@@ -1,0 +1,6 @@
+# Python environments
+venv/
+__pycache__/
+
+# Security
+.env
