@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Float, Date, ARRAY, DateTime
+from sqlalchemy import Column, Integer, String, Float, Date, ARRAY, DateTime, Boolean
 from database import Base
 
 class Profile(Base):
@@ -18,11 +18,14 @@ class Task(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     title = Column(String, nullable=False)
-    task_type = Column(String, nullable=False)        # "Schedule" or "Work"
+    task_type = Column(String, nullable=False)        
     due_date = Column(DateTime, nullable=False)
     status = Column(String, default="Pending")        
-    tags = Column(ARRAY(String), nullable=False)      # Validated later in FastAPI
+    tags = Column(ARRAY(String), nullable=False)      
     completed_at = Column(DateTime, nullable=True)    
+    
+    #  NEW FEATURE TOGGLE
+    is_todo = Column(Boolean, default=False)
 
 class Subject(Base):
     __tablename__ = "subjects"
