@@ -3,9 +3,13 @@ from sqlalchemy.orm import Session
 from sqlalchemy import text
 from database import engine, get_db
 import models
+from routes import profile,portfolio
 
 models.Base.metadata.create_all(bind=engine)
 app = FastAPI()
+
+app.include_router(profile.router)  # Connect the profile routes to the main app
+app.include_router(portfolio.router)
 
 @app.get("/")
 def read_root(db: Session = Depends(get_db)):
