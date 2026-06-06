@@ -1,6 +1,6 @@
 from pydantic import BaseModel
 from typing import List, Optional
-from datetime import date,datetime
+from datetime import date, datetime
 
 # 1. SETUP SCHEMA (What the frontend sends when you first open the app)
 class ProfileCreate(BaseModel):
@@ -18,6 +18,9 @@ class ProfileResponse(BaseModel):
     last_active_date: Optional[date] = None
     custom_task_tags: List[str]
 
+    class Config:
+        from_attributes = True
+
 # 3. PORTFOLIO SCHEMAS (Skills & Projects)
 class PortfolioCreate(BaseModel):
     item_type: str  # Must be "Skill" or "Project"
@@ -32,7 +35,8 @@ class PortfolioResponse(BaseModel):
     description: Optional[str] = None
     links: List[str] = []
     
-from datetime import datetime
+    class Config:
+        from_attributes = True
 
 # 4. TASK SCHEMAS (Powers both Schedule and Work)
 class TaskCreate(BaseModel):
