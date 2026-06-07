@@ -58,3 +58,36 @@ class TaskResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+# 5. SUBJECTS SCHEMAS (Timetable & Attendance)
+class SubjectCreate(BaseModel):
+    name: str
+    room: Optional[str] = None
+    total_classes: int = 0
+
+class SubjectResponse(BaseModel):
+    id: int
+    name: str
+    room: Optional[str] = None
+    total_classes: int
+    attended_classes: int
+
+    class Config:
+        from_attributes = True
+
+# 6. EXPENSES SCHEMAS (Money Manager)
+class ExpenseCreate(BaseModel):
+    amount: float
+    reason: str
+    date: date
+    tags: List[str]
+
+class ExpenseResponse(BaseModel):
+    id: int
+    amount: float
+    reason: str
+    date: date
+    tags: List[str]
+
+    class Config:
+        from_attributes = True

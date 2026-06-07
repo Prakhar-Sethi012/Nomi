@@ -3,14 +3,20 @@ from sqlalchemy.orm import Session
 from sqlalchemy import text
 from database import engine, get_db
 import models
-from routes import profile,portfolio,tasks
+
+# Import your route files
+from routes import profile, portfolio, tasks, subjects, expenses
 
 models.Base.metadata.create_all(bind=engine)
+
 app = FastAPI()
 
-app.include_router(profile.router)  # Connect the profile routes to the main app
+# Connect ALL routers to the main engine
+app.include_router(profile.router)
 app.include_router(portfolio.router)
 app.include_router(tasks.router)
+app.include_router(subjects.router)
+app.include_router(expenses.router)
 
 @app.get("/")
 def read_root(db: Session = Depends(get_db)):
