@@ -1,17 +1,26 @@
 from fastapi import FastAPI, Depends
+from fastapi.middleware.cors import CORSMiddleware  # NEW IMPORT
 from sqlalchemy.orm import Session
 from sqlalchemy import text
 from database import engine, get_db
 import models
 
-# Import your route files
 from routes import profile, portfolio, tasks, subjects, expenses
 
 models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
 
-# Connect ALL routers to the main engine
+# --- NEW CORS CONFIGURATION ---
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173"],  # Your Vite React port
+    allow_credentials=True,
+    allow_methods=["*"],                      # Allow all requests (GET, POST, etc.)
+    allow_headers=["*"],
+)
+# ------------------------------
+
 app.include_router(profile.router)
 app.include_router(portfolio.router)
 app.include_router(tasks.router)
