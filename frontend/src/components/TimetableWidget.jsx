@@ -4,6 +4,13 @@ function TimetableWidget() {
   const [subjects, setSubjects] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
 
+  // Form State
+  const [showForm, setShowForm] = useState(false);
+  const [formData, setFormData] = useState({
+    name: '',
+    room: ''
+  });
+
   useEffect(() => {
     fetchSubjects();
   }, []);
@@ -22,14 +29,32 @@ function TimetableWidget() {
     }
   };
 
-  // The function to log attendance and instantly refresh the data
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      const response = await fetch('http://127.0.0.1:8000/subjects/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData)
+      });
+
+      if (response.ok) {
+        fetchSubjects(); // Refresh the list
+        setShowForm(false); // Close form
+        setFormData({ name: '', room: '' }); // Clear inputs
+      }
+    } catch (err) {
+      console.error('Error saving subject');
+    }
+  };
+
   const markAttendance = async (id, attended) => {
     try {
       const response = await fetch(`http://127.0.0.1:8000/subjects/${id}/attendance?attended=${attended}`, {
         method: 'PUT'
       });
       if (response.ok) {
-        fetchSubjects(); // Instantly refresh the UI with the new percentage
+        fetchSubjects(); // Refresh UI with new percentage
       }
     } catch (err) {
       console.error('Connection error');
@@ -46,22 +71,55 @@ function TimetableWidget() {
 
   return (
     <div className="bg-slate-800 p-6 rounded-xl border border-slate-700 h-80 flex flex-col shadow-lg">
-      <h2 className="text-xl font-bold text-white mb-4">Classes & Attendance</h2>
-      
-      {subjects.length === 0 ? (
+      <div className="flex justify-between items-center mb-4">
+        <h2 className="text-xl font-bold text-white">Classes & Attendance</h2>
+        {/* Only show the Add button if the form IS NOT open */}
+        {!showForm && (
+          <button 
+            onClick={() => setShowForm(true)} 
+            className="text-xs bg-slate-700 hover:bg-slate-600 text-white px-3 py-1.5 rounded border border-slate-600 transition-colors"
+          >
+            + Add Class
+          </button>
+        )}
+      </div>
+
+      {showForm ? (
+        <form onSubmit={handleSubmit} className="flex-1 flex flex-col gap-3">
+          <input 
+            type="text" 
+            placeholder="Class Name (e.g., Software Engineering)" 
+            required 
+            value={formData.name} 
+            onChange={(e) => setFormData({...formData, name: e.target.value})} 
+            className="w-full p-2 bg-slate-700 rounded text-sm text-white border border-slate-600 focus:border-blue-500 outline-none" 
+          />
+          
+          <input 
+            type="text" 
+            placeholder="Room Number (e.g., SJT 311)" 
+            value={formData.room} 
+            onChange={(e) => setFormData({...formData, room: e.target.value})} 
+            className="w-full p-2 bg-slate-700 rounded text-sm text-white border border-slate-600 focus:border-blue-500 outline-none" 
+          />
+          
+          <div className="flex gap-2 mt-auto pt-2">
+            <button type="button" onClick={() => setShowForm(false)} className="flex-1 bg-slate-600 hover:bg-slate-500 text-white text-sm py-2 rounded transition-colors">Cancel</button>
+            <button type="submit" className="flex-1 bg-blue-600 hover:bg-blue-500 text-white text-sm py-2 rounded font-bold transition-colors">Save</button>
+          </div>
+        </form>
+      ) : subjects.length === 0 ? (
         <div className="flex-1 flex flex-col items-center justify-center text-slate-500 text-sm text-center">
           <p>No classes set up yet.</p>
-          <p className="text-xs mt-2 text-slate-600">(Add them via the Swagger UI for now!)</p>
+          <p className="text-xs mt-2 text-slate-600">Click '+ Add Class' to start.</p>
         </div>
       ) : (
         <ul className="space-y-3 overflow-y-auto pr-2 custom-scrollbar flex-1">
           {subjects.map((sub) => {
-            // Calculate attendance percentage safely to avoid dividing by zero
             const percentage = sub.total_classes === 0 
               ? 100 
               : Math.round((sub.attended_classes / sub.total_classes) * 100);
             
-            // Dynamic color logic: Red if below 75%, Green if safe
             const badgeColor = percentage >= 75 ? 'bg-green-900/50 text-green-400' : 'bg-red-900/50 text-red-400';
 
             return (
@@ -76,20 +134,9 @@ function TimetableWidget() {
                   </div>
                 </div>
                 
-                {/* The Live Action Buttons */}
                 <div className="flex gap-2 mt-2">
-                  <button 
-                    onClick={() => markAttendance(sub.id, true)} 
-                    className="flex-1 bg-slate-600 hover:bg-green-600/80 text-white text-xs py-1.5 rounded transition-colors"
-                  >
-                    Present
-                  </button>
-                  <button 
-                    onClick={() => markAttendance(sub.id, false)} 
-                    className="flex-1 bg-slate-600 hover:bg-red-600/80 text-white text-xs py-1.5 rounded transition-colors"
-                  >
-                    Absent
-                  </button>
+                  <button onClick={() => markAttendance(sub.id, true)} className="flex-1 bg-slate-600 hover:bg-green-600/80 text-white text-xs py-1.5 rounded transition-colors">Present</button>
+                  <button onClick={() => markAttendance(sub.id, false)} className="flex-1 bg-slate-600 hover:bg-red-600/80 text-white text-xs py-1.5 rounded transition-colors">Absent</button>
                 </div>
               </li>
             );
