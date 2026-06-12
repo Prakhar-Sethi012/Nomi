@@ -4,7 +4,7 @@ function TimetableWidget() {
   const [subjects, setSubjects] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Form State
+  // Form State - Reverted to match strict FastAPI schema
   const [showForm, setShowForm] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
@@ -15,12 +15,16 @@ function TimetableWidget() {
     fetchSubjects();
   }, []);
 
-  const fetchSubjects = async () => {
+const fetchSubjects = async () => {
     try {
       const response = await fetch('http://127.0.0.1:8000/subjects/');
       if (response.ok) {
         const data = await response.json();
-        setSubjects(data);
+        
+        // THE FIX: Force the array to sort by ID so the order never changes
+        const sortedData = data.sort((a, b) => a.id - b.id);
+        
+        setSubjects(sortedData);
       }
     } catch (err) {
       console.error('Failed to fetch subjects');
@@ -32,16 +36,22 @@ function TimetableWidget() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
+      // Stripped payload down to what the API strictly accepts
+      const payload = {
+        name: formData.name,
+        room: formData.room
+      };
+
       const response = await fetch('http://127.0.0.1:8000/subjects/', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData)
+        body: JSON.stringify(payload)
       });
 
       if (response.ok) {
-        fetchSubjects(); // Refresh the list
-        setShowForm(false); // Close form
-        setFormData({ name: '', room: '' }); // Clear inputs
+        fetchSubjects(); 
+        setShowForm(false); 
+        setFormData({ name: '', room: '' }); 
       }
     } catch (err) {
       console.error('Error saving subject');
@@ -54,7 +64,7 @@ function TimetableWidget() {
         method: 'PUT'
       });
       if (response.ok) {
-        fetchSubjects(); // Refresh UI with new percentage
+        fetchSubjects(); 
       }
     } catch (err) {
       console.error('Connection error');
@@ -73,7 +83,6 @@ function TimetableWidget() {
     <div className="bg-slate-800 p-6 rounded-xl border border-slate-700 h-80 flex flex-col shadow-lg">
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-xl font-bold text-white">Classes & Attendance</h2>
-        {/* Only show the Add button if the form IS NOT open */}
         {!showForm && (
           <button 
             onClick={() => setShowForm(true)} 
@@ -127,7 +136,11 @@ function TimetableWidget() {
                 <div className="flex justify-between items-start mb-2">
                   <div>
                     <p className="font-medium text-slate-200 text-sm">{sub.name}</p>
-                    <p className="text-xs text-slate-400">Room: {sub.room || 'TBA'}</p>
+                    <div className="flex items-center gap-2 mt-0.5">
+                      <span className="text-xs text-slate-400">Room: {sub.room || 'TBA'}</span>
+                      <span className="text-xs text-slate-500">•</span>
+                      <span className="text-[11px] text-slate-400 font-mono">({sub.attended_classes}/{sub.total_classes})</span>
+                    </div>
                   </div>
                   <div className={`text-xs font-bold px-2 py-1 rounded border border-slate-600 ${badgeColor}`}>
                     {percentage}%

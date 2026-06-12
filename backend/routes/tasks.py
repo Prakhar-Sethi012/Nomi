@@ -60,3 +60,18 @@ def get_todo_list(db: Session = Depends(get_db)):
         ((models.Task.task_type == "Schedule") & (models.Task.is_todo == True))
     ).all()
     return tasks
+
+@router.delete("/{task_id}")
+def delete_task(task_id: int, db: Session = Depends(get_db)):
+    # 1. Find the task in the database
+    task = db.query(models.Task).filter(models.Task.id == task_id).first()
+    
+    # 2. If it doesn't exist, throw an error
+    if not task:
+        raise HTTPException(status_code=404, detail="Task not found")
+    
+    # 3. Delete it from the database and save the changes
+    db.delete(task)
+    db.commit()
+    
+    return {"message": "Task deleted successfully"}
