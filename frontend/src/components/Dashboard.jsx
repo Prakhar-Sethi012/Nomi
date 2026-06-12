@@ -3,6 +3,7 @@ import TasksWidget from './TasksWidget';
 import TimetableWidget from './TimetableWidget';
 import ExpensesWidget from './ExpensesWidget';
 import PortfolioWidget from './PortfolioWidget'; // NEW IMPORT
+import WeatherWidget from './WeatherWidget';
 
 function Dashboard({ profile }) {
   return (
@@ -12,6 +13,10 @@ function Dashboard({ profile }) {
         <div>
           <h1 className="text-2xl font-bold text-white">Welcome back, {profile.name.split(' ')[0]}</h1>
           <p className="text-slate-400 text-sm">VIT Command Center • Reg: {profile.reg_no}</p>
+        </div>
+        {/* NEW WEATHER WIDGET PLACEMENT */}
+        <div className="hidden md:block">
+          <WeatherWidget />
         </div>
         <div className="text-right">
           <div className="text-3xl font-black text-orange-500">🔥 Day {profile.current_streak}</div>
