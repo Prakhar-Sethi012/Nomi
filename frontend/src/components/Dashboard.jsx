@@ -1,11 +1,12 @@
 import React from 'react';
 import TasksWidget from './TasksWidget';
-import TimetableWidget from './TimetableWidget'; 
-import ExpensesWidget from './ExpensesWidget';// NEW IMPORT
+import TimetableWidget from './TimetableWidget';
+import ExpensesWidget from './ExpensesWidget';
+import PortfolioWidget from './PortfolioWidget'; // NEW IMPORT
 
 function Dashboard({ profile }) {
   return (
-    <div className="w-full max-w-6xl">
+    <div className="w-full max-w-6xl pb-10"> {/* Added padding bottom (pb-10) for scrolling */}
       {/* Header Bar */}
       <header className="flex justify-between items-center bg-slate-800 p-6 rounded-xl border border-slate-700 mb-6 shadow-lg">
         <div>
@@ -18,20 +19,16 @@ function Dashboard({ profile }) {
         </div>
       </header>
 
-      {/* Grid for Modules */}
+      {/* TOP ROW: Daily Operations Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        
-        {/* Box 1: NEW LIVE TIMETABLE WIDGET */}
         <TimetableWidget />
-
-        {/* Box 2: Tasks Widget */}
         <TasksWidget />
-
-        {/* Box 3: Expenses */}
         <ExpensesWidget />
-        
-        
       </div>
+
+      {/* BOTTOM ROW: The Developer Showcase */}
+      <PortfolioWidget />
+
     </div>
   );
 }
