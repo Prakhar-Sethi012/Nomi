@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Dashboard from './components/Dashboard';
 import LinksView from './components/LinksView';
+import ScratchpadView from './components/ScratchpadView';
 
 function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -63,7 +64,7 @@ function App() {
   return (
     <div className="min-h-screen bg-slate-900 flex flex-col items-center pt-6 px-4 font-sans">
       
-      <nav className="flex gap-1 mb-6 bg-slate-800 p-1.5 rounded-lg border border-slate-700 shadow-lg z-10 sticky top-4">
+<nav className="flex gap-1 mb-6 bg-slate-800 p-1.5 rounded-lg border border-slate-700 shadow-lg z-10 sticky top-4">
         <button
           onClick={() => setActiveTab('dashboard')}
           className={`px-5 py-2 rounded-md text-sm font-bold transition-all duration-200 ${
@@ -71,6 +72,14 @@ function App() {
           }`}
         >
           Dashboard
+        </button>
+        <button
+          onClick={() => setActiveTab('scratchpad')}
+          className={`px-5 py-2 rounded-md text-sm font-bold transition-all duration-200 ${
+            activeTab === 'scratchpad' ? 'bg-blue-600 text-white shadow' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-700'
+          }`}
+        >
+          Scratchpad
         </button>
         <button
           onClick={() => setActiveTab('links')}
@@ -83,13 +92,10 @@ function App() {
       </nav>
 
       <div className="w-full flex justify-center">
-        {activeTab === 'dashboard' ? (
-          <Dashboard profile={profile} />
-        ) : (
-          <LinksView />
-        )}
+        {activeTab === 'dashboard' && <Dashboard profile={profile} />}
+        {activeTab === 'scratchpad' && <ScratchpadView />}
+        {activeTab === 'links' && <LinksView />}
       </div>
-
     </div>
   );
 }

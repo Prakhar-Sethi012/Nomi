@@ -5,6 +5,7 @@ import ExpensesWidget from './ExpensesWidget';
 import PortfolioWidget from './PortfolioWidget';
 import WeatherWidget from './WeatherWidget';
 
+
 function Dashboard({ profile }) {
   // Live Calendar Engine
   const today = new Date();
@@ -21,14 +22,30 @@ function Dashboard({ profile }) {
   const [tempCgpa, setTempCgpa] = useState(cgpa);
 
   useEffect(() => {
-    const savedStreak = localStorage.getItem('cc_streak') || 0;
-    setStreak(parseInt(savedStreak));
+    let currentStreak = parseInt(localStorage.getItem('cc_streak') || 0);
+    const lastActiveStr = localStorage.getItem('cc_last_active');
+    const todayStr = new Date().toDateString();
 
+    // 🔥 THE EXPIRATION CHECKER 🔥
+    // If you have a streak, let's verify you didn't break it while you were away.
+    if (lastActiveStr && currentStreak > 0) {
+      const yesterday = new Date();
+      yesterday.setDate(yesterday.getDate() - 1);
+
+      // If the last time you did a task wasn't today, AND it wasn't yesterday... you broke the chain.
+      if (lastActiveStr !== todayStr && lastActiveStr !== yesterday.toDateString()) {
+        currentStreak = 0; // Reset to zero
+        localStorage.setItem('cc_streak', '0'); // Save the failure to memory
+      }
+    }
+
+    setStreak(currentStreak);
+
+    // Keep listening for live updates during the day
     const handleStreakUpdate = () => setStreak(parseInt(localStorage.getItem('cc_streak')));
     window.addEventListener('streak-updated', handleStreakUpdate);
     return () => window.removeEventListener('streak-updated', handleStreakUpdate);
   }, []);
-
   const handleCgpaSave = (e) => {
     e.preventDefault();
     // Force the input to format nicely as a 2-decimal number out of 10

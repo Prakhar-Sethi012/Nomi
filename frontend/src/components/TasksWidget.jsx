@@ -86,7 +86,37 @@ function TasksWidget() {
       try {
         const response = await fetch(`http://127.0.0.1:8000/tasks/${id}`, { method: 'DELETE' });
         
-        if (response.ok) {
+if (response.ok) {
+          // 🔥 STRICT GAMIFICATION ENGINE: "INBOX ZERO" RULE 🔥
+          
+          // 1. Find all tasks that are due today or are already overdue
+          const pendingDailyTasks = tasks.filter(t => new Date(t.due_date).setHours(0,0,0,0) <= new Date().setHours(0,0,0,0));
+          
+          // 2. Check if the task you are currently deleting is the absolute LAST one on that list
+          const isPerfectDay = pendingDailyTasks.length === 1 && pendingDailyTasks[0].id === id;
+
+          // 3. Only ignite the streak if you cleared the board
+          if (isPerfectDay) {
+            const lastActiveStr = localStorage.getItem('cc_last_active');
+            let currentStreak = parseInt(localStorage.getItem('cc_streak') || 0);
+
+            if (lastActiveStr !== todayStr) {
+              const yesterday = new Date();
+              yesterday.setDate(yesterday.getDate() - 1);
+              
+              if (lastActiveStr === yesterday.toDateString()) {
+                 currentStreak += 1; 
+              } else {
+                 currentStreak = 1; 
+              }
+
+              localStorage.setItem('cc_streak', currentStreak);
+              localStorage.setItem('cc_last_active', todayStr);
+              window.dispatchEvent(new Event('streak-updated'));
+            }
+          }
+
+          // Fetch fresh tasks AFTER doing the gamification math
           fetchTasks(); 
           
           // Clean up the timer state so it doesn't leave ghost data
@@ -95,25 +125,6 @@ function TasksWidget() {
             delete newState[id];
             return newState;
           });
-          
-          // 🔥 GAMIFICATION ENGINE 🔥
-          const lastActiveStr = localStorage.getItem('cc_last_active');
-          let currentStreak = parseInt(localStorage.getItem('cc_streak') || 0);
-
-          if (lastActiveStr !== todayStr) {
-            const yesterday = new Date();
-            yesterday.setDate(yesterday.getDate() - 1);
-            
-            if (lastActiveStr === yesterday.toDateString()) {
-               currentStreak += 1; 
-            } else {
-               currentStreak = 1; 
-            }
-
-            localStorage.setItem('cc_streak', currentStreak);
-            localStorage.setItem('cc_last_active', todayStr);
-            window.dispatchEvent(new Event('streak-updated'));
-          }
         } else {
           // If the backend fails, abort the UI change
           setCompletingTasks(prev => {
@@ -135,19 +146,13 @@ function TasksWidget() {
     }));
   };
 
-  // Only show tasks due today or in the future
-  const activeTasks = tasks.filter(task => {
-    const taskDate = new Date(task.due_date);
-    return taskDate.setHours(0,0,0,0) >= new Date().setHours(0,0,0,0);
-  });
-
   if (isLoading) return <div className="bg-slate-800 p-6 rounded-xl border border-slate-700 h-80 flex items-center justify-center text-blue-400 animate-pulse">Syncing tasks...</div>;
 
   return (
     <div className="bg-slate-800 p-6 rounded-xl border border-slate-700 h-80 flex flex-col shadow-lg">
       <h2 className="text-xl font-bold text-white mb-4 flex justify-between items-center">
         Action Items
-        {!showForm && <span className="text-xs bg-blue-600 text-white px-2 py-1 rounded-full">{activeTasks.length}</span>}
+        {!showForm && <span className="text-xs bg-blue-600 text-white px-2 py-1 rounded-full">{tasks.length}</span>}
       </h2>
       
       {error && <div className="bg-red-900/40 border border-red-500/50 text-red-200 text-xs p-2 rounded mb-2 overflow-x-auto max-h-16 font-mono">{error}</div>}
@@ -165,40 +170,55 @@ function TasksWidget() {
       ) : (
         <>
           <button onClick={() => setShowForm(true)} className="w-full mb-3 bg-slate-700 hover:bg-slate-600 border border-slate-600 text-white text-sm py-1.5 rounded transition-colors flex items-center justify-center gap-2">+ New Task</button>
-          {activeTasks.length === 0 ? (
+          {tasks.length === 0 ? (
             <div className="flex-1 flex items-center justify-center text-slate-500 text-sm">No pending tasks. You're all caught up!</div>
           ) : (
             <ul className="space-y-3 overflow-y-auto pr-2 custom-scrollbar flex-1">
-              {activeTasks.map((task) => (
-                <li key={task.id} className={`bg-slate-700 p-3 rounded-lg border transition-all duration-500 ${completingTasks[task.id] ? 'opacity-40 border-green-500 scale-[0.98]' : 'border-slate-600 hover:border-blue-500'}`}>
-                  <div className="flex justify-between items-start mb-2">
-                    <div className="flex items-start gap-3">
-                      <button onClick={() => toggleComplete(task.id)} className={`mt-0.5 shrink-0 w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors ${completingTasks[task.id] ? 'bg-green-500 border-green-500' : 'border-slate-400 hover:border-green-400'}`}>
-                        {completingTasks[task.id] && <span className="text-white text-xs">✓</span>}
-                      </button>
-                      <div>
-                        <p className={`font-medium text-sm leading-tight transition-all ${completingTasks[task.id] ? 'text-slate-400 line-through' : 'text-slate-200'}`}>{task.title}</p>
-                        {/* 🔥 THE LIVE UPDATING COUNTDOWN TEXT 🔥 */}
-                        {completingTasks[task.id] && (
-                          <p className="text-[10px] text-green-400 font-bold mt-1">
-                            Deleting in {completingTasks[task.id].remaining}s... Click circle to undo.
+              {tasks.map((task) => {
+                // Determine if task date is yesterday or earlier
+                const isOverdue = new Date(task.due_date).setHours(0,0,0,0) < new Date().setHours(0,0,0,0);
+
+                return (
+                  <li key={task.id} className={`bg-slate-700 p-3 rounded-lg border transition-all duration-500 ${
+                    completingTasks[task.id] 
+                      ? 'opacity-40 border-green-500 scale-[0.98]' 
+                      : isOverdue 
+                        ? 'border-red-500/60 bg-red-900/10' 
+                        : 'border-slate-600 hover:border-blue-500'
+                  }`}>
+                    <div className="flex justify-between items-start mb-2">
+                      <div className="flex items-start gap-3">
+                        <button onClick={() => toggleComplete(task.id)} className={`mt-0.5 shrink-0 w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors ${completingTasks[task.id] ? 'bg-green-500 border-green-500' : 'border-slate-400 hover:border-green-400'}`}>
+                          {completingTasks[task.id] && <span className="text-white text-xs">✓</span>}
+                        </button>
+                        <div>
+                          <p className={`font-medium text-sm leading-tight transition-all ${completingTasks[task.id] ? 'text-slate-400 line-through' : isOverdue ? 'text-red-200' : 'text-slate-200'}`}>
+                            {task.title}
+                            {/* Visual Overdue Tag */}
+                            {isOverdue && !completingTasks[task.id] && <span className="ml-2 text-[9px] bg-red-900/80 text-red-300 px-1.5 py-0.5 rounded uppercase tracking-wider font-bold">Overdue</span>}
                           </p>
-                        )}
+                          {/* Live Updating Countdown */}
+                          {completingTasks[task.id] && (
+                            <p className="text-[10px] text-green-400 font-bold mt-1">
+                              Deleting in {completingTasks[task.id].remaining}s... Click circle to undo.
+                            </p>
+                          )}
+                        </div>
                       </div>
+                      <p className={`text-xs whitespace-nowrap ml-2 ${isOverdue ? 'text-red-400 font-bold' : 'text-slate-400'}`}>
+                        {new Date(task.due_date).toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                      </p>
                     </div>
-                    <p className="text-xs text-slate-400 whitespace-nowrap ml-2">
-                      {new Date(task.due_date).toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
-                    </p>
-                  </div>
-                  <div className="flex flex-wrap gap-1.5 ml-8">
-                    {task.tags.map(tag => (
-                      <span key={tag} className={`text-[10px] uppercase tracking-wider font-bold bg-slate-800 border border-slate-600 px-2 py-0.5 rounded ${completingTasks[task.id] ? 'text-slate-500' : 'text-blue-400'}`}>
-                        {tag}
-                      </span>
-                    ))}
-                  </div>
-                </li>
-              ))}
+                    <div className="flex flex-wrap gap-1.5 ml-8">
+                      {task.tags.map(tag => (
+                        <span key={tag} className={`text-[10px] uppercase tracking-wider font-bold bg-slate-800 border border-slate-600 px-2 py-0.5 rounded ${completingTasks[task.id] ? 'text-slate-500' : 'text-blue-400'}`}>
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                  </li>
+                );
+              })}
             </ul>
           )}
         </>
