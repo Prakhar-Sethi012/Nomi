@@ -3,6 +3,7 @@ import Dashboard from './components/Dashboard';
 import LinksView from './components/LinksView';
 import ScratchpadView from './components/ScratchpadView';
 import AttendanceStrategyView from './components/AttendanceStrategyView';
+import TimetableView from './components/TimetableView';
 
 function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -98,11 +99,20 @@ function App() {
         >
           <span>Strategy</span>
         </button>
+        <button
+       onClick={() => setActiveTab('timetable')}
+       className={`px-5 py-2 rounded-md text-sm font-bold transition-all duration-200 flex items-center gap-2 ${
+         activeTab === 'timetable' ? 'bg-indigo-600 text-white shadow' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-700'
+       }`}
+     >
+       <span>Timetable</span>
+     </button>
       </nav>
         <div className="w-full flex justify-center">
         {activeTab === 'dashboard' && <Dashboard profile={profile} />}
         {activeTab === 'scratchpad' && <ScratchpadView />}
         {activeTab === 'links' && <LinksView />}
+        {activeTab === 'timetable' && <TimetableView />}
         {/* NEW ROUTE */}
         {activeTab === 'strategy' && <AttendanceStrategyView />}
       </div>

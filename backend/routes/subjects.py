@@ -15,12 +15,12 @@ def add_subject(subject_data: schemas.SubjectCreate, db: Session = Depends(get_d
     db.refresh(new_subject)
     return new_subject
 
-# 2. GET ALL SUBJECTS (To render your timetable)
+# 2. GET ALL SUBJECTS (To render your timetable & strategy room)
 @router.get("/", response_model=List[schemas.SubjectResponse])
 def get_subjects(db: Session = Depends(get_db)):
     return db.query(models.Subject).all()
 
-# 3. UPDATE ATTENDANCE (Click a button on frontend to +1)
+# 3. UPDATE ATTENDANCE (Incrementing reality)
 @router.put("/{subject_id}/attendance", response_model=schemas.SubjectResponse)
 def update_attendance(subject_id: int, attended: bool, db: Session = Depends(get_db)):
     subject = db.query(models.Subject).filter(models.Subject.id == subject_id).first()
@@ -28,11 +28,24 @@ def update_attendance(subject_id: int, attended: bool, db: Session = Depends(get
     if not subject:
         raise HTTPException(status_code=404, detail="Subject not found")
 
-    # Increment total classes. If they attended, increment attended_classes too.
-    subject.total_classes += 1
+    # Increment conducted classes (the class happened). 
+    subject.conducted_classes += 1
+    
+    # If the user was present, increment attended_classes too.
     if attended:
         subject.attended_classes += 1
         
     db.commit()
     db.refresh(subject)
     return subject
+
+# 4. DELETE A SUBJECT (Removing it from the grid)
+@router.delete("/{subject_id}")
+def delete_subject(subject_id: int, db: Session = Depends(get_db)):
+    subject = db.query(models.Subject).filter(models.Subject.id == subject_id).first()
+    if not subject:
+        raise HTTPException(status_code=404, detail="Subject not found")
+    
+    db.delete(subject)
+    db.commit()
+    return {"message": "Subject completely removed from the grid"}

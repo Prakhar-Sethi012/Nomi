@@ -28,6 +28,7 @@ app.include_router(tasks.router)
 app.include_router(subjects.router)
 app.include_router(expenses.router)
 app.include_router(weather.router)
+
 @app.get("/")
 def read_root(db: Session = Depends(get_db)):
     try:

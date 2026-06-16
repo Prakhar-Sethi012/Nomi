@@ -62,18 +62,18 @@ class TaskResponse(BaseModel):
 # 5. SUBJECTS SCHEMAS (Timetable & Attendance)
 class SubjectCreate(BaseModel):
     name: str
-    room: Optional[str] = None
-    total_classes: int = 0
+    subject_type: str
+    theory_slot: Optional[str] = None
+    lab_slot: Optional[str] = None
+    total_classes: int = 60
 
-class SubjectResponse(BaseModel):
+class SubjectResponse(SubjectCreate):
     id: int
-    name: str
-    room: Optional[str] = None
-    total_classes: int
     attended_classes: int
+    conducted_classes: int
 
     class Config:
-        from_attributes = True
+        from_attributes = True # Use orm_mode = True if you are on an older Pydantic version
 
 # 6. EXPENSES SCHEMAS (Money Manager)
 class ExpenseCreate(BaseModel):

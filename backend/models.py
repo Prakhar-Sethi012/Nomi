@@ -26,15 +26,24 @@ class Task(Base):
     
     #  NEW FEATURE TOGGLE
     is_todo = Column(Boolean, default=False)
+from sqlalchemy import Column, Integer, String
+# Assuming you have your Base imported at the top of the file
 
 class Subject(Base):
     __tablename__ = "subjects"
 
     id = Column(Integer, primary_key=True, index=True)
-    name = Column(String, nullable=False)
-    room = Column(String, nullable=True)
-    total_classes = Column(Integer, nullable=False)
+    name = Column(String, index=True)
+    subject_type = Column(String) # Will store: 'THEORY', 'LAB', or 'EMBEDDED'
+    
+    # Slots
+    theory_slot = Column(String, nullable=True) # e.g., 'A1+TA1'
+    lab_slot = Column(String, nullable=True)    # e.g., 'L31+L32'
+    
+    # Crystal Ball / Attendance Tracking
+    total_classes = Column(Integer, default=60)
     attended_classes = Column(Integer, default=0)
+    conducted_classes = Column(Integer, default=0)
 
 class Expense(Base):
     __tablename__ = "expenses"
