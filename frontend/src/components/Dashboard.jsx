@@ -5,7 +5,6 @@ import ExpensesWidget from './ExpensesWidget';
 import PortfolioWidget from './PortfolioWidget';
 import WeatherWidget from './WeatherWidget';
 
-
 function Dashboard({ profile }) {
   // Live Calendar Engine
   const today = new Date();
@@ -128,6 +127,7 @@ function Dashboard({ profile }) {
 
       {/* The Developer Showcase */}
       <PortfolioWidget />
+      
     </div>
   );
 }
