@@ -10,18 +10,33 @@ function AttendanceStrategyView() {
   const [newTotalStr, setNewTotalStr] = useState("");
 
   const DEFAULT_TOTAL_CLASSES = 60; 
+useEffect(() => {
+    const fetchSubjects = async () => {
+      try {
+        const response = await fetch('http://127.0.0.1:8000/subjects/');
+        if (response.ok) {
+          const dbData = await response.json();
+          
+          // 🗺️ MAPPING: Convert PostgreSQL column names to our Crystal Ball engine variables
+          const liveData = dbData.map(sub => ({
+            id: sub.id,
+            name: sub.name,
+            attended: sub.attended_classes,
+            conducted: sub.conducted_classes,
+            total: sub.total_classes
+          }));
 
-  useEffect(() => {
-    // Mock Data - Replace with FastAPI fetch later!
-    const mockData = [
-      { id: 1, name: 'Software Engineering (Theory)', attended: 28, conducted: 32, total: DEFAULT_TOTAL_CLASSES },
-      { id: 2, name: 'Database Management Systems', attended: 21, conducted: 30, total: DEFAULT_TOTAL_CLASSES },
-      { id: 3, name: 'FastAPI & Backend Architecture', attended: 12, conducted: 20, total: DEFAULT_TOTAL_CLASSES }, 
-    ];
-    
-    setRealSubjects(mockData);
-    setSimulatedSubjects(JSON.parse(JSON.stringify(mockData))); 
-    setIsLoading(false);
+          setRealSubjects(liveData);
+          setSimulatedSubjects(JSON.parse(JSON.stringify(liveData))); // Deep copy for Sandbox
+        }
+      } catch (err) {
+        console.error("Failed to load live subjects from database");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchSubjects();
   }, []);
 
   // 🧮 THE CRYSTAL BALL MATH ENGINE
