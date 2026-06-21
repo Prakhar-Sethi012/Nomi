@@ -4,6 +4,7 @@ import TimetableWidget from './TimetableWidget';
 import ExpensesWidget from './ExpensesWidget';
 import PortfolioWidget from './PortfolioWidget';
 import WeatherWidget from './WeatherWidget';
+import DashboardAttendance from './DashboardAttendance';
 
 function Dashboard({ profile }) {
   // Live Calendar Engine
@@ -120,7 +121,7 @@ function Dashboard({ profile }) {
 
       {/* Grid for Modules */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <TimetableWidget />
+        <DashboardAttendance />
         <TasksWidget />
         <ExpensesWidget />
       </div>

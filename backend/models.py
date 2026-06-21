@@ -39,7 +39,7 @@ class Subject(Base):
     # Slots
     theory_slot = Column(String, nullable=True) # e.g., 'A1+TA1'
     lab_slot = Column(String, nullable=True)    # e.g., 'L31+L32'
-    
+    room_number = Column(String, nullable=True)
     # Crystal Ball / Attendance Tracking
     total_classes = Column(Integer, default=60)
     attended_classes = Column(Integer, default=0)

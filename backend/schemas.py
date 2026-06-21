@@ -66,6 +66,7 @@ class SubjectCreate(BaseModel):
     theory_slot: Optional[str] = None
     lab_slot: Optional[str] = None
     total_classes: int = 60
+    room_number: Optional[str] = None
 
 class SubjectResponse(SubjectCreate):
     id: int

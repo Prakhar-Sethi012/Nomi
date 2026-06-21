@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 // ==========================================
 // 1. THE FFCS MASTER DICTIONARY
 // ==========================================
-const DAYS = ["MON", "TUE", "WED", "THU", "FRI"];
+const DAYS = ["MON", "TUES", "WEDNES", "THURS", "FRI"];
 const TIMES = [
   "08:00 - 08:50", "09:00 - 09:50", "10:00 - 10:50", "11:00 - 11:50", "12:00 - 12:50",
   "LUNCH",
@@ -24,12 +24,21 @@ function TimetableView() {
   const [viewMode, setViewMode] = useState('grid'); // 'grid' or 'agenda'
   const [isLoading, setIsLoading] = useState(true);
   
+  // ⏱️ NEW: Real-time clock state
+  const [now, setNow] = useState(new Date());
+
   // Form State
   const [showModal, setShowModal] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
   const [formData, setFormData] = useState({
-    name: '', subject_type: 'THEORY', theory_slot: '', lab_slot: ''
+    name: '', subject_type: 'THEORY', theory_slot: '', lab_slot: '', room_number: ''
   });
+
+  // ⏱️ NEW: Update the clock every 60 seconds
+  useEffect(() => {
+    const timer = setInterval(() => setNow(new Date()), 60000);
+    return () => clearInterval(timer); // Cleanup on unmount
+  }, []);
 
   // Fetch from FastAPI
   const fetchSubjects = async () => {
@@ -48,12 +57,10 @@ function TimetableView() {
   // ==========================================
   // 2. THE CLASH DETECTION ENGINE
   // ==========================================
-  // Checks if a given string of slots (e.g., "A1+TA1") exists inside a specific grid cell (e.g., "A1/L1")
   const slotExistsInCell = (userSlots, cellData) => {
     if (!userSlots || cellData === "LUNCH") return false;
-    // Split "A1+TA1" into ["A1", "TA1"] and check if the cell contains any of them
     const slotsArray = userSlots.split('+').map(s => s.trim().toUpperCase());
-    const cellSlots = cellData.split('/'); // ["A1", "L1"]
+    const cellSlots = cellData.split('/');
     return slotsArray.some(s => cellSlots.includes(s));
   };
 
@@ -70,11 +77,9 @@ function TimetableView() {
       for (let c = 0; c < MASTER_GRID[r].length; c++) {
         const cell = MASTER_GRID[r][c];
         
-        // Does our new subject want this block?
         const newWantsBlock = slotExistsInCell(newTheory, cell) || slotExistsInCell(newLab, cell);
         
         if (newWantsBlock) {
-          // Does an existing subject already own this block?
           const existingOwner = subjects.find(sub => 
             slotExistsInCell(sub.theory_slot, cell) || slotExistsInCell(sub.lab_slot, cell)
           );
@@ -89,9 +94,8 @@ function TimetableView() {
       if (hasClash) break;
     }
 
-    if (hasClash) return; // Abort save!
+    if (hasClash) return;
 
-    // If safe, save to Database
     try {
       const res = await fetch('http://127.0.0.1:8000/subjects/', {
         method: 'POST',
@@ -101,7 +105,7 @@ function TimetableView() {
       if (res.ok) {
         fetchSubjects();
         setShowModal(false);
-        setFormData({ name: '', subject_type: 'THEORY', theory_slot: '', lab_slot: '' });
+        setFormData({ name: '', subject_type: 'THEORY', theory_slot: '', lab_slot: '', room_number: '' });
       }
     } catch (err) { setErrorMsg("Failed to save to database."); }
   };
@@ -114,15 +118,13 @@ function TimetableView() {
   };
 
   // ==========================================
-  // 3. UI HELPER FUNCTIONS
+  // 3. UI HELPER FUNCTIONS & HIGHLIGHT ENGINE
   // ==========================================
-  // Assign a fixed color to a subject based on its ID so it stays consistent
   const getSubjectColor = (id) => {
     const colors = ['bg-indigo-600', 'bg-emerald-600', 'bg-rose-600', 'bg-amber-600', 'bg-cyan-600', 'bg-fuchsia-600'];
     return colors[id % colors.length];
   };
 
-  // Find which subject owns a specific cell on the grid
   const getSubjectForCell = (cellData) => {
     if (cellData === "LUNCH") return { type: "LUNCH" };
     
@@ -132,6 +134,32 @@ function TimetableView() {
     
     if (owner) return { type: "SUBJECT", data: owner };
     return { type: "EMPTY", data: cellData };
+  };
+
+  // ⏱️ REAL-TIME HIGHLIGHT CHECK
+  const isClassActive = (dayName, timeString) => {
+    // Map JS Date.getDay() to your specific array formatting
+    const jsDays = ["SUN", "MON", "TUES", "WEDNES", "THURS", "FRI", "SAT"];
+    const currentDayName = jsDays[now.getDay()];
+    
+    if (dayName !== currentDayName) return false;
+
+    try {
+      const [startStr, endStr] = timeString.split(" - ");
+      if (!startStr || !endStr) return false;
+
+      const currentTotalMinutes = now.getHours() * 60 + now.getMinutes();
+
+      const [startH, startM] = startStr.split(":").map(Number);
+      const startTotalMinutes = startH * 60 + startM;
+
+      const [endH, endM] = endStr.split(":").map(Number);
+      const endTotalMinutes = endH * 60 + endM;
+
+      return currentTotalMinutes >= startTotalMinutes && currentTotalMinutes <= endTotalMinutes;
+    } catch (e) {
+      return false;
+    }
   };
 
   if (isLoading) return <div className="text-white text-center mt-20 animate-pulse">Mapping FFCS Matrix...</div>;
@@ -147,7 +175,6 @@ function TimetableView() {
         </div>
         
         <div className="flex gap-4 items-center">
-          {/* View Toggle */}
           <div className="bg-slate-900 border border-slate-700 rounded-lg p-1 flex gap-1">
             <button onClick={() => setViewMode('grid')} className={`text-xs px-3 py-1.5 rounded-md font-bold transition-all ${viewMode === 'grid' ? 'bg-indigo-600 text-white shadow' : 'text-slate-400 hover:text-white'}`}>Master Grid</button>
             <button onClick={() => setViewMode('agenda')} className={`text-xs px-3 py-1.5 rounded-md font-bold transition-all ${viewMode === 'agenda' ? 'bg-indigo-600 text-white shadow' : 'text-slate-400 hover:text-white'}`}>Daily Agenda</button>
@@ -171,6 +198,10 @@ function TimetableView() {
                 <input type="text" required value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="w-full p-2 bg-slate-900 rounded text-sm text-white outline-none border border-slate-700 focus:border-indigo-500 mt-1" />
               </div>
               
+              <div>
+                <label className="text-[10px] text-slate-400 uppercase font-bold">Room / Venue</label>
+                <input type="text" placeholder="e.g. SJT 314" value={formData.room_number} onChange={e => setFormData({...formData, room_number: e.target.value})} className="w-full p-2 bg-slate-900 rounded text-sm text-white outline-none border border-slate-700 focus:border-indigo-500 mt-1 uppercase" />
+              </div>
               <div>
                 <label className="text-[10px] text-slate-400 uppercase font-bold">Course Type</label>
                 <select value={formData.subject_type} onChange={e => setFormData({...formData, subject_type: e.target.value})} className="w-full p-2 bg-slate-900 rounded text-sm text-white outline-none border border-slate-700 focus:border-indigo-500 mt-1">
@@ -238,9 +269,8 @@ function TimetableView() {
                         <td key={cIndex} className={`p-2 border-b border-r border-slate-700 text-center relative group`}>
                           <div className={`w-full h-full p-2 rounded-md shadow-sm ${getSubjectColor(cellData.data.id)} flex flex-col justify-center items-center transition-transform hover:scale-105 cursor-pointer`}>
                             <span className="text-xs font-bold text-white leading-tight line-clamp-2">{cellData.data.name}</span>
-                            <span className="text-[9px] text-white/70 mt-1">{cellStr}</span>
+                            <span className="text-[9px] text-white/70 mt-1">{cellStr} • {cellData.data.room_number || 'TBA'}</span>
                           </div>
-                          {/* Delete Tooltip on Hover */}
                           <div className="absolute top-0 right-0 hidden group-hover:flex">
                             <button onClick={() => deleteSubject(cellData.data.id)} className="bg-red-600 text-white text-[10px] px-1.5 py-0.5 rounded-bl-md shadow hover:bg-red-500">✕</button>
                           </div>
@@ -248,7 +278,6 @@ function TimetableView() {
                       );
                     }
 
-                    // Empty Slot
                     return (
                       <td key={cIndex} className="p-2 border-b border-r border-slate-700/50 bg-slate-900 text-center text-[10px] text-slate-600 font-mono hover:bg-slate-800 transition-colors">
                         {cellStr}
@@ -268,31 +297,49 @@ function TimetableView() {
       {viewMode === 'agenda' && (
         <div className="flex-1 overflow-y-auto custom-scrollbar pr-2 flex flex-col gap-6">
           {DAYS.map((day, rIndex) => {
-            // Filter to see if there are ANY classes on this day before rendering the day card
             const activeClassesToday = MASTER_GRID[rIndex].map((cellStr, cIndex) => ({
               time: TIMES[cIndex],
               cellData: getSubjectForCell(cellStr)
             })).filter(item => item.cellData.type === "SUBJECT");
 
-            if (activeClassesToday.length === 0) return null; // Skip days with no classes
+            if (activeClassesToday.length === 0) return null; 
 
             return (
               <div key={day} className="bg-slate-800 p-5 rounded-xl border border-slate-700 shadow-lg">
                 <h2 className="text-lg font-black text-indigo-400 border-b border-slate-700 pb-2 mb-4">{day}DAY</h2>
                 <div className="flex flex-col gap-3">
-                  {activeClassesToday.map((item, idx) => (
-                    <div key={idx} className={`flex items-center gap-4 p-3 rounded-lg border border-slate-600/50 bg-slate-900/50 border-l-4`} style={{ borderLeftColor: 'currentColor', color: 'rgb(79, 70, 229)' }}>
-                      <div className="w-24 shrink-0 text-center">
-                        <span className="text-xs text-slate-400 font-bold">{item.time}</span>
+                  {activeClassesToday.map((item, idx) => {
+                    // ⏱️ Determine if this specific class is active right now
+                    const isActive = isClassActive(day, item.time);
+
+                    return (
+                      <div 
+                        key={idx} 
+                        className={`flex items-center gap-4 p-3 rounded-lg border transition-all duration-500 border-l-4 ${
+                          isActive 
+                            ? 'bg-green-900/20 border-green-500 border-l-green-400 shadow-[0_0_15px_rgba(74,222,128,0.15)] scale-[1.02]' 
+                            : 'border-slate-600/50 bg-slate-900/50 border-l-indigo-600'
+                        }`}
+                      >
+                        <div className="w-24 shrink-0 text-center">
+                          <span className={`text-xs font-bold ${isActive ? 'text-green-400 animate-pulse' : 'text-slate-400'}`}>
+                            {item.time}
+                          </span>
+                          {isActive && <span className="block text-[8px] uppercase tracking-widest text-green-500 mt-1 font-black">Happening Now</span>}
+                        </div>
+                        <div className="flex-1">
+                          <h3 className={`text-sm font-bold ${isActive ? 'text-white' : 'text-white'}`}>{item.cellData.data.name}</h3>
+                          <p className="text-[10px] uppercase font-bold text-slate-500 mt-0.5 flex flex-wrap gap-1.5 items-center">
+                            <span className="bg-slate-800 px-1.5 py-0.5 rounded border border-slate-700">{item.cellData.data.subject_type}</span>
+                            <span className="bg-slate-800 px-1.5 py-0.5 rounded border border-slate-700">SLOT: {item.cellData.data.subject_type === 'LAB' ? item.cellData.data.lab_slot : item.cellData.data.theory_slot}</span>
+                            <span className={`${isActive ? 'bg-green-900/40 text-green-300 border-green-500/30' : 'bg-indigo-900/40 text-indigo-300 border-indigo-500/30'} px-1.5 py-0.5 rounded border`}>
+                              🚩 {item.cellData.data.room_number || 'TBA'}
+                            </span>
+                          </p>
+                        </div>
                       </div>
-                      <div className="flex-1">
-                        <h3 className="text-sm font-bold text-white">{item.cellData.data.name}</h3>
-                        <p className="text-[10px] uppercase font-bold text-slate-500 mt-0.5">
-                          {item.cellData.data.subject_type} • SLOT: {item.cellData.data.subject_type === 'LAB' ? item.cellData.data.lab_slot : item.cellData.data.theory_slot}
-                        </p>
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             );
