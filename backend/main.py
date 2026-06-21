@@ -5,6 +5,7 @@ from sqlalchemy import text
 from database import engine, get_db
 from routers import weather
 import models
+from routes import profile
 
 from routes import profile, portfolio, tasks, subjects, expenses
 

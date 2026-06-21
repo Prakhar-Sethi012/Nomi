@@ -2,17 +2,29 @@ from pydantic import BaseModel
 from typing import List, Optional
 from datetime import date, datetime
 
-# 1. SETUP SCHEMA (What the frontend sends when you first open the app)
+# ==========================================
+# 1. PROFILE SCHEMAS (User Data & Settings)
+# ==========================================
 class ProfileCreate(BaseModel):
     name: str
     reg_no: str
     app_pin: str
 
-# 2. RESPONSE SCHEMA (What the backend sends to the frontend to display)
+# NEW: Allows updating specific fields without overwriting the whole profile
+class ProfileUpdate(BaseModel):
+    name: Optional[str] = None
+    reg_no: Optional[str] = None
+    app_pin: Optional[str] = None
+    cgpa: Optional[float] = None
+    current_streak: Optional[int] = None
+    last_active_date: Optional[date] = None
+    custom_task_tags: Optional[List[str]] = None
+
 class ProfileResponse(BaseModel):
     id: int
     name: str
     reg_no: str
+    app_pin: str
     cgpa: Optional[float] = None
     current_streak: int
     last_active_date: Optional[date] = None
@@ -21,7 +33,10 @@ class ProfileResponse(BaseModel):
     class Config:
         from_attributes = True
 
-# 3. PORTFOLIO SCHEMAS (Skills & Projects)
+
+# ==========================================
+# 2. PORTFOLIO SCHEMAS (Skills & Projects)
+# ==========================================
 class PortfolioCreate(BaseModel):
     item_type: str  # Must be "Skill" or "Project"
     title: str
@@ -38,7 +53,10 @@ class PortfolioResponse(BaseModel):
     class Config:
         from_attributes = True
 
-# 4. TASK SCHEMAS (Powers both Schedule and Work)
+
+# ==========================================
+# 3. TASK SCHEMAS (Powers both Schedule and Work)
+# ==========================================
 class TaskCreate(BaseModel):
     title: str
     task_type: str      # Must be "Schedule" or "Work"
@@ -59,7 +77,10 @@ class TaskResponse(BaseModel):
     class Config:
         from_attributes = True
 
-# 5. SUBJECTS SCHEMAS (Timetable & Attendance)
+
+# ==========================================
+# 4. SUBJECTS SCHEMAS (Timetable & Attendance)
+# ==========================================
 class SubjectCreate(BaseModel):
     name: str
     subject_type: str
@@ -74,9 +95,12 @@ class SubjectResponse(SubjectCreate):
     conducted_classes: int
 
     class Config:
-        from_attributes = True # Use orm_mode = True if you are on an older Pydantic version
+        from_attributes = True
 
-# 6. EXPENSES SCHEMAS (Money Manager)
+
+# ==========================================
+# 5. EXPENSES SCHEMAS (Money Manager)
+# ==========================================
 class ExpenseCreate(BaseModel):
     amount: float
     reason: str

@@ -54,3 +54,21 @@ def get_profile(db: Session = Depends(get_db)):
     db.refresh(profile)
 
     return profile
+
+# --- 3. THE UPDATE ROUTE (For editing CGPA, Name, or Tags later) ---
+@router.put("/", response_model=schemas.ProfileResponse)
+def update_profile(profile_data: schemas.ProfileUpdate, db: Session = Depends(get_db)):
+    profile = db.query(models.Profile).first()
+    
+    if not profile:
+        raise HTTPException(status_code=404, detail="Profile not found")
+    
+    # Update only the fields that React sent over
+    update_data = profile_data.model_dump(exclude_unset=True)
+    for key, value in update_data.items():
+        setattr(profile, key, value)
+        
+    db.commit()
+    db.refresh(profile)
+    
+    return profile
