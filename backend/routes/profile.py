@@ -34,24 +34,14 @@ def get_profile(db: Session = Depends(get_db)):
     if not profile:
         raise HTTPException(status_code=404, detail="Profile not found. Please complete setup.")
 
-    # --- DAILY STREAK LOGIC ---
+    # --- THE EXPIRATION ENGINE ---
     today = date.today()
     
-    if profile.last_active_date == today:
-        # Already opened the app today, do nothing.
-        pass 
-    elif profile.last_active_date == today - timedelta(days=1):
-        # Opened exactly yesterday. Streak continues!
-        profile.current_streak += 1
-        profile.last_active_date = today
-    else:
-        # Missed a day. Streak resets to 1 (for today).
-        profile.current_streak = 1
-        profile.last_active_date = today
-
-    # Save the updated streak to the database
-    db.commit()
-    db.refresh(profile)
+    # If your last active date is older than yesterday, you broke the chain.
+    if profile.last_active_date and profile.last_active_date < today - timedelta(days=1):
+        profile.current_streak = 0
+        db.commit()
+        db.refresh(profile)
 
     return profile
 

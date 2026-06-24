@@ -31,19 +31,28 @@ function PortfolioWidget() {
     }
   };
 
+  // ✅ MOVED OUTSIDE: The delete function is now accessible to the whole component
+  const deleteProject = async (id) => {
+    try {
+      const response = await fetch(`http://127.0.0.1:8000/portfolio/${id}`, { method: 'DELETE' });
+      if (response.ok) {
+        fetchProjects(); // Refresh the grid instantly
+      }
+    } catch (err) {
+      console.error("Failed to delete project");
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      // THE FIX: Perfect alignment with your FastAPI PortfolioCreate schema
       const payload = {
-        item_type: "Project", // 1. Added the required item_type
+        item_type: "Project",
         title: formData.title,
-        // 2. Hack: Bundle the tech_stack securely into the description string
         description: formData.description + (formData.tech_stack ? ` | Stack: ${formData.tech_stack}` : ""),
-        // 3. Wrap the github link safely inside the expected Array
         links: [formData.github_link || "https://github.com"] 
       };
-
+      
       const response = await fetch('http://127.0.0.1:8000/portfolio/', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -51,7 +60,7 @@ function PortfolioWidget() {
       });
 
       if (response.ok) {
-        fetchProjects(); // Refresh the grid
+        fetchProjects(); 
         setShowForm(false);
         setFormData({ title: '', description: '', tech_stack: '', github_link: '' });
       }
@@ -105,7 +114,6 @@ function PortfolioWidget() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {projects.map((proj) => {
-            // THE UNPACKING LOGIC: Reverse engineering the string back into UI elements
             const hasTech = proj.description && proj.description.includes(' | Stack: ');
             const cleanDesc = hasTech ? proj.description.split(' | Stack: ')[0] : proj.description;
             const techString = hasTech ? proj.description.split(' | Stack: ')[1] : '';
@@ -113,11 +121,23 @@ function PortfolioWidget() {
             const githubLink = proj.links && proj.links.length > 0 ? proj.links[0] : '#';
 
             return (
-              <div key={proj.id} className="bg-slate-700 p-4 rounded-lg border border-slate-600 hover:border-blue-500 transition-colors flex flex-col">
-                <div className="flex justify-between items-start mb-2">
-                  <h3 className="font-bold text-slate-200">{proj.title}</h3>
+              // ✅ ADDED `group` and `relative` classes for the hover effect
+              <div key={proj.id} className="group relative bg-slate-700 p-4 rounded-lg border border-slate-600 hover:border-blue-500 transition-colors flex flex-col">
+                
+                {/* ✅ ADDED: Invisible delete button that appears on hover */}
+                <button 
+                  onClick={() => deleteProject(proj.id)}
+                  className="absolute top-2 right-2 w-6 h-6 bg-red-900/80 text-red-200 rounded text-xs opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center hover:bg-red-600 z-10"
+                  title="Delete Project"
+                >
+                  ✕
+                </button>
+
+                {/* Added pr-8 to prevent text from going under the delete button */}
+                <div className="flex justify-between items-start mb-2 pr-8">
+                  <h3 className="font-bold text-slate-200 leading-tight">{proj.title}</h3>
                   {githubLink !== '#' && (
-                    <a href={githubLink} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:text-blue-300 text-xs flex items-center gap-1 bg-slate-800 px-2 py-1 rounded">
+                    <a href={githubLink} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:text-blue-300 text-xs flex items-center gap-1 bg-slate-800 px-2 py-1 rounded shrink-0">
                       GitHub ↗
                     </a>
                   )}

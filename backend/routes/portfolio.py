@@ -23,3 +23,14 @@ def add_portfolio_item(item_data: schemas.PortfolioCreate, db: Session = Depends
 def get_portfolio(db: Session = Depends(get_db)):
     items = db.query(models.PortfolioItem).all()
     return items
+
+# ROUTE 3: Delete an item
+@router.delete("/{item_id}")
+def delete_portfolio_item(item_id: int, db: Session = Depends(get_db)):
+    item = db.query(models.PortfolioItem).filter(models.PortfolioItem.id == item_id).first()
+    if not item:
+        raise HTTPException(status_code=404, detail="Item not found")
+        
+    db.delete(item)
+    db.commit()
+    return {"status": "success", "detail": "Item deleted"}

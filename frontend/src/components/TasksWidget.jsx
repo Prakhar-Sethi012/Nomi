@@ -88,34 +88,36 @@ function TasksWidget() {
         
 if (response.ok) {
           // 🔥 STRICT GAMIFICATION ENGINE: "INBOX ZERO" RULE 🔥
-          
-          // 1. Find all tasks that are due today or are already overdue
           const pendingDailyTasks = tasks.filter(t => new Date(t.due_date).setHours(0,0,0,0) <= new Date().setHours(0,0,0,0));
-          
-          // 2. Check if the task you are currently deleting is the absolute LAST one on that list
           const isPerfectDay = pendingDailyTasks.length === 1 && pendingDailyTasks[0].id === id;
 
-          // 3. Only ignite the streak if you cleared the board
+          // 🌟 DATABASE STREAK UPDATE
           if (isPerfectDay) {
-            const lastActiveStr = localStorage.getItem('cc_last_active');
-            let currentStreak = parseInt(localStorage.getItem('cc_streak') || 0);
+            try {
+              const profRes = await fetch('http://127.0.0.1:8000/profile/');
+              if (profRes.ok) {
+                const profile = await profRes.json();
+                
+                // Get today's date in YYYY-MM-DD format to match PostgreSQL
+                const todayStr = new Date().toISOString().split('T')[0];
 
-            if (lastActiveStr !== todayStr) {
-              const yesterday = new Date();
-              yesterday.setDate(yesterday.getDate() - 1);
-              
-              if (lastActiveStr === yesterday.toDateString()) {
-                 currentStreak += 1; 
-              } else {
-                 currentStreak = 1; 
+                // CHEAT CODE PREVENTION: Only award the point if you haven't won yet today!
+                if (profile.last_active_date !== todayStr) {
+                  await fetch('http://127.0.0.1:8000/profile/', {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                      current_streak: profile.current_streak + 1,
+                      last_active_date: todayStr // Lock in the win for today
+                    })
+                  });
+                  window.dispatchEvent(new Event('streak-updated'));
+                }
               }
-
-              localStorage.setItem('cc_streak', currentStreak);
-              localStorage.setItem('cc_last_active', todayStr);
-              window.dispatchEvent(new Event('streak-updated'));
+            } catch (err) {
+              console.error("Failed to update database streak");
             }
           }
-
           // Fetch fresh tasks AFTER doing the gamification math
           fetchTasks(); 
           

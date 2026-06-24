@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException 
 from sqlalchemy.orm import Session
 from typing import List
 import models, schemas
@@ -20,3 +20,14 @@ def log_expense(expense_data: schemas.ExpenseCreate, db: Session = Depends(get_d
 def get_expenses(db: Session = Depends(get_db)):
     # Order by date descending (newest first)
     return db.query(models.Expense).order_by(models.Expense.date.desc()).all()
+
+# 3. DELETE AN EXPENSE
+@router.delete("/{expense_id}")
+def delete_expense(expense_id: int, db: Session = Depends(get_db)):
+    expense = db.query(models.Expense).filter(models.Expense.id == expense_id).first()
+    if not expense:
+        raise HTTPException(status_code=404, detail="Expense not found")
+    
+    db.delete(expense)
+    db.commit()
+    return {"status": "success", "detail": "Expense deleted"}

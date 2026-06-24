@@ -44,6 +44,18 @@ function ExpensesWidget() {
     }
   };
 
+  // ✅ MOVED OUTSIDE: The delete function is now accessible to the "✕" buttons
+  const deleteExpense = async (id) => {
+    try {
+      const response = await fetch(`http://127.0.0.1:8000/expenses/${id}`, { method: 'DELETE' });
+      if (response.ok) {
+        fetchExpenses(); // Refresh the list instantly
+      }
+    } catch (err) {
+      console.error("Failed to delete expense");
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
@@ -76,8 +88,7 @@ function ExpensesWidget() {
     setIsEditingLimit(false);
   };
 
-  // --- The Financial Math ---
-// --- The Time-Filtered Financial Math ---
+  // --- The Time-Filtered Financial Math ---
   const currentMonth = new Date().getMonth();
   const currentYear = new Date().getFullYear();
 
@@ -93,6 +104,7 @@ function ExpensesWidget() {
   const progressPercentage = monthlyLimit > 0 ? Math.min((totalSpent / monthlyLimit) * 100, 100) : 0;
   
   const barColor = progressPercentage > 90 ? 'bg-red-500' : progressPercentage > 75 ? 'bg-orange-500' : 'bg-blue-500';
+  
   if (isLoading) {
     return <div className="bg-slate-800 p-6 rounded-xl border border-slate-700 h-80 flex items-center justify-center text-blue-400 animate-pulse">Loading Ledger...</div>;
   }
@@ -175,13 +187,20 @@ function ExpensesWidget() {
           ) : (
             <ul className="space-y-2 overflow-y-auto pr-2 custom-scrollbar flex-1">
               {thisMonthExpenses.map((exp) => (
-                <li key={exp.id} className="flex justify-between items-center bg-slate-700 p-2.5 rounded border border-slate-600 hover:border-slate-500 transition-colors">
+                <li key={exp.id} className="group flex justify-between items-center bg-slate-700 p-2.5 rounded border border-slate-600 hover:border-slate-500 transition-colors">
                   <div className="truncate pr-2">
                     <p className="font-medium text-slate-200 text-sm truncate">{exp.reason}</p>
                     <p className="text-[10px] text-slate-400 uppercase">{exp.tags[0]} • {new Date(exp.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</p>
                   </div>
-                  <div className="font-bold text-red-300 text-sm whitespace-nowrap">
-                    ₹{exp.amount}
+                  <div className="flex items-center gap-3">
+                    <span className="font-bold text-red-300 text-sm whitespace-nowrap">₹{exp.amount}</span>
+                    <button 
+                      onClick={() => deleteExpense(exp.id)} 
+                      className="text-slate-500 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity"
+                      title="Delete Expense"
+                    >
+                      ✕
+                    </button>
                   </div>
                 </li>
               ))}
