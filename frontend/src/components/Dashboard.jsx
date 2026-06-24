@@ -5,7 +5,7 @@ import PortfolioWidget from './PortfolioWidget';
 import WeatherWidget from './WeatherWidget';
 import DashboardAttendance from './DashboardAttendance';
 
-function Dashboard() {
+function Dashboard({setActiveTab}) {
   // Application State
   const [profile, setProfile] = useState(null);
   const [needsSetup, setNeedsSetup] = useState(false);
@@ -196,7 +196,7 @@ function Dashboard() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         <DashboardAttendance />
         <TasksWidget />
-        <ExpensesWidget />
+        <ExpensesWidget setActiveTab={setActiveTab} />
         
       </div>
       <PortfolioWidget />

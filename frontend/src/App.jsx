@@ -4,18 +4,17 @@ import LinksView from './components/LinksView';
 import ScratchpadView from './components/ScratchpadView';
 import AttendanceStrategyView from './components/AttendanceStrategyView';
 import TimetableView from './components/TimetableView';
+import ExpensesView from './components/ExpensesView'; // ✅ NEW IMPORT
 
 function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
 
-  // START NULL: This forces the app to render the Onboarding screen for new users
   const [profile, setProfile] = useState(() => {
     const saved = localStorage.getItem('cc_profile');
     if (saved) return JSON.parse(saved);
     return null; 
   });
 
-  // Temporary state for the setup form
   const [setupData, setSetupData] = useState({ name: '', reg_no: '' });
 
   useEffect(() => {
@@ -24,9 +23,6 @@ function App() {
     }
   }, [profile]);
 
-  // ==========================================
-  // STATE 1: THE ONBOARDING GUARD
-  // ==========================================
   if (!profile) {
     return (
       <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4 font-sans">
@@ -60,61 +56,28 @@ function App() {
     );
   }
 
-  // ==========================================
-  // STATE 2: THE MAIN APPLICATION
-  // ==========================================
   return (
     <div className="min-h-screen bg-slate-900 flex flex-col items-center pt-6 px-4 font-sans">
       
-<nav className="flex gap-1 mb-6 bg-slate-800 p-1.5 rounded-lg border border-slate-700 shadow-lg z-10 sticky top-4">
-        <button
-          onClick={() => setActiveTab('dashboard')}
-          className={`px-5 py-2 rounded-md text-sm font-bold transition-all duration-200 ${
-            activeTab === 'dashboard' ? 'bg-blue-600 text-white shadow' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-700'
-          }`}
-        >
-          Dashboard
-        </button>
-        <button
-          onClick={() => setActiveTab('scratchpad')}
-          className={`px-5 py-2 rounded-md text-sm font-bold transition-all duration-200 ${
-            activeTab === 'scratchpad' ? 'bg-blue-600 text-white shadow' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-700'
-          }`}
-        >
-          Scratchpad
-        </button>
-        <button
-          onClick={() => setActiveTab('links')}
-          className={`px-5 py-2 rounded-md text-sm font-bold transition-all duration-200 ${
-            activeTab === 'links' ? 'bg-blue-600 text-white shadow' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-700'
-          }`}
-        >
-          Directory
-        </button>
-        <button
-          onClick={() => setActiveTab('strategy')}
-          className={`px-5 py-2 rounded-md text-sm font-bold transition-all duration-200 flex items-center gap-2 ${
-            activeTab === 'strategy' ? 'bg-indigo-600 text-white shadow' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-700'
-          }`}
-        >
-          <span>Strategy</span>
-        </button>
-        <button
-       onClick={() => setActiveTab('timetable')}
-       className={`px-5 py-2 rounded-md text-sm font-bold transition-all duration-200 flex items-center gap-2 ${
-         activeTab === 'timetable' ? 'bg-indigo-600 text-white shadow' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-700'
-       }`}
-     >
-       <span>Timetable</span>
-     </button>
+      <nav className="flex gap-1 mb-6 bg-slate-800 p-1.5 rounded-lg border border-slate-700 shadow-lg z-10 sticky top-4 flex-wrap justify-center">
+        <button onClick={() => setActiveTab('dashboard')} className={`px-4 py-2 rounded-md text-sm font-bold transition-all duration-200 ${activeTab === 'dashboard' ? 'bg-blue-600 text-white shadow' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-700'}`}>Dashboard</button>
+        <button onClick={() => setActiveTab('scratchpad')} className={`px-4 py-2 rounded-md text-sm font-bold transition-all duration-200 ${activeTab === 'scratchpad' ? 'bg-blue-600 text-white shadow' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-700'}`}>Scratchpad</button>
+        <button onClick={() => setActiveTab('links')} className={`px-4 py-2 rounded-md text-sm font-bold transition-all duration-200 ${activeTab === 'links' ? 'bg-blue-600 text-white shadow' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-700'}`}>Directory</button>
+        <button onClick={() => setActiveTab('strategy')} className={`px-4 py-2 rounded-md text-sm font-bold transition-all duration-200 ${activeTab === 'strategy' ? 'bg-indigo-600 text-white shadow' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-700'}`}>Strategy</button>
+        <button onClick={() => setActiveTab('timetable')} className={`px-4 py-2 rounded-md text-sm font-bold transition-all duration-200 ${activeTab === 'timetable' ? 'bg-indigo-600 text-white shadow' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-700'}`}>Timetable</button>
+        
+        {/* ✅ NEW FINANCE TAB */}
+        <button onClick={() => setActiveTab('expenses')} className={`px-4 py-2 rounded-md text-sm font-bold transition-all duration-200 flex items-center gap-2 ${activeTab === 'expenses' ? 'bg-emerald-600 text-white shadow' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-700'}`}>Finance</button>
       </nav>
-        <div className="w-full flex justify-center">
-        {activeTab === 'dashboard' && <Dashboard profile={profile} />}
+
+      <div className="w-full flex justify-center">
+        {/* ✅ Passed setActiveTab to Dashboard so it can link to Finance */}
+        {activeTab === 'dashboard' && <Dashboard profile={profile} setActiveTab={setActiveTab} />}
         {activeTab === 'scratchpad' && <ScratchpadView />}
         {activeTab === 'links' && <LinksView />}
         {activeTab === 'timetable' && <TimetableView />}
-        {/* NEW ROUTE */}
         {activeTab === 'strategy' && <AttendanceStrategyView />}
+        {activeTab === 'expenses' && <ExpensesView />}
       </div>
     </div>
   );
