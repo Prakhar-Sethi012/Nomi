@@ -38,8 +38,8 @@ function ExpensesWidget({ setActiveTab }) {
   if (isLoading) return <div className="bg-slate-800 p-6 rounded-xl border border-slate-700 h-80 flex items-center justify-center text-emerald-400 animate-pulse">Scanning Ledger...</div>;
 
   return (
-    <div className="bg-slate-800 p-6 rounded-xl border border-slate-700 h-80 flex flex-col shadow-lg justify-between relative overflow-hidden">
-      
+    // Replace the top wrapper div with this:
+<div className="bg-slate-800 p-5 rounded-xl border border-slate-700 shadow-lg flex flex-col justify-between h-[300px] relative overflow-hidden">  
       {/* Background Icon */}
       <div className="absolute -right-4 -bottom-4 text-[100px] opacity-5 pointer-events-none text-emerald-500">₹</div>
 

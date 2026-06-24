@@ -7,7 +7,12 @@ function DashboardAttendance() {
   const fetchSubjects = async () => {
     try {
       const res = await fetch('http://127.0.0.1:8000/subjects/');
-      if (res.ok) setSubjects(await res.json());
+      if (res.ok) {
+        const data = await res.json();
+        // ✅ THE FIX: Sort data by ID so the order never changes
+        const sortedData = data.sort((a, b) => a.id - b.id);
+        setSubjects(sortedData);
+      }
     } catch (err) {
       console.error("Failed to load subjects");
     } finally {
@@ -19,7 +24,7 @@ function DashboardAttendance() {
     fetchSubjects();
   }, []);
 
-  // THE FIX: Explicitly passing true (Present) or false (Absent) to the backend
+  // Explicitly passing true (Present) or false (Absent) to the backend
   const logAttendance = async (id, isPresent) => {
     try {
       // FastAPI expects a boolean query parameter like: ?attended=true
@@ -37,7 +42,7 @@ function DashboardAttendance() {
   if (isLoading) return <div className="bg-slate-800 p-5 rounded-xl border border-slate-700 text-slate-400 text-sm animate-pulse">Syncing classes...</div>;
 
   return (
-    <div className="bg-slate-800 p-5 rounded-xl border border-slate-700 shadow-lg flex flex-col h-full max-h-[400px]">
+    <div className="bg-slate-800 p-5 rounded-xl border border-slate-700 shadow-lg flex flex-col h-full max-h-[300px]">
       
       <div className="flex justify-between items-end mb-4 shrink-0 border-b border-slate-700 pb-3">
         <div>

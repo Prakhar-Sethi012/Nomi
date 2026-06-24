@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import TasksWidget from './TasksWidget';
 import ExpensesWidget from './ExpensesWidget';
@@ -193,11 +194,16 @@ function Dashboard({setActiveTab}) {
       </header>
 
       {/* Grid for Modules */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <DashboardAttendance />
-        <TasksWidget />
-        <ExpensesWidget setActiveTab={setActiveTab} />
-        
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        <div className="lg:col-span-4 w-full">
+          <DashboardAttendance />
+        </div>
+        <div className="lg:col-span-5 w-full">
+          <TasksWidget />
+        </div>
+        <div className="lg:col-span-3 w-full">
+          <ExpensesWidget setActiveTab={setActiveTab} />
+        </div>
       </div>
       <PortfolioWidget />
     </div>
