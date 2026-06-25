@@ -1,22 +1,21 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import List, Optional
 from datetime import date, datetime
 
 # ==========================================
-# 1. PROFILE SCHEMAS (User Data & Settings)
+# 1. PROFILE SCHEMAS
 # ==========================================
 class ProfileCreate(BaseModel):
-    name: str
-    reg_no: str
-    app_pin: str
+    name: str = Field(..., min_length=2, max_length=50)
+    reg_no: str = Field(..., min_length=8)
+    app_pin: str = Field(..., pattern=r"^\d{4}$", description="Must be exactly 4 digits")
 
-# NEW: Allows updating specific fields without overwriting the whole profile
 class ProfileUpdate(BaseModel):
-    name: Optional[str] = None
-    reg_no: Optional[str] = None
-    app_pin: Optional[str] = None
-    cgpa: Optional[float] = None
-    current_streak: Optional[int] = None
+    name: Optional[str] = Field(None, min_length=2, max_length=50)
+    reg_no: Optional[str] = Field(None, min_length=8)
+    app_pin: Optional[str] = Field(None, pattern=r"^\d{4}$")
+    cgpa: Optional[float] = Field(None, ge=0.0, le=10.0, description="CGPA must be between 0 and 10")
+    current_streak: Optional[int] = Field(None, ge=0)
     last_active_date: Optional[date] = None
     custom_task_tags: Optional[List[str]] = None
 
@@ -24,7 +23,7 @@ class ProfileResponse(BaseModel):
     id: int
     name: str
     reg_no: str
-    app_pin: str
+    # 🚨 SECURITY FIX: app_pin has been permanently removed from the response model.
     cgpa: Optional[float] = None
     current_streak: int
     last_active_date: Optional[date] = None
@@ -33,13 +32,12 @@ class ProfileResponse(BaseModel):
     class Config:
         from_attributes = True
 
-
 # ==========================================
-# 2. PORTFOLIO SCHEMAS (Skills & Projects)
+# 2. PORTFOLIO SCHEMAS 
 # ==========================================
 class PortfolioCreate(BaseModel):
-    item_type: str  # Must be "Skill" or "Project"
-    title: str
+    item_type: str 
+    title: str = Field(..., min_length=2)
     description: Optional[str] = None
     links: List[str] = []
 
@@ -53,14 +51,13 @@ class PortfolioResponse(BaseModel):
     class Config:
         from_attributes = True
 
-
 # ==========================================
-# 3. TASK SCHEMAS (Powers both Schedule and Work)
+# 3. TASK SCHEMAS 
 # ==========================================
 class TaskCreate(BaseModel):
-    title: str
-    task_type: str      # Must be "Schedule" or "Work"
-    due_date: datetime  # e.g., "2026-06-07T14:30:00"
+    title: str = Field(..., min_length=1)
+    task_type: str      
+    due_date: datetime  
     tags: List[str]
     is_todo: Optional[bool] = False
 
@@ -77,33 +74,31 @@ class TaskResponse(BaseModel):
     class Config:
         from_attributes = True
 
-
 # ==========================================
-# 4. SUBJECTS SCHEMAS (Timetable & Attendance)
+# 4. SUBJECTS SCHEMAS 
 # ==========================================
 class SubjectCreate(BaseModel):
-    name: str
+    name: str = Field(..., min_length=2)
     subject_type: str
     theory_slot: Optional[str] = None
     lab_slot: Optional[str] = None
-    total_classes: int = 60
+    total_classes: int = Field(60, gt=0, description="Total classes must be greater than 0")
     room_number: Optional[str] = None
 
 class SubjectResponse(SubjectCreate):
     id: int
-    attended_classes: int
-    conducted_classes: int
+    attended_classes: int = Field(..., ge=0)
+    conducted_classes: int = Field(..., ge=0)
 
     class Config:
         from_attributes = True
 
-
 # ==========================================
-# 5. EXPENSES SCHEMAS (Money Manager)
+# 5. EXPENSES SCHEMAS 
 # ==========================================
 class ExpenseCreate(BaseModel):
-    amount: float
-    reason: str
+    amount: float = Field(..., gt=0, description="Expense amount must be positive")
+    reason: str = Field(..., min_length=2)
     date: date
     tags: List[str]
 
@@ -116,3 +111,8 @@ class ExpenseResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+# Add this inside the "4. SUBJECTS SCHEMAS" section
+class SubjectUpdate(BaseModel):
+    total_classes: Optional[int] = Field(None, gt=0, description="Cannot be zero or negative")
+    room_number: Optional[str] = None

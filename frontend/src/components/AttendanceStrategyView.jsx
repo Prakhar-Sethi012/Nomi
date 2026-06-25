@@ -89,20 +89,35 @@ useEffect(() => {
     setNewTotalStr(sub.total.toString());
   };
 
-  const saveNewTotal = (id, currentConducted) => {
+  const saveNewTotal = async (id, currentConducted) => {
     const parsedTotal = parseInt(newTotalStr, 10);
     
     // Validation: Must be a number, and cannot be less than classes already conducted
     if (!isNaN(parsedTotal) && parsedTotal >= currentConducted) {
-      // Update the "Real" memory so it persists through resets
-      setRealSubjects(prev => prev.map(s => s.id === id ? { ...s, total: parsedTotal } : s));
-      // Update the active Simulation memory
-      setSimulatedSubjects(prev => prev.map(s => s.id === id ? { ...s, total: parsedTotal } : s));
+      try {
+        // 🔥 THE FIX: Send the update to PostgreSQL
+        const res = await fetch(`http://127.0.0.1:8000/subjects/${id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ total_classes: parsedTotal })
+        });
+
+        if (res.ok) {
+          // Update the "Real" memory so it persists through resets
+          setRealSubjects(prev => prev.map(s => s.id === id ? { ...s, total: parsedTotal } : s));
+          // Update the active Simulation memory
+          setSimulatedSubjects(prev => prev.map(s => s.id === id ? { ...s, total: parsedTotal } : s));
+        } else {
+          console.error("Failed to save total classes to database");
+        }
+      } catch (err) {
+        console.error("Network error while saving total classes");
+      }
     }
     
     setEditingTotalFor(null); // Close the editor
   };
-
+  
   if (isLoading) return <div className="text-white text-center mt-20 animate-pulse">Initializing Crystal Ball...</div>;
 
   return (

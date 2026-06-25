@@ -49,3 +49,20 @@ def delete_subject(subject_id: int, db: Session = Depends(get_db)):
     db.delete(subject)
     db.commit()
     return {"message": "Subject completely removed from the grid"}
+
+# --- NEW: GENERAL UPDATE ROUTE (For editing Total Classes or Rooms) ---
+@router.put("/{subject_id}", response_model=schemas.SubjectResponse)
+def update_subject(subject_id: int, subject_data: schemas.SubjectUpdate, db: Session = Depends(get_db)):
+    subject = db.query(models.Subject).filter(models.Subject.id == subject_id).first()
+    
+    if not subject:
+        raise HTTPException(status_code=404, detail="Subject not found")
+
+    # Only update the fields the frontend explicitly sends over
+    update_data = subject_data.model_dump(exclude_unset=True)
+    for key, value in update_data.items():
+        setattr(subject, key, value)
+        
+    db.commit()
+    db.refresh(subject)
+    return subject

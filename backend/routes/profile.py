@@ -1,25 +1,29 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from datetime import date, timedelta
+from passlib.context import CryptContext  # 🔒 NEW: Security Import
 import models, schemas
 from database import get_db
 
-# Create a router specifically for profile actions
 router = APIRouter(prefix="/profile", tags=["Profile"])
+
+# 🔒 Initialize the bcrypt hashing engine
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 @router.post("/setup", response_model=schemas.ProfileResponse)
 def setup_profile(profile_data: schemas.ProfileCreate, db: Session = Depends(get_db)):
-    # 1. Check if a profile already exists (we only want ONE command center owner)
     existing_profile = db.query(models.Profile).first()
     if existing_profile:
         raise HTTPException(status_code=400, detail="Profile already set up. Use settings to update.")
 
-    # 2. Create the new profile
+    # 🔒 Hash the PIN before saving it to the database
+    hashed_pin = pwd_context.hash(profile_data.app_pin)
+
     new_profile = models.Profile(
         name=profile_data.name,
         reg_no=profile_data.reg_no,
-        app_pin=profile_data.app_pin,
-        current_streak=1,             # Day 1 of the streak!
+        app_pin=hashed_pin,  # Save the scramble, not the plain text!
+        current_streak=1,    
         last_active_date=date.today()
     )
     db.add(new_profile)
@@ -34,18 +38,16 @@ def get_profile(db: Session = Depends(get_db)):
     if not profile:
         raise HTTPException(status_code=404, detail="Profile not found. Please complete setup.")
 
-    # --- THE EXPIRATION ENGINE ---
     today = date.today()
     
-    # If your last active date is older than yesterday, you broke the chain.
     if profile.last_active_date and profile.last_active_date < today - timedelta(days=1):
         profile.current_streak = 0
         db.commit()
         db.refresh(profile)
 
+    # Note: Pydantic will automatically strip out the app_pin when returning this!
     return profile
 
-# --- 3. THE UPDATE ROUTE (For editing CGPA, Name, or Tags later) ---
 @router.put("/", response_model=schemas.ProfileResponse)
 def update_profile(profile_data: schemas.ProfileUpdate, db: Session = Depends(get_db)):
     profile = db.query(models.Profile).first()
@@ -53,10 +55,14 @@ def update_profile(profile_data: schemas.ProfileUpdate, db: Session = Depends(ge
     if not profile:
         raise HTTPException(status_code=404, detail="Profile not found")
     
-    # Update only the fields that React sent over
     update_data = profile_data.model_dump(exclude_unset=True)
+    
     for key, value in update_data.items():
-        setattr(profile, key, value)
+        # 🔒 If the user is updating their PIN, hash the new one before saving
+        if key == "app_pin":
+            setattr(profile, key, pwd_context.hash(value))
+        else:
+            setattr(profile, key, value)
         
     db.commit()
     db.refresh(profile)
