@@ -4,58 +4,54 @@ import LinksView from './components/LinksView';
 import ScratchpadView from './components/ScratchpadView';
 import AttendanceStrategyView from './components/AttendanceStrategyView';
 import TimetableView from './components/TimetableView';
-import ExpensesView from './components/ExpensesView'; // ✅ NEW IMPORT
+import ExpensesView from './components/ExpensesView';
+import SetupForm from './components/SetupForm'; // ✅ Imported your clean setup form
 
 function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
+  
+  // ✅ The Single Source of Truth
+  const [profile, setProfile] = useState(null);
+  const [isAuthenticating, setIsAuthenticating] = useState(true);
 
-  const [profile, setProfile] = useState(() => {
-    const saved = localStorage.getItem('cc_profile');
-    if (saved) return JSON.parse(saved);
-    return null; 
-  });
-
-  const [setupData, setSetupData] = useState({ name: '', reg_no: '' });
-
+  // ✅ Blocking API call on initial load
   useEffect(() => {
-    if (profile) {
-      localStorage.setItem('cc_profile', JSON.stringify(profile));
-    }
-  }, [profile]);
+    const authenticateCommander = async () => {
+      try {
+        const res = await fetch('http://127.0.0.1:8000/profile/');
+        if (res.ok) {
+          const data = await res.json();
+          setProfile(data);
+        }
+        // If 404, the backend says no profile exists. We safely leave profile as null.
+      } catch (err) {
+        console.error("Database connection failed. Is FastAPI running?");
+      } finally {
+        setIsAuthenticating(false);
+      }
+    };
 
-  if (!profile) {
+    authenticateCommander();
+  }, []);
+
+  if (isAuthenticating) {
     return (
-      <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4 font-sans">
-        <form 
-          onSubmit={(e) => {
-            e.preventDefault();
-            setProfile({ name: setupData.name, reg_no: setupData.reg_no.toUpperCase() });
-          }}
-          className="bg-slate-800 p-8 rounded-xl border border-slate-700 shadow-2xl w-full max-w-md animate-fade-in"
-        >
-          <div className="text-center mb-6">
-            <h1 className="text-2xl font-bold text-white mb-2">Initialize Profile</h1>
-            <p className="text-slate-400 text-sm">Enter your details to lock in your identity. This cannot be changed later.</p>
-          </div>
-          
-          <div className="space-y-4">
-            <div>
-              <label className="text-[10px] text-slate-400 font-bold mb-1 block uppercase tracking-wider">First Name</label>
-              <input type="text" required value={setupData.name} onChange={e => setSetupData({...setupData, name: e.target.value})} className="w-full p-3 bg-slate-700 rounded text-sm text-white border border-slate-600 focus:border-blue-500 outline-none" placeholder="e.g. Rahul" />
-            </div>
-            <div>
-              <label className="text-[10px] text-slate-400 font-bold mb-1 block uppercase tracking-wider">Registration Number</label>
-              <input type="text" required value={setupData.reg_no} onChange={e => setSetupData({...setupData, reg_no: e.target.value})} className="w-full p-3 bg-slate-700 rounded text-sm text-white border border-slate-600 focus:border-blue-500 outline-none uppercase" placeholder="e.g. 25BCE0000" />
-            </div>
-            <button type="submit" className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded transition-colors mt-2">
-              Launch Command Center
-            </button>
-          </div>
-        </form>
+      <div className="min-h-screen bg-slate-900 flex items-center justify-center font-mono text-emerald-400 animate-pulse">
+        Establishing secure connection to Command Center Database...
       </div>
     );
   }
 
+  // ✅ If backend says no user exists, render the Setup Form
+  if (!profile) {
+    return (
+      <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4 font-sans animate-fade-in">
+        <SetupForm onSetupComplete={(newProfile) => setProfile(newProfile)} />
+      </div>
+    );
+  }
+
+  // ✅ Profile verified. Load the OS.
   return (
     <div className="min-h-screen bg-slate-900 flex flex-col items-center pt-6 px-4 font-sans">
       
@@ -65,14 +61,12 @@ function App() {
         <button onClick={() => setActiveTab('links')} className={`px-4 py-2 rounded-md text-sm font-bold transition-all duration-200 ${activeTab === 'links' ? 'bg-blue-600 text-white shadow' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-700'}`}>Directory</button>
         <button onClick={() => setActiveTab('strategy')} className={`px-4 py-2 rounded-md text-sm font-bold transition-all duration-200 ${activeTab === 'strategy' ? 'bg-indigo-600 text-white shadow' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-700'}`}>Strategy</button>
         <button onClick={() => setActiveTab('timetable')} className={`px-4 py-2 rounded-md text-sm font-bold transition-all duration-200 ${activeTab === 'timetable' ? 'bg-indigo-600 text-white shadow' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-700'}`}>Timetable</button>
-        
-        {/* ✅ NEW FINANCE TAB */}
         <button onClick={() => setActiveTab('expenses')} className={`px-4 py-2 rounded-md text-sm font-bold transition-all duration-200 flex items-center gap-2 ${activeTab === 'expenses' ? 'bg-emerald-600 text-white shadow' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-700'}`}>Finance</button>
       </nav>
 
       <div className="w-full flex justify-center">
-        {/* ✅ Passed setActiveTab to Dashboard so it can link to Finance */}
-        {activeTab === 'dashboard' && <Dashboard profile={profile} setActiveTab={setActiveTab} />}
+        {/* ✅ Pass profile AND setProfile so the Dashboard can update the master state */}
+        {activeTab === 'dashboard' && <Dashboard profile={profile} setProfile={setProfile} setActiveTab={setActiveTab} />}
         {activeTab === 'scratchpad' && <ScratchpadView />}
         {activeTab === 'links' && <LinksView />}
         {activeTab === 'timetable' && <TimetableView />}
