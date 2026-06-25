@@ -1,32 +1,29 @@
 import React, { useState, useEffect } from 'react';
+import { api } from '../services/api';
 
 function TasksWidget() {
   const [tasks, setTasks] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
 
-  // Upgraded UI State to hold the timer, interval, AND remaining seconds
   const [completingTasks, setCompletingTasks] = useState({});
-
   const [showForm, setShowForm] = useState(false);
   const [formData, setFormData] = useState({ title: '', due_date: '', tags: '' });
 
-  const todayStr = new Date().toDateString();
-
-  useEffect(() => {
-    fetchTasks();
-  }, []);
-
   const fetchTasks = async () => {
     try {
-      const response = await fetch('http://127.0.0.1:8000/tasks/todo');
-      if (response.ok) setTasks(await response.json());
+      const data = await api.getTodoTasks();
+      setTasks(data);
     } catch (err) {
       setError('Connection error.');
     } finally {
       setIsLoading(false);
     }
   };
+
+  useEffect(() => {
+    fetchTasks();
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -39,24 +36,18 @@ function TasksWidget() {
 
       const payload = { title: formData.title, task_type: 'Work', due_date: isoDate, tags: tagsArray, is_todo: true };
 
-      const response = await fetch('http://127.0.0.1:8000/tasks/', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-
-      if (response.ok) {
-        fetchTasks(); setShowForm(false); setFormData({ title: '', due_date: '', tags: '' });
-      } else {
-        const errorData = await response.json();
-        setError(`API Error: ${JSON.stringify(errorData.detail)}`);
-      }
-    } catch (err) { setError('Network failed.'); }
+      await api.addTask(payload);
+      
+      fetchTasks(); 
+      setShowForm(false); 
+      setFormData({ title: '', due_date: '', tags: '' });
+      
+    } catch (err) { 
+      setError(err.message || 'Network failed.'); 
+    }
   };
 
-  // --- The Live Countdown Deletion Engine ---
   const toggleComplete = (id) => {
-    // 1. UNDO ACTION: If it's already ticking, cancel everything
     if (completingTasks[id]) {
       clearInterval(completingTasks[id].interval);
       clearTimeout(completingTasks[id].timer);
@@ -68,80 +59,56 @@ function TasksWidget() {
       return;
     }
 
-    // 2. COMPLETE ACTION: Set up the ticking interval
     const intervalId = setInterval(() => {
       setCompletingTasks(prev => {
-        // If the user cancelled it while the interval was running, ignore it
         if (!prev[id]) return prev; 
-        return {
-          ...prev,
-          [id]: { ...prev[id], remaining: prev[id].remaining - 1 }
-        };
+        return { ...prev, [id]: { ...prev[id], remaining: prev[id].remaining - 1 } };
       });
     }, 1000);
 
-    // 3. EXECUTE DELETION: The 5-second final trigger
     const timerId = setTimeout(async () => {
-      clearInterval(intervalId); // Stop the countdown text
+      clearInterval(intervalId); 
       try {
-        const response = await fetch(`http://127.0.0.1:8000/tasks/${id}`, { method: 'DELETE' });
+        await api.deleteTask(id);
         
-if (response.ok) {
-          // 🔥 STRICT GAMIFICATION ENGINE: "INBOX ZERO" RULE 🔥
-          const pendingDailyTasks = tasks.filter(t => new Date(t.due_date).setHours(0,0,0,0) <= new Date().setHours(0,0,0,0));
-          const isPerfectDay = pendingDailyTasks.length === 1 && pendingDailyTasks[0].id === id;
+        // Gamification Engine
+        const pendingDailyTasks = tasks.filter(t => new Date(t.due_date).setHours(0,0,0,0) <= new Date().setHours(0,0,0,0));
+        const isPerfectDay = pendingDailyTasks.length === 1 && pendingDailyTasks[0].id === id;
 
-          // 🌟 DATABASE STREAK UPDATE
-          if (isPerfectDay) {
-            try {
-              const profRes = await fetch('http://127.0.0.1:8000/profile/');
-              if (profRes.ok) {
-                const profile = await profRes.json();
-                
-                // Get today's date in YYYY-MM-DD format to match PostgreSQL
-                const todayStr = new Date().toISOString().split('T')[0];
+        if (isPerfectDay) {
+          try {
+            const profile = await api.getProfile();
+            const todayStr = new Date().toISOString().split('T')[0];
 
-                // CHEAT CODE PREVENTION: Only award the point if you haven't won yet today!
-                if (profile.last_active_date !== todayStr) {
-                  await fetch('http://127.0.0.1:8000/profile/', {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ 
-                      current_streak: profile.current_streak + 1,
-                      last_active_date: todayStr // Lock in the win for today
-                    })
-                  });
-                  window.dispatchEvent(new Event('streak-updated'));
-                }
-              }
-            } catch (err) {
-              console.error("Failed to update database streak");
+            if (profile.last_active_date !== todayStr) {
+              await api.updateProfile({ 
+                current_streak: profile.current_streak + 1,
+                last_active_date: todayStr 
+              });
+              window.dispatchEvent(new Event('streak-updated'));
             }
+          } catch (err) {
+            console.error("Failed to update database streak");
           }
-          // Fetch fresh tasks AFTER doing the gamification math
-          fetchTasks(); 
-          
-          // Clean up the timer state so it doesn't leave ghost data
-          setCompletingTasks(prev => {
-            const newState = { ...prev };
-            delete newState[id];
-            return newState;
-          });
-        } else {
-          // If the backend fails, abort the UI change
-          setCompletingTasks(prev => {
-            const newState = { ...prev };
-            delete newState[id];
-            return newState;
-          });
-          setError("Failed to delete task from database.");
         }
+        
+        fetchTasks(); 
+        setCompletingTasks(prev => {
+          const newState = { ...prev };
+          delete newState[id];
+          return newState;
+        });
+
       } catch (err) { 
-        console.error("Failed to delete"); 
+        setCompletingTasks(prev => {
+          const newState = { ...prev };
+          delete newState[id];
+          return newState;
+        });
+        setError("Failed to delete task from database.");
       }
     }, 5000);
 
-    // 4. Initialize the state with 5 seconds on the clock
     setCompletingTasks(prev => ({
       ...prev,
       [id]: { timer: timerId, interval: intervalId, remaining: 5 }
@@ -151,7 +118,7 @@ if (response.ok) {
   if (isLoading) return <div className="bg-slate-800 p-6 rounded-xl border border-slate-700 h-80 flex items-center justify-center text-blue-400 animate-pulse">Syncing tasks...</div>;
 
   return (
-    <div className="bg-slate-800 p-5 rounded-xl border border-slate-700 shadow-lg flex flex-col h-[300px]">
+    <div className="bg-slate-800 p-5 rounded-xl border border-slate-700 shadow-lg flex flex-col h-[400px]">
       <h2 className="text-xl font-bold text-white mb-4 flex justify-between items-center">
         Action Items
         {!showForm && <span className="text-xs bg-blue-600 text-white px-2 py-1 rounded-full">{tasks.length}</span>}
@@ -177,7 +144,6 @@ if (response.ok) {
           ) : (
             <ul className="space-y-3 overflow-y-auto pr-2 custom-scrollbar flex-1">
               {tasks.map((task) => {
-                // Determine if task date is yesterday or earlier
                 const isOverdue = new Date(task.due_date).setHours(0,0,0,0) < new Date().setHours(0,0,0,0);
 
                 return (
@@ -196,10 +162,8 @@ if (response.ok) {
                         <div>
                           <p className={`font-medium text-sm leading-tight transition-all ${completingTasks[task.id] ? 'text-slate-400 line-through' : isOverdue ? 'text-red-200' : 'text-slate-200'}`}>
                             {task.title}
-                            {/* Visual Overdue Tag */}
                             {isOverdue && !completingTasks[task.id] && <span className="ml-2 text-[9px] bg-red-900/80 text-red-300 px-1.5 py-0.5 rounded uppercase tracking-wider font-bold">Overdue</span>}
                           </p>
-                          {/* Live Updating Countdown */}
                           {completingTasks[task.id] && (
                             <p className="text-[10px] text-green-400 font-bold mt-1">
                               Deleting in {completingTasks[task.id].remaining}s... Click circle to undo.

@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { calculateForecast } from '../utils/attendanceEngine'; // ✅ NEW IMPORT
+
 
 function AttendanceStrategyView() {
   const [realSubjects, setRealSubjects] = useState([]);
@@ -39,26 +41,7 @@ useEffect(() => {
     fetchSubjects();
   }, []);
 
-  // 🧮 THE CRYSTAL BALL MATH ENGINE
-  const calculateForecast = (attended, conducted, total) => {
-    const currentPct = conducted === 0 ? 0 : (attended / conducted) * 100;
-    
-    let safeBunks = 0;
-    let rescueClasses = 0;
-    let isImpossible = false;
-    let remainingClasses = total - conducted;
-
-    if (currentPct >= 75) {
-      safeBunks = Math.floor(attended / 0.75) - conducted;
-      if (safeBunks > remainingClasses) safeBunks = remainingClasses;
-    } else {
-      rescueClasses = Math.ceil((0.75 * conducted - attended) / 0.25);
-      if (rescueClasses > remainingClasses) isImpossible = true;
-    }
-
-    return { currentPct, safeBunks, rescueClasses, isImpossible, remainingClasses };
-  };
-
+  
   // 🎮 SIMULATION CONTROLS
   const simulateBunk = (id) => {
     setSimulatedSubjects(prev => prev.map(sub => {
@@ -117,7 +100,7 @@ useEffect(() => {
     
     setEditingTotalFor(null); // Close the editor
   };
-  
+
   if (isLoading) return <div className="text-white text-center mt-20 animate-pulse">Initializing Crystal Ball...</div>;
 
   return (

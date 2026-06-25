@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { api } from '../services/api';
 
-// --- NUMBER TO WORDS HELPER ---
 const numberToWords = (num) => {
   const a = ['', 'One ', 'Two ', 'Three ', 'Four ', 'Five ', 'Six ', 'Seven ', 'Eight ', 'Nine ', 'Ten ', 'Eleven ', 'Twelve ', 'Thirteen ', 'Fourteen ', 'Fifteen ', 'Sixteen ', 'Seventeen ', 'Eighteen ', 'Nineteen '];
   const b = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
@@ -17,12 +17,10 @@ const numberToWords = (num) => {
   return str.trim() || 'Zero';
 };
 
-// --- COMPACT STAT CARD COMPONENT ---
 const StatCard = ({ title, value, subtitle, valueColor = "text-white" }) => (
   <div className="bg-slate-900/70 backdrop-blur-xl rounded-3xl p-6 border border-slate-800 hover:border-emerald-500/30 transition-all flex flex-col justify-center relative overflow-hidden group">
     <p className="text-slate-500 text-[10px] uppercase tracking-widest font-bold mb-1 z-10">{title}</p>
     <h2 className={`text-2xl lg:text-3xl font-black z-10 ${valueColor}`}>{value}</h2>
-    {/* ✅ NEW: Dynamic Subtitles */}
     {subtitle && <p className="text-[10px] text-slate-400 mt-1.5 font-bold uppercase tracking-wider z-10">{subtitle}</p>}
   </div>
 );
@@ -33,54 +31,69 @@ function ExpensesView() {
   
   const [viewDate, setViewDate] = useState(new Date());
   const [selectedCategory, setSelectedCategory] = useState(null);
-
   const [isModalOpen, setIsModalOpen] = useState(false);
+
+  // Timezone fix for India
+  const getLocalDate = () => {
+    const tzOffset = (new Date()).getTimezoneOffset() * 60000;
+    return new Date(Date.now() - tzOffset).toISOString().split('T')[0];
+  };
+
   const [formData, setFormData] = useState({
     amount: '', reason: '', tags: 'food',
-    date: new Date().toISOString().split('T')[0]
+    date: getLocalDate()
   });
-
-  useEffect(() => {
-    fetchExpenses();
-  }, []);
 
   const fetchExpenses = async () => {
     try {
-      const response = await fetch('http://127.0.0.1:8000/expenses/');
-      if (response.ok) setExpenses(await response.json());
+      const data = await api.getExpenses();
+      setExpenses(data);
     } catch (err) {
-      console.error('Failed to fetch expenses');
+      console.error('Failed to fetch expenses', err);
     } finally {
       setIsLoading(false);
     }
   };
 
+  useEffect(() => {
+    fetchExpenses();
+  }, []);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+    const finalAmount = parseFloat(formData.amount);
+    if (isNaN(finalAmount) || finalAmount <= 0) {
+      alert("Please enter a valid expense amount greater than 0.");
+      return;
+    }
+
     try {
-      const payload = { amount: parseFloat(formData.amount), reason: formData.reason, date: formData.date, tags: [formData.tags] };
-      const response = await fetch('http://127.0.0.1:8000/expenses/', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
-      });
-      if (response.ok) {
-        fetchExpenses(); setIsModalOpen(false); setFormData({ ...formData, amount: '', reason: '' }); 
-      }
+      const payload = { 
+        amount: finalAmount, 
+        reason: formData.reason, 
+        date: formData.date, 
+        tags: [formData.tags] 
+      };
+      await api.addExpense(payload);
+      
+      fetchExpenses(); 
+      setIsModalOpen(false); 
+      setFormData({ ...formData, amount: '', reason: '' }); 
     } catch (err) {
-      console.error('Error saving expense');
+      console.error('Error saving expense', err);
     }
   };
 
   const deleteExpense = async (id) => {
     if (!window.confirm("Delete this transaction permanently?")) return;
     try {
-      const response = await fetch(`http://127.0.0.1:8000/expenses/${id}`, { method: 'DELETE' });
-      if (response.ok) fetchExpenses();
-    } catch (err) { console.error("Failed to delete expense"); }
+      await api.deleteExpense(id);
+      fetchExpenses();
+    } catch (err) { 
+      console.error("Failed to delete expense", err); 
+    }
   };
 
-  // ==========================================
-  // CORE MATH & DYNAMIC DATES
-  // ==========================================
   const viewMonth = viewDate.getMonth();
   const viewYear = viewDate.getFullYear();
   const isCurrentMonth = viewMonth === new Date().getMonth() && viewYear === new Date().getFullYear();
@@ -93,13 +106,11 @@ function ExpensesView() {
   });
   const monthTotal = monthlyExpenses.reduce((sum, item) => sum + item.amount, 0);
 
-  // ✅ 1. TODAY MATH & SUBTITLE
   const todayObj = new Date();
-  const todayStr = todayObj.toISOString().split('T')[0];
+  const todayStr = getLocalDate();
   const todayTotal = expenses.filter(e => e.date === todayStr).reduce((sum, item) => sum + item.amount, 0);
   const todaySubtitle = `${todayObj.getDate()} ${todayObj.toLocaleDateString('default', { month: 'long' })}`;
 
-  // ✅ 2. WEEK MATH & SUBTITLE (Strict Calendar Week: Sun-Sat)
   const startOfWeek = new Date(todayObj.getFullYear(), todayObj.getMonth(), todayObj.getDate() - todayObj.getDay());
   startOfWeek.setHours(0, 0, 0, 0);
   const endOfWeek = new Date(todayObj.getFullYear(), todayObj.getMonth(), todayObj.getDate() - todayObj.getDay() + 6);
@@ -107,16 +118,14 @@ function ExpensesView() {
 
   const weekTotal = expenses.filter(e => {
     const d = new Date(e.date);
-    d.setHours(0,0,0,0); // normalize time
+    d.setHours(0,0,0,0);
     return d >= startOfWeek && d <= endOfWeek;
   }).reduce((sum, item) => sum + item.amount, 0);
 
-  // Generate the "21-27 June" string (Handles weeks that cross into new months safely)
   const weekSubtitle = startOfWeek.getMonth() === endOfWeek.getMonth()
     ? `${startOfWeek.getDate()}-${endOfWeek.getDate()} ${endOfWeek.toLocaleDateString('default', { month: 'long' })}`
     : `${startOfWeek.getDate()} ${startOfWeek.toLocaleDateString('default', { month: 'short' })} - ${endOfWeek.getDate()} ${endOfWeek.toLocaleDateString('default', { month: 'short' })}`;
 
-  // Last Month Trend Calculation
   const lastMonthDate = new Date(viewYear, viewMonth - 1, 1);
   const lastMonthExpenses = expenses.filter(exp => {
     const d = new Date(exp.date);
@@ -128,7 +137,6 @@ function ExpensesView() {
   if (lastMonthTotal === 0 && monthTotal > 0) change = 100; 
   else if (lastMonthTotal > 0) change = ((monthTotal - lastMonthTotal) / lastMonthTotal) * 100;
 
-  // Daily Average
   const daysInViewMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
   const currentDay = isCurrentMonth ? (new Date().getDate() || 1) : daysInViewMonth;
   const dailyAverage = monthTotal / currentDay;
@@ -136,9 +144,6 @@ function ExpensesView() {
   const handlePrevMonth = () => { setViewDate(new Date(viewYear, viewMonth - 1, 1)); setSelectedCategory(null); };
   const handleNextMonth = () => { setViewDate(new Date(viewYear, viewMonth + 1, 1)); setSelectedCategory(null); };
 
-  // ==========================================
-  // CHART ENGINE
-  // ==========================================
   const categoryColors = { food: '#f97316', travel: '#3b82f6', utilities: '#a855f7', entertainment: '#ec4899', other: '#64748b' };
   const iconMap = { food: '🍔', travel: '🚌', utilities: '⚡', entertainment: '🎮', other: '🧾' };
 
@@ -162,9 +167,6 @@ function ExpensesView() {
   }).join(', ');
   const chartStyle = monthTotal > 0 ? { background: `conic-gradient(${gradientStops})` } : { background: '#1e293b' };
 
-  // ==========================================
-  // LEDGER ENGINE
-  // ==========================================
   const displayedExpenses = selectedCategory ? monthlyExpenses.filter(exp => exp.tags[0] === selectedCategory) : monthlyExpenses;
   const groupedExpenses = displayedExpenses.reduce((acc, exp) => {
     const dateStr = new Date(exp.date).toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long' });
@@ -188,8 +190,6 @@ function ExpensesView() {
       </button>
 
       <div className="w-full max-w-6xl pb-24 relative z-10 animate-fade-in mx-auto">
-
-        {/* HERO DASHBOARD */}
         <div className="relative overflow-hidden rounded-[32px] p-10 mb-8 bg-gradient-to-r from-emerald-600/20 via-slate-900 to-blue-600/20 border border-slate-700 shadow-2xl">
           <div className="absolute top-6 right-6 md:top-8 md:right-8 flex items-center gap-3 bg-slate-950/50 backdrop-blur-md px-3 py-1.5 rounded-full border border-slate-700/50">
             <button onClick={handlePrevMonth} className="w-8 h-8 rounded-full hover:bg-slate-800 text-slate-300 font-bold transition-colors">←</button>
@@ -205,7 +205,6 @@ function ExpensesView() {
           </div>
         </div>
 
-        {/* ✅ COMPACT METRICS (Now with Dates!) */}
         <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
           <StatCard title="Today" value={`₹${todayTotal.toLocaleString('en-IN')}`} subtitle={todaySubtitle} />
           <StatCard title="This Week" value={`₹${weekTotal.toLocaleString('en-IN')}`} subtitle={weekSubtitle} />
@@ -221,7 +220,6 @@ function ExpensesView() {
           </div>
         </div>
 
-        {/* MAIN GRID */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
           
           <div className="lg:col-span-5 bg-slate-900/40 backdrop-blur-xl p-8 rounded-[32px] border border-slate-800 shadow-xl flex flex-col items-center">
@@ -306,7 +304,6 @@ function ExpensesView() {
         </div>
       </div>
 
-      {/* PREMIUM MODAL */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center p-4 animate-fade-in">
           <div className="bg-slate-950/95 backdrop-blur-3xl rounded-[32px] border border-slate-800 p-8 shadow-2xl w-full max-w-md relative">

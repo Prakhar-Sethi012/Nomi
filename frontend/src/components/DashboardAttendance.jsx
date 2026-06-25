@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { api } from '../services/api';
 
 function DashboardAttendance() {
   const [subjects, setSubjects] = useState([]);
@@ -6,15 +7,12 @@ function DashboardAttendance() {
 
   const fetchSubjects = async () => {
     try {
-      const res = await fetch('http://127.0.0.1:8000/subjects/');
-      if (res.ok) {
-        const data = await res.json();
-        // ✅ THE FIX: Sort data by ID so the order never changes
-        const sortedData = data.sort((a, b) => a.id - b.id);
-        setSubjects(sortedData);
-      }
+      const data = await api.getSubjects();
+      // Force sort by ID to prevent the "Jumping Bug" when updating
+      const sortedData = data.sort((a, b) => a.id - b.id);
+      setSubjects(sortedData);
     } catch (err) {
-      console.error("Failed to load subjects");
+      console.error("Failed to load quick log subjects");
     } finally {
       setIsLoading(false);
     }
@@ -24,16 +22,10 @@ function DashboardAttendance() {
     fetchSubjects();
   }, []);
 
-  // Explicitly passing true (Present) or false (Absent) to the backend
   const logAttendance = async (id, isPresent) => {
     try {
-      // FastAPI expects a boolean query parameter like: ?attended=true
-      const res = await fetch(`http://127.0.0.1:8000/subjects/${id}/attendance?attended=${isPresent}`, {
-        method: 'PUT'
-      });
-      if (res.ok) {
-        fetchSubjects(); // Refresh the UI immediately
-      }
+      await api.markAttendance(id, isPresent);
+      fetchSubjects(); // Refresh UI instantly
     } catch (err) {
       console.error("Failed to log attendance");
     }
@@ -42,7 +34,7 @@ function DashboardAttendance() {
   if (isLoading) return <div className="bg-slate-800 p-5 rounded-xl border border-slate-700 text-slate-400 text-sm animate-pulse">Syncing classes...</div>;
 
   return (
-    <div className="bg-slate-800 p-5 rounded-xl border border-slate-700 shadow-lg flex flex-col h-full max-h-[300px]">
+    <div className="bg-slate-800 p-5 rounded-xl border border-slate-700 shadow-lg flex flex-col h-full max-h-[400px]">
       
       <div className="flex justify-between items-end mb-4 shrink-0 border-b border-slate-700 pb-3">
         <div>
@@ -59,7 +51,10 @@ function DashboardAttendance() {
           <p className="text-xs text-slate-500 text-center mt-10">Go to the Timetable tab to add your classes first.</p>
         ) : (
           subjects.map(sub => {
-            const currentPct = sub.conducted_classes === 0 ? 0 : (sub.attended_classes / sub.conducted_classes) * 100;
+            // Safely default to 0 to prevent NaN crashes
+            const attended = sub.attended_classes || 0;
+            const conducted = sub.conducted_classes || 0;
+            const currentPct = conducted === 0 ? 0 : (attended / conducted) * 100;
             
             return (
               <div key={sub.id} className="bg-slate-900/50 p-3 rounded-lg border border-slate-700 flex flex-col gap-2">
@@ -69,12 +64,11 @@ function DashboardAttendance() {
                     <h3 className="text-sm font-bold text-slate-200 leading-tight">{sub.name}</h3>
                     <p className="text-[10px] font-mono text-slate-500 mt-0.5">{sub.room_number || 'Room TBA'}</p>
                   </div>
-                  <span className={`text-xs font-black ${currentPct >= 75 ? 'text-green-400' : currentPct > 0 ? 'text-red-400' : 'text-slate-500'}`}>
-                    {sub.conducted_classes > 0 ? `${currentPct.toFixed(1)}%` : 'N/A'}
+                  <span className={`text-xs font-black ${currentPct >= 75 ? 'text-green-400' : conducted > 0 ? 'text-red-400' : 'text-slate-500'}`}>
+                    {conducted > 0 ? `${currentPct.toFixed(1)}%` : 'N/A'}
                   </span>
                 </div>
 
-                {/* The Logging Controls */}
                 <div className="flex gap-2 mt-1">
                   <button 
                     onClick={() => logAttendance(sub.id, false)}

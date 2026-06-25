@@ -1,8 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { api } from '../services/api';
 
-// ==========================================
-// 1. THE FFCS MASTER DICTIONARY
-// ==========================================
 const DAYS = ["MON", "TUES", "WEDNES", "THURS", "FRI"];
 const TIMES = [
   "08:00 - 08:50", "09:00 - 09:50", "10:00 - 10:50", "11:00 - 11:50", "12:00 - 12:50",
@@ -10,53 +8,46 @@ const TIMES = [
   "14:00 - 14:50", "15:00 - 15:50", "16:00 - 16:50", "17:00 - 17:50", "18:00 - 18:50"
 ];
 
-// Based on the standard VIT timetable matrix
 const MASTER_GRID = [
-  ["A1/L1", "F1/L2", "D1/L3", "TB1/L4", "TG1/L5", "LUNCH", "A2/L31", "F2/L32", "D2/L33", "TB2/L34", "TG2/L35"], // MON
-  ["B1/L7", "G1/L8", "E1/L9", "TC1/L10", "TAA1/L11", "LUNCH", "B2/L37", "G2/L38", "E2/L39", "TC2/L40", "TAA2/L41"], // TUE
-  ["C1/L13", "A1/L14", "F1/L15", "L16", "L17", "LUNCH", "C2/L43", "A2/L44", "F2/L45", "TD2/L46", "TBB2/L47"], // WED
-  ["D1/L19", "B1/L20", "G1/L21", "TE1/L22", "TCC1/L23", "LUNCH", "D2/L49", "B2/L50", "G2/L51", "TE2/L52", "TCC2/L53"], // THU
-  ["E1/L25", "C1/L26", "TA1/L27", "TF1/L28", "TD1/L29", "LUNCH", "E2/L55", "C2/L56", "TA2/L57", "TF2/L58", "TDD2/L59"], // FRI
+  ["A1/L1", "F1/L2", "D1/L3", "TB1/L4", "TG1/L5", "LUNCH", "A2/L31", "F2/L32", "D2/L33", "TB2/L34", "TG2/L35"], 
+  ["B1/L7", "G1/L8", "E1/L9", "TC1/L10", "TAA1/L11", "LUNCH", "B2/L37", "G2/L38", "E2/L39", "TC2/L40", "TAA2/L41"], 
+  ["C1/L13", "A1/L14", "F1/L15", "L16", "L17", "LUNCH", "C2/L43", "A2/L44", "F2/L45", "TD2/L46", "TBB2/L47"], 
+  ["D1/L19", "B1/L20", "G1/L21", "TE1/L22", "TCC1/L23", "LUNCH", "D2/L49", "B2/L50", "G2/L51", "TE2/L52", "TCC2/L53"], 
+  ["E1/L25", "C1/L26", "TA1/L27", "TF1/L28", "TD1/L29", "LUNCH", "E2/L55", "C2/L56", "TA2/L57", "TF2/L58", "TDD2/L59"], 
 ];
 
 function TimetableView() {
   const [subjects, setSubjects] = useState([]);
-  const [viewMode, setViewMode] = useState('grid'); // 'grid' or 'agenda'
+  const [viewMode, setViewMode] = useState('grid'); 
   const [isLoading, setIsLoading] = useState(true);
-  
-  // ⏱️ NEW: Real-time clock state
   const [now, setNow] = useState(new Date());
 
-  // Form State
   const [showModal, setShowModal] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
   const [formData, setFormData] = useState({
     name: '', subject_type: 'THEORY', theory_slot: '', lab_slot: '', room_number: ''
   });
 
-  // ⏱️ NEW: Update the clock every 60 seconds
   useEffect(() => {
     const timer = setInterval(() => setNow(new Date()), 60000);
-    return () => clearInterval(timer); // Cleanup on unmount
+    return () => clearInterval(timer); 
   }, []);
 
-  // Fetch from FastAPI
   const fetchSubjects = async () => {
     try {
-      const res = await fetch('http://127.0.0.1:8000/subjects/');
-      if (res.ok) setSubjects(await res.json());
+      const data = await api.getSubjects();
+      setSubjects(data);
     } catch (err) {
-      console.error("Failed to fetch timetable");
+      console.error("Failed to fetch timetable", err);
     } finally {
       setIsLoading(false);
     }
   };
 
-  useEffect(() => { fetchSubjects(); }, []);
+  useEffect(() => { 
+    fetchSubjects(); 
+  }, []);
 
-  // ==========================================
-  // 2. THE CLASH DETECTION ENGINE
-  // ==========================================
   const slotExistsInCell = (userSlots, cellData) => {
     if (!userSlots || cellData === "LUNCH") return false;
     const slotsArray = userSlots.split('+').map(s => s.trim().toUpperCase());
@@ -71,12 +62,10 @@ function TimetableView() {
     const newTheory = formData.theory_slot.toUpperCase();
     const newLab = formData.lab_slot.toUpperCase();
 
-    // 🛡️ FAILSAFE: Check for Clashes
     let hasClash = false;
     for (let r = 0; r < MASTER_GRID.length; r++) {
       for (let c = 0; c < MASTER_GRID[r].length; c++) {
         const cell = MASTER_GRID[r][c];
-        
         const newWantsBlock = slotExistsInCell(newTheory, cell) || slotExistsInCell(newLab, cell);
         
         if (newWantsBlock) {
@@ -97,29 +86,25 @@ function TimetableView() {
     if (hasClash) return;
 
     try {
-      const res = await fetch('http://127.0.0.1:8000/subjects/', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData)
-      });
-      if (res.ok) {
-        fetchSubjects();
-        setShowModal(false);
-        setFormData({ name: '', subject_type: 'THEORY', theory_slot: '', lab_slot: '', room_number: '' });
-      }
-    } catch (err) { setErrorMsg("Failed to save to database."); }
+      await api.addSubject(formData);
+      
+      fetchSubjects();
+      setShowModal(false);
+      setFormData({ name: '', subject_type: 'THEORY', theory_slot: '', lab_slot: '', room_number: '' });
+    } catch (err) { 
+      setErrorMsg(err.message || "Failed to save to database."); 
+    }
   };
 
   const deleteSubject = async (id) => {
     try {
-      await fetch(`http://127.0.0.1:8000/subjects/${id}`, { method: 'DELETE' });
+      await api.deleteSubject(id);
       fetchSubjects();
-    } catch (err) { console.error("Delete failed"); }
+    } catch (err) { 
+      console.error("Delete failed", err); 
+    }
   };
 
-  // ==========================================
-  // 3. UI HELPER FUNCTIONS & HIGHLIGHT ENGINE
-  // ==========================================
   const getSubjectColor = (id) => {
     const colors = ['bg-indigo-600', 'bg-emerald-600', 'bg-rose-600', 'bg-amber-600', 'bg-cyan-600', 'bg-fuchsia-600'];
     return colors[id % colors.length];
@@ -136,9 +121,7 @@ function TimetableView() {
     return { type: "EMPTY", data: cellData };
   };
 
-  // ⏱️ REAL-TIME HIGHLIGHT CHECK
   const isClassActive = (dayName, timeString) => {
-    // Map JS Date.getDay() to your specific array formatting
     const jsDays = ["SUN", "MON", "TUES", "WEDNES", "THURS", "FRI", "SAT"];
     const currentDayName = jsDays[now.getDay()];
     
@@ -149,10 +132,8 @@ function TimetableView() {
       if (!startStr || !endStr) return false;
 
       const currentTotalMinutes = now.getHours() * 60 + now.getMinutes();
-
       const [startH, startM] = startStr.split(":").map(Number);
       const startTotalMinutes = startH * 60 + startM;
-
       const [endH, endM] = endStr.split(":").map(Number);
       const endTotalMinutes = endH * 60 + endM;
 
@@ -167,7 +148,6 @@ function TimetableView() {
   return (
     <div className="w-full max-w-7xl pb-10 mx-auto animate-fade-in flex flex-col h-[85vh]">
       
-      {/* 🎛️ HEADER & CONTROLS */}
       <header className="bg-slate-800 p-6 rounded-xl border border-slate-700 mb-6 shadow-lg flex justify-between items-center shrink-0">
         <div>
           <h1 className="text-2xl font-bold text-white mb-1 flex items-center gap-2">🗓️ Timetable Matrix</h1>
@@ -185,7 +165,6 @@ function TimetableView() {
         </div>
       </header>
 
-      {/* 🛑 ADD SUBJECT MODAL */}
       {showModal && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-slate-800 p-6 rounded-xl border border-slate-700 w-full max-w-md shadow-2xl animate-fade-in">
@@ -235,9 +214,6 @@ function TimetableView() {
         </div>
       )}
 
-      {/* ======================================= */}
-      {/* VIEW 1: THE MASTER GRID                 */}
-      {/* ======================================= */}
       {viewMode === 'grid' && (
         <div className="flex-1 bg-slate-900/50 rounded-xl border border-slate-700 overflow-auto custom-scrollbar shadow-inner">
           <table className="w-full text-left border-collapse min-w-[1000px]">
@@ -291,9 +267,6 @@ function TimetableView() {
         </div>
       )}
 
-      {/* ======================================= */}
-      {/* VIEW 2: THE DAILY AGENDA                */}
-      {/* ======================================= */}
       {viewMode === 'agenda' && (
         <div className="flex-1 overflow-y-auto custom-scrollbar pr-2 flex flex-col gap-6">
           {DAYS.map((day, rIndex) => {
@@ -309,7 +282,6 @@ function TimetableView() {
                 <h2 className="text-lg font-black text-indigo-400 border-b border-slate-700 pb-2 mb-4">{day}DAY</h2>
                 <div className="flex flex-col gap-3">
                   {activeClassesToday.map((item, idx) => {
-                    // ⏱️ Determine if this specific class is active right now
                     const isActive = isClassActive(day, item.time);
 
                     return (

@@ -1,45 +1,36 @@
 import React, { useState, useEffect } from 'react';
+import { api } from '../services/api';
 
 function PortfolioWidget() {
   const [projects, setProjects] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
 
-  // Form State
   const [formData, setFormData] = useState({
-    title: '',
-    description: '',
-    tech_stack: '',
-    github_link: ''
+    title: '', description: '', tech_stack: '', github_link: ''
   });
-
-  useEffect(() => {
-    fetchProjects();
-  }, []);
 
   const fetchProjects = async () => {
     try {
-      const response = await fetch('http://127.0.0.1:8000/portfolio/');
-      if (response.ok) {
-        const data = await response.json();
-        setProjects(data);
-      }
+      const data = await api.getPortfolio();
+      setProjects(data);
     } catch (err) {
-      console.error('Failed to fetch portfolio');
+      console.error('Failed to fetch portfolio', err);
     } finally {
       setIsLoading(false);
     }
   };
 
-  // ✅ MOVED OUTSIDE: The delete function is now accessible to the whole component
+  useEffect(() => {
+    fetchProjects();
+  }, []);
+
   const deleteProject = async (id) => {
     try {
-      const response = await fetch(`http://127.0.0.1:8000/portfolio/${id}`, { method: 'DELETE' });
-      if (response.ok) {
-        fetchProjects(); // Refresh the grid instantly
-      }
+      await api.deletePortfolioItem(id);
+      fetchProjects(); 
     } catch (err) {
-      console.error("Failed to delete project");
+      console.error("Failed to delete project", err);
     }
   };
 
@@ -53,19 +44,13 @@ function PortfolioWidget() {
         links: [formData.github_link || "https://github.com"] 
       };
       
-      const response = await fetch('http://127.0.0.1:8000/portfolio/', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-
-      if (response.ok) {
-        fetchProjects(); 
-        setShowForm(false);
-        setFormData({ title: '', description: '', tech_stack: '', github_link: '' });
-      }
+      await api.addPortfolioItem(payload);
+      
+      fetchProjects(); 
+      setShowForm(false);
+      setFormData({ title: '', description: '', tech_stack: '', github_link: '' });
     } catch (err) {
-      console.error('Error saving project');
+      console.error('Error saving project', err);
     }
   };
 
@@ -121,10 +106,8 @@ function PortfolioWidget() {
             const githubLink = proj.links && proj.links.length > 0 ? proj.links[0] : '#';
 
             return (
-              // ✅ ADDED `group` and `relative` classes for the hover effect
               <div key={proj.id} className="group relative bg-slate-700 p-4 rounded-lg border border-slate-600 hover:border-blue-500 transition-colors flex flex-col">
                 
-                {/* ✅ ADDED: Invisible delete button that appears on hover */}
                 <button 
                   onClick={() => deleteProject(proj.id)}
                   className="absolute top-2 right-2 w-6 h-6 bg-red-900/80 text-red-200 rounded text-xs opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center hover:bg-red-600 z-10"
@@ -133,7 +116,6 @@ function PortfolioWidget() {
                   ✕
                 </button>
 
-                {/* Added pr-8 to prevent text from going under the delete button */}
                 <div className="flex justify-between items-start mb-2 pr-8">
                   <h3 className="font-bold text-slate-200 leading-tight">{proj.title}</h3>
                   {githubLink !== '#' && (

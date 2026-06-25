@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { api } from '../services/api';
 
-// ✅ Pass in setActiveTab as a prop from Dashboard
 function ExpensesWidget({ setActiveTab }) {
   const [expenses, setExpenses] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -10,10 +10,10 @@ function ExpensesWidget({ setActiveTab }) {
   useEffect(() => {
     const fetchExpenses = async () => {
       try {
-        const response = await fetch('http://127.0.0.1:8000/expenses/');
-        if (response.ok) setExpenses(await response.json());
+        const data = await api.getExpenses();
+        setExpenses(data);
       } catch (err) {
-        console.error('Failed to fetch expenses');
+        console.error('Failed to fetch expenses', err);
       } finally {
         setIsLoading(false);
       }
@@ -35,12 +35,10 @@ function ExpensesWidget({ setActiveTab }) {
   
   const barColor = progressPercentage > 90 ? 'bg-red-500' : progressPercentage > 75 ? 'bg-orange-500' : 'bg-emerald-500';
   
-  if (isLoading) return <div className="bg-slate-800 p-6 rounded-xl border border-slate-700 h-80 flex items-center justify-center text-emerald-400 animate-pulse">Scanning Ledger...</div>;
+  if (isLoading) return <div className="bg-slate-800 p-6 rounded-xl border border-slate-700 h-[300px] flex items-center justify-center text-emerald-400 animate-pulse">Scanning Ledger...</div>;
 
   return (
-    // Replace the top wrapper div with this:
-<div className="bg-slate-800 p-5 rounded-xl border border-slate-700 shadow-lg flex flex-col justify-between h-[300px] relative overflow-hidden">  
-      {/* Background Icon */}
+    <div className="bg-slate-800 p-5 rounded-xl border border-slate-700 shadow-lg flex flex-col justify-between h-[300px] relative overflow-hidden">  
       <div className="absolute -right-4 -bottom-4 text-[100px] opacity-5 pointer-events-none text-emerald-500">₹</div>
 
       <div>
