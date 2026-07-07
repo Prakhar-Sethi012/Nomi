@@ -47,16 +47,19 @@ export const api = {
 
   // Tasks
   getTodoTasks: () => fetchAPI('/tasks/todo'),
+  updateTask: (id, data) => fetchAPI(`/tasks/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   addTask: (data) => fetchAPI('/tasks/', { method: 'POST', body: JSON.stringify(data) }),
   deleteTask: (id) => fetchAPI(`/tasks/${id}`, { method: 'DELETE' }),
 
   // Expenses
   getExpenses: () => fetchAPI('/expenses/'),
+  updateExpense: (id, data) => fetchAPI(`/expenses/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   addExpense: (data) => fetchAPI('/expenses/', { method: 'POST', body: JSON.stringify(data) }),
   deleteExpense: (id) => fetchAPI(`/expenses/${id}`, { method: 'DELETE' }),
 
   // Portfolio
   getPortfolio: () => fetchAPI('/portfolio/'),
+  updatePortfolioItem: (id, data) => fetchAPI(`/portfolio/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   addPortfolioItem: (data) => fetchAPI('/portfolio/', { method: 'POST', body: JSON.stringify(data) }),
   deletePortfolioItem: (id) => fetchAPI(`/portfolio/${id}`, { method: 'DELETE' })
 };

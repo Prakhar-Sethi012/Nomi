@@ -31,3 +31,17 @@ def delete_expense(expense_id: int, db: Session = Depends(get_db)):
     db.delete(expense)
     db.commit()
     return {"status": "success", "detail": "Expense deleted"}
+
+@router.put("/{expense_id}", response_model=schemas.ExpenseResponse)
+def update_expense(expense_id: int, expense_data: schemas.ExpenseUpdate, db: Session = Depends(get_db)):
+    expense = db.query(models.Expense).filter(models.Expense.id == expense_id).first()
+    if not expense:
+        raise HTTPException(status_code=404, detail="Expense not found")
+        
+    update_data = expense_data.model_dump(exclude_unset=True)
+    for key, value in update_data.items():
+        setattr(expense, key, value)
+        
+    db.commit()
+    db.refresh(expense)
+    return expense

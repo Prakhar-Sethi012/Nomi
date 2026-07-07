@@ -8,6 +8,10 @@ function TasksWidget() {
 
   const [completingTasks, setCompletingTasks] = useState({});
   const [showForm, setShowForm] = useState(false);
+  
+  // 🔥 NEW: Track which task is being edited
+  const [editingTaskId, setEditingTaskId] = useState(null);
+
   const [formData, setFormData] = useState({ title: '', due_date: '', tags: '' });
 
   const fetchTasks = async () => {
@@ -25,6 +29,22 @@ function TasksWidget() {
     fetchTasks();
   }, []);
 
+  // Formats date for the datetime-local input safely
+  const formatForInput = (isoString) => {
+    const d = new Date(isoString);
+    const offset = d.getTimezoneOffset() * 60000;
+    return (new Date(d.getTime() - offset)).toISOString().slice(0, 16);
+  };
+
+  const openEditMode = (task) => {
+    setEditingTaskId(task.id);
+    setFormData({
+      title: task.title,
+      due_date: formatForInput(task.due_date),
+      tags: task.tags.join(', ')
+    });
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
@@ -34,12 +54,19 @@ function TasksWidget() {
       try { isoDate = new Date(formData.due_date).toISOString(); } 
       catch (e) { return setError('Invalid date selection.'); }
 
-      const payload = { title: formData.title, task_type: 'Work', due_date: isoDate, tags: tagsArray, is_todo: true };
-
-      await api.addTask(payload);
+      if (editingTaskId) {
+        // 🔥 UPDATE MODE
+        const payload = { title: formData.title, due_date: isoDate, tags: tagsArray };
+        await api.updateTask(editingTaskId, payload);
+      } else {
+        // 🔥 CREATE MODE
+        const payload = { title: formData.title, task_type: 'Work', due_date: isoDate, tags: tagsArray, is_todo: true };
+        await api.addTask(payload);
+      }
       
       fetchTasks(); 
       setShowForm(false); 
+      setEditingTaskId(null);
       setFormData({ title: '', due_date: '', tags: '' });
       
     } catch (err) { 
@@ -71,7 +98,6 @@ function TasksWidget() {
       try {
         await api.deleteTask(id);
         
-        // Gamification Engine
         const pendingDailyTasks = tasks.filter(t => new Date(t.due_date).setHours(0,0,0,0) <= new Date().setHours(0,0,0,0));
         const isPerfectDay = pendingDailyTasks.length === 1 && pendingDailyTasks[0].id === id;
 
@@ -121,19 +147,19 @@ function TasksWidget() {
     <div className="bg-slate-800 p-5 rounded-xl border border-slate-700 shadow-lg flex flex-col h-[400px]">
       <h2 className="text-xl font-bold text-white mb-4 flex justify-between items-center">
         Action Items
-        {!showForm && <span className="text-xs bg-blue-600 text-white px-2 py-1 rounded-full">{tasks.length}</span>}
+        {!showForm && !editingTaskId && <span className="text-xs bg-blue-600 text-white px-2 py-1 rounded-full">{tasks.length}</span>}
       </h2>
       
       {error && <div className="bg-red-900/40 border border-red-500/50 text-red-200 text-xs p-2 rounded mb-2 overflow-x-auto max-h-16 font-mono">{error}</div>}
 
-      {showForm ? (
+      {showForm || editingTaskId ? (
         <form onSubmit={handleSubmit} className="flex-1 flex flex-col gap-3 overflow-y-auto custom-scrollbar pr-2">
           <input type="text" placeholder="Task Title" required value={formData.title} onChange={(e) => setFormData({...formData, title: e.target.value})} className="w-full p-2 bg-slate-700 rounded text-sm text-white border border-slate-600 focus:border-blue-500 outline-none" />
           <input type="datetime-local" required value={formData.due_date} onChange={(e) => setFormData({...formData, due_date: e.target.value})} className="w-full p-2 bg-slate-700 rounded text-sm text-white border border-slate-600 focus:border-blue-500 outline-none" />
           <input type="text" placeholder="Tags (comma separated)" required value={formData.tags} onChange={(e) => setFormData({...formData, tags: e.target.value})} className="w-full p-2 bg-slate-700 rounded text-sm text-white border border-slate-600 focus:border-blue-500 outline-none" />
           <div className="flex gap-2 mt-auto pt-2">
-            <button type="button" onClick={() => { setShowForm(false); setError(''); }} className="flex-1 bg-slate-600 hover:bg-slate-500 text-white text-sm py-2 rounded transition-colors">Cancel</button>
-            <button type="submit" className="flex-1 bg-blue-600 hover:bg-blue-500 text-white text-sm py-2 rounded font-bold transition-colors">Add Task</button>
+            <button type="button" onClick={() => { setShowForm(false); setEditingTaskId(null); setError(''); setFormData({ title: '', due_date: '', tags: '' }); }} className="flex-1 bg-slate-600 hover:bg-slate-500 text-white text-sm py-2 rounded transition-colors">Cancel</button>
+            <button type="submit" className="flex-1 bg-blue-600 hover:bg-blue-500 text-white text-sm py-2 rounded font-bold transition-colors">{editingTaskId ? 'Save Edits' : 'Add Task'}</button>
           </div>
         </form>
       ) : (
@@ -147,14 +173,26 @@ function TasksWidget() {
                 const isOverdue = new Date(task.due_date).setHours(0,0,0,0) < new Date().setHours(0,0,0,0);
 
                 return (
-                  <li key={task.id} className={`bg-slate-700 p-3 rounded-lg border transition-all duration-500 ${
+                  <li key={task.id} className={`group bg-slate-700 p-3 rounded-lg border transition-all duration-500 relative ${
                     completingTasks[task.id] 
                       ? 'opacity-40 border-green-500 scale-[0.98]' 
                       : isOverdue 
                         ? 'border-red-500/60 bg-red-900/10' 
                         : 'border-slate-600 hover:border-blue-500'
                   }`}>
-                    <div className="flex justify-between items-start mb-2">
+                    
+                    {/* 🔥 NEW: Edit Button Overlay */}
+                    {!completingTasks[task.id] && (
+                      <button 
+                        onClick={() => openEditMode(task)} 
+                        className="absolute top-3 right-3 text-slate-400 hover:text-blue-400 opacity-0 group-hover:opacity-100 transition-opacity"
+                        title="Edit Task"
+                      >
+                        ✎
+                      </button>
+                    )}
+
+                    <div className="flex justify-between items-start mb-2 pr-6">
                       <div className="flex items-start gap-3">
                         <button onClick={() => toggleComplete(task.id)} className={`mt-0.5 shrink-0 w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors ${completingTasks[task.id] ? 'bg-green-500 border-green-500' : 'border-slate-400 hover:border-green-400'}`}>
                           {completingTasks[task.id] && <span className="text-white text-xs">✓</span>}
@@ -171,16 +209,19 @@ function TasksWidget() {
                           )}
                         </div>
                       </div>
+                    </div>
+                    
+                    <div className="flex justify-between items-end ml-8">
+                      <div className="flex flex-wrap gap-1.5">
+                        {task.tags.map(tag => (
+                          <span key={tag} className={`text-[10px] uppercase tracking-wider font-bold bg-slate-800 border border-slate-600 px-2 py-0.5 rounded ${completingTasks[task.id] ? 'text-slate-500' : 'text-blue-400'}`}>
+                            {tag}
+                          </span>
+                        ))}
+                      </div>
                       <p className={`text-xs whitespace-nowrap ml-2 ${isOverdue ? 'text-red-400 font-bold' : 'text-slate-400'}`}>
                         {new Date(task.due_date).toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
                       </p>
-                    </div>
-                    <div className="flex flex-wrap gap-1.5 ml-8">
-                      {task.tags.map(tag => (
-                        <span key={tag} className={`text-[10px] uppercase tracking-wider font-bold bg-slate-800 border border-slate-600 px-2 py-0.5 rounded ${completingTasks[task.id] ? 'text-slate-500' : 'text-blue-400'}`}>
-                          {tag}
-                        </span>
-                      ))}
                     </div>
                   </li>
                 );

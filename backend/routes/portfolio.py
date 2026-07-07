@@ -34,3 +34,17 @@ def delete_portfolio_item(item_id: int, db: Session = Depends(get_db)):
     db.delete(item)
     db.commit()
     return {"status": "success", "detail": "Item deleted"}
+
+@router.put("/{item_id}", response_model=schemas.PortfolioResponse)
+def update_portfolio_item(item_id: int, item_data: schemas.PortfolioUpdate, db: Session = Depends(get_db)):
+    item = db.query(models.PortfolioItem).filter(models.PortfolioItem.id == item_id).first()
+    if not item:
+        raise HTTPException(status_code=404, detail="Item not found")
+        
+    update_data = item_data.model_dump(exclude_unset=True)
+    for key, value in update_data.items():
+        setattr(item, key, value)
+        
+    db.commit()
+    db.refresh(item)
+    return item
