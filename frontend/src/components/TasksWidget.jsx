@@ -8,8 +8,6 @@ function TasksWidget() {
 
   const [completingTasks, setCompletingTasks] = useState({});
   const [showForm, setShowForm] = useState(false);
-  
-  // 🔥 NEW: Track which task is being edited
   const [editingTaskId, setEditingTaskId] = useState(null);
 
   const [formData, setFormData] = useState({ title: '', due_date: '', tags: '' });
@@ -17,7 +15,7 @@ function TasksWidget() {
   const fetchTasks = async () => {
     try {
       const data = await api.getTodoTasks();
-      setTasks(data);
+      setTasks(data); // 🔥 Backend now auto-sorts these by date!
     } catch (err) {
       setError('Connection error.');
     } finally {
@@ -29,7 +27,6 @@ function TasksWidget() {
     fetchTasks();
   }, []);
 
-  // Formats date for the datetime-local input safely
   const formatForInput = (isoString) => {
     const d = new Date(isoString);
     const offset = d.getTimezoneOffset() * 60000;
@@ -55,11 +52,9 @@ function TasksWidget() {
       catch (e) { return setError('Invalid date selection.'); }
 
       if (editingTaskId) {
-        // 🔥 UPDATE MODE
         const payload = { title: formData.title, due_date: isoDate, tags: tagsArray };
         await api.updateTask(editingTaskId, payload);
       } else {
-        // 🔥 CREATE MODE
         const payload = { title: formData.title, task_type: 'Work', due_date: isoDate, tags: tagsArray, is_todo: true };
         await api.addTask(payload);
       }
@@ -98,7 +93,19 @@ function TasksWidget() {
       try {
         await api.deleteTask(id);
         
-        const pendingDailyTasks = tasks.filter(t => new Date(t.due_date).setHours(0,0,0,0) <= new Date().setHours(0,0,0,0));
+        // 🔥 STRICT GAMIFICATION ENGINE FIX
+        const today = new Date();
+        today.setHours(0, 0, 0, 0); // Lock to midnight today
+
+        // Only count tasks that are overdue or due today
+        const pendingDailyTasks = tasks.filter(t => {
+          const taskDate = new Date(t.due_date);
+          taskDate.setHours(0, 0, 0, 0);
+          return taskDate <= today;
+        });
+
+        // If the only daily task left is the one we are deleting, you hit Inbox Zero!
+        // (Future tasks are completely ignored by this logic)
         const isPerfectDay = pendingDailyTasks.length === 1 && pendingDailyTasks[0].id === id;
 
         if (isPerfectDay) {
@@ -181,7 +188,6 @@ function TasksWidget() {
                         : 'border-slate-600 hover:border-blue-500'
                   }`}>
                     
-                    {/* 🔥 NEW: Edit Button Overlay */}
                     {!completingTasks[task.id] && (
                       <button 
                         onClick={() => openEditMode(task)} 

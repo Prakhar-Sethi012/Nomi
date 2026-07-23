@@ -4,29 +4,30 @@ function WeatherWidget() {
   const [weatherData, setWeatherData] = useState(null);
   const [isRefreshing, setIsRefreshing] = useState(true);
 
-  // DYNAMIC THEME ENGINE
+  // 🌩️ DYNAMIC THEME & MESSAGE ENGINE
   const getWeatherTheme = (code) => {
-    if (code === undefined) return { icon: '⏳', text: 'Loading', bg: 'from-slate-800 to-slate-900', accent: 'text-slate-400' };
+    if (code === undefined) return { icon: '⏳', text: 'Loading', message: 'Looking out the window...', bg: 'from-slate-800 to-slate-900', accent: 'text-slate-400' };
     
     if (code === 0) 
-      return { icon: '☀️', text: 'Clear Sky', bg: 'from-amber-500/10 to-orange-900/40 border-orange-500/20', accent: 'text-orange-400' };
+      return { icon: '☀️', text: 'Clear Sky', message: 'Clear skies. Go touch some grass.', bg: 'from-amber-500/10 to-orange-900/40 border-orange-500/20', accent: 'text-orange-400' };
     if (code >= 1 && code <= 3) 
-      return { icon: '⛅', text: 'Partly Cloudy', bg: 'from-blue-400/10 to-slate-800/60 border-blue-400/20', accent: 'text-blue-300' };
+      return { icon: '⛅', text: 'Partly Cloudy', message: 'Cloudy. Perfect dark-mode weather.', bg: 'from-blue-400/10 to-slate-800/60 border-blue-400/20', accent: 'text-blue-300' };
     if (code >= 45 && code <= 48) 
-      return { icon: '🌫️', text: 'Foggy', bg: 'from-slate-400/10 to-slate-800/60 border-slate-400/20', accent: 'text-slate-300' };
+      return { icon: '🌫️', text: 'Foggy', message: 'Foggy. Silent Hill vibes outside.', bg: 'from-slate-400/10 to-slate-800/60 border-slate-400/20', accent: 'text-slate-300' };
     if (code >= 51 && code <= 67) 
-      return { icon: '🌧️', text: 'Raining', bg: 'from-blue-600/20 to-slate-900/80 border-blue-500/30', accent: 'text-blue-400' };
+      return { icon: '🌧️', text: 'Raining', message: "It's raining. Don't melt out there.", bg: 'from-blue-600/20 to-slate-900/80 border-blue-500/30', accent: 'text-blue-400' };
     if (code >= 71 && code <= 77) 
-      return { icon: '❄️', text: 'Snowing', bg: 'from-indigo-200/10 to-slate-800/60 border-indigo-200/20', accent: 'text-indigo-200' };
+      return { icon: '❄️', text: 'Snowing', message: 'Snow in Vellore? The simulation is breaking.', bg: 'from-indigo-200/10 to-slate-800/60 border-indigo-200/20', accent: 'text-indigo-200' };
     if (code >= 95) 
-      return { icon: '⛈️', text: 'Thunderstorm', bg: 'from-purple-600/20 to-slate-900/80 border-purple-500/30', accent: 'text-purple-400' };
+      return { icon: '⛈️', text: 'Thunderstorm', message: 'Thunderstorm. Code like a hacker in a movie.', bg: 'from-purple-600/20 to-slate-900/80 border-purple-500/30', accent: 'text-purple-400' };
     
-    return { icon: '☁️', text: 'Cloudy', bg: 'from-slate-700/20 to-slate-900/60 border-slate-600/30', accent: 'text-slate-300' };
+    return { icon: '☁️', text: 'Cloudy', message: 'Atmosphere looks ambiguous.', bg: 'from-slate-700/20 to-slate-900/60 border-slate-600/30', accent: 'text-slate-300' };
   };
 
   const fetchWeather = async () => {
     setIsRefreshing(true);
     try {
+      // Hardcoded to Vellore, TN
       const res = await fetch('https://api.open-meteo.com/v1/forecast?latitude=12.9165&longitude=79.1325&current=temperature_2m,relative_humidity_2m,apparent_temperature,weather_code&timezone=auto');
       if (!res.ok) throw new Error("Network response was not ok");
       const data = await res.json();
@@ -59,14 +60,14 @@ function WeatherWidget() {
   const currentTheme = weatherData?.theme || getWeatherTheme(undefined);
 
   return (
-    <div className={`relative overflow-hidden px-5 py-3 rounded-xl border bg-gradient-to-br shadow-lg flex items-center justify-between gap-5 transition-all duration-700 ease-in-out ${currentTheme.bg}`}>
+    <div className={`relative overflow-hidden px-5 py-3 rounded-xl border bg-gradient-to-br shadow-lg flex items-center justify-between gap-5 transition-all duration-700 ease-in-out ${currentTheme.bg} min-w-[280px]`}>
       
       {/* Background Watermark Icon */}
       <div className="absolute right-0 top-1/2 -translate-y-1/2 text-[90px] opacity-10 pointer-events-none select-none blur-[2px] translate-x-4">
         {currentTheme.icon}
       </div>
 
-      {/* LEFT: Icon & Temp */}
+      {/* LEFT: Icon, Temp & Message */}
       <div className="flex items-center gap-3 relative z-10">
         <div className="text-4xl filter drop-shadow-md">
           {currentTheme.icon}
@@ -80,6 +81,10 @@ function WeatherWidget() {
           </div>
           <p className={`text-[11px] font-bold mt-1 uppercase tracking-wide ${currentTheme.accent}`}>
             {currentTheme.text}
+          </p>
+          {/* 🔥 NEW: The Clever Message */}
+          <p className="text-[9px] text-white/60 mt-0.5 max-w-[140px] leading-tight italic">
+            "{currentTheme.message}"
           </p>
         </div>
       </div>

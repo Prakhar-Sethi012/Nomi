@@ -58,7 +58,7 @@ def get_todo_list(db: Session = Depends(get_db)):
     tasks = db.query(models.Task).filter(
         (models.Task.task_type == "Work") | 
         ((models.Task.task_type == "Schedule") & (models.Task.is_todo == True))
-    ).all()
+    ).order_by(models.Task.due_date.asc()).all() # THE FIX: Sorts oldest/closest dates to the top
     return tasks
 
 @router.delete("/{task_id}")
