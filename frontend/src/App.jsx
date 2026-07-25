@@ -5,27 +5,25 @@ import ScratchpadView from './components/ScratchpadView';
 import AttendanceStrategyView from './components/AttendanceStrategyView';
 import TimetableView from './components/TimetableView';
 import ExpensesView from './components/ExpensesView';
-import SetupForm from './components/SetupForm'; // ✅ Imported your clean setup form
+import SetupForm from './components/SetupForm'; 
+import { offlineSync } from './services/offlineSync';
+import { api } from './services/api'; // 🔥 Brought in the API SDK
 
 function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
-  
-  // ✅ The Single Source of Truth
   const [profile, setProfile] = useState(null);
   const [isAuthenticating, setIsAuthenticating] = useState(true);
 
-  // ✅ Blocking API call on initial load
+  // =========================================
+  // 1. AUTHENTICATE & FETCH PROFILE
+  // =========================================
   useEffect(() => {
     const authenticateCommander = async () => {
       try {
-        const res = await fetch('http://127.0.0.1:8000/profile/');
-        if (res.ok) {
-          const data = await res.json();
-          setProfile(data);
-        }
-        // If 404, the backend says no profile exists. We safely leave profile as null.
+        const data = await api.getProfile();
+        setProfile(data);
       } catch (err) {
-        console.error("Database connection failed. Is FastAPI running?");
+        console.error("Database connection failed or profile not found.");
       } finally {
         setIsAuthenticating(false);
       }
@@ -34,38 +32,66 @@ function App() {
     authenticateCommander();
   }, []);
 
+  // =========================================
+  // 2. THE GLOBAL OFFLINE-FIRST LISTENER
+  // =========================================
+  useEffect(() => {
+    const handleOnline = () => {
+      console.log("🟢 Connection restored!");
+      offlineSync.processQueue();
+    };
+
+    const handleOffline = () => {
+      console.log("🔴 Connection lost. Switching to IndexedDB Queue.");
+    };
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    if (navigator.onLine) {
+      offlineSync.processQueue();
+    }
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
+
+  // =========================================
+  // RENDER BLOCKS
+  // =========================================
+
   if (isAuthenticating) {
     return (
-      <div className="min-h-screen bg-slate-900 flex items-center justify-center font-mono text-emerald-400 animate-pulse">
+      <div className="min-h-screen bg-background transition-colors duration-300 flex items-center justify-center font-mono text-accent animate-pulse">
         Establishing secure connection to Command Center Database...
       </div>
     );
   }
 
-  // ✅ If backend says no user exists, render the Setup Form
   if (!profile) {
     return (
-      <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4 font-sans animate-fade-in">
+      <div className="min-h-screen bg-background transition-colors duration-300 flex items-center justify-center p-4 font-sans animate-fade-in">
         <SetupForm onSetupComplete={(newProfile) => setProfile(newProfile)} />
       </div>
     );
   }
 
-  // ✅ Profile verified. Load the OS.
   return (
-    <div className="min-h-screen bg-slate-900 flex flex-col items-center pt-6 px-4 font-sans">
+    <div className="min-h-screen bg-background transition-colors duration-300 flex flex-col items-center pt-6 px-4 font-sans">
       
-      <nav className="flex gap-1 mb-6 bg-slate-800 p-1.5 rounded-lg border border-slate-700 shadow-lg z-10 sticky top-4 flex-wrap justify-center">
-        <button onClick={() => setActiveTab('dashboard')} className={`px-4 py-2 rounded-md text-sm font-bold transition-all duration-200 ${activeTab === 'dashboard' ? 'bg-blue-600 text-white shadow' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-700'}`}>Dashboard</button>
-        <button onClick={() => setActiveTab('scratchpad')} className={`px-4 py-2 rounded-md text-sm font-bold transition-all duration-200 ${activeTab === 'scratchpad' ? 'bg-blue-600 text-white shadow' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-700'}`}>Scratchpad</button>
-        <button onClick={() => setActiveTab('links')} className={`px-4 py-2 rounded-md text-sm font-bold transition-all duration-200 ${activeTab === 'links' ? 'bg-blue-600 text-white shadow' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-700'}`}>Directory</button>
-        <button onClick={() => setActiveTab('strategy')} className={`px-4 py-2 rounded-md text-sm font-bold transition-all duration-200 ${activeTab === 'strategy' ? 'bg-indigo-600 text-white shadow' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-700'}`}>Strategy</button>
-        <button onClick={() => setActiveTab('timetable')} className={`px-4 py-2 rounded-md text-sm font-bold transition-all duration-200 ${activeTab === 'timetable' ? 'bg-indigo-600 text-white shadow' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-700'}`}>Timetable</button>
-        <button onClick={() => setActiveTab('expenses')} className={`px-4 py-2 rounded-md text-sm font-bold transition-all duration-200 flex items-center gap-2 ${activeTab === 'expenses' ? 'bg-emerald-600 text-white shadow' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-700'}`}>Finance</button>
+      {/* 🔥 REFACTORED NAVBAR: Uses semantic theme colors so it changes with the toggle */}
+      <nav className="flex gap-1 mb-6 bg-surface p-1.5 rounded-lg border border-border shadow-lg z-10 sticky top-4 flex-wrap justify-center transition-colors duration-300">
+        <button onClick={() => setActiveTab('dashboard')} className={`px-4 py-2 rounded-md text-sm font-bold transition-all duration-200 ${activeTab === 'dashboard' ? 'bg-accent text-white shadow' : 'text-textSecondary hover:text-textPrimary hover:bg-surfaceHover'}`}>Dashboard</button>
+        <button onClick={() => setActiveTab('scratchpad')} className={`px-4 py-2 rounded-md text-sm font-bold transition-all duration-200 ${activeTab === 'scratchpad' ? 'bg-accent text-white shadow' : 'text-textSecondary hover:text-textPrimary hover:bg-surfaceHover'}`}>Scratchpad</button>
+        <button onClick={() => setActiveTab('links')} className={`px-4 py-2 rounded-md text-sm font-bold transition-all duration-200 ${activeTab === 'links' ? 'bg-accent text-white shadow' : 'text-textSecondary hover:text-textPrimary hover:bg-surfaceHover'}`}>Directory</button>
+        <button onClick={() => setActiveTab('strategy')} className={`px-4 py-2 rounded-md text-sm font-bold transition-all duration-200 ${activeTab === 'strategy' ? 'bg-accent text-white shadow' : 'text-textSecondary hover:text-textPrimary hover:bg-surfaceHover'}`}>Strategy</button>
+        <button onClick={() => setActiveTab('timetable')} className={`px-4 py-2 rounded-md text-sm font-bold transition-all duration-200 ${activeTab === 'timetable' ? 'bg-accent text-white shadow' : 'text-textSecondary hover:text-textPrimary hover:bg-surfaceHover'}`}>Timetable</button>
+        <button onClick={() => setActiveTab('expenses')} className={`px-4 py-2 rounded-md text-sm font-bold transition-all duration-200 flex items-center gap-2 ${activeTab === 'expenses' ? 'bg-success text-white shadow' : 'text-textSecondary hover:text-textPrimary hover:bg-surfaceHover'}`}>Finance</button>
       </nav>
 
       <div className="w-full flex justify-center">
-        {/* ✅ Pass profile AND setProfile so the Dashboard can update the master state */}
         {activeTab === 'dashboard' && <Dashboard profile={profile} setProfile={setProfile} setActiveTab={setActiveTab} />}
         {activeTab === 'scratchpad' && <ScratchpadView />}
         {activeTab === 'links' && <LinksView />}

@@ -1,9 +1,11 @@
+import { offlineSync } from './offlineSync';
+
 // Centralized configuration
 const BASE_URL = 'http://127.0.0.1:8000';
 
 /**
  * Core Fetch Wrapper
- * Automatically handles JSON headers, error parsing, and URL routing.
+ * Automatically handles JSON headers, error parsing, URL routing, AND Offline Syncing.
  */
 async function fetchAPI(endpoint, options = {}) {
   try {
@@ -15,16 +17,43 @@ async function fetchAPI(endpoint, options = {}) {
       },
     });
 
-    // Global Error Interceptor
+    // Global Error Interceptor for valid backend rejections (like a 400 Bad Request)
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
       throw new Error(errorData.detail || `API Error: ${response.status}`);
     }
 
     return await response.json();
+    
   } catch (error) {
+    const method = (options.method || 'GET').toUpperCase();
+    
+    // 🔥 THE OFFLINE INTERCEPTOR
+    // If it's a mutative request (changing data) and the network failed...
+    if (['POST', 'PUT', 'DELETE'].includes(method)) {
+      const isNetworkError = !navigator.onLine || error.name === 'TypeError' || error.message.includes('fetch');
+      
+      if (isNetworkError) {
+        console.warn(`[Offline Intercept] Network down. Queuing ${method} to ${endpoint}`);
+        
+        // Parse the body back into a JS object so we can save it to IndexedDB
+        const payload = options.body ? JSON.parse(options.body) : null;
+        
+        // Save the action to our local database queue
+        await offlineSync.addToQueue(`${BASE_URL}${endpoint}`, method, payload);
+        
+        // Return a mock successful response so the UI optimistically updates!
+        return { 
+          _offline: true, 
+          message: "Saved to offline queue",
+          ...(payload || {}) 
+        };
+      }
+    }
+
+    // If it's a GET request, or a legitimate backend error, throw normally
     console.error(`[Network Failed] ${endpoint}:`, error.message);
-    throw error; // Rethrow so the specific component can show a UI error if needed
+    throw error; 
   }
 }
 

@@ -1,38 +1,38 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
-import tailwindcss from '@tailwindcss/vite'
-import { VitePWA } from 'vite-plugin-pwa' // NEW IMPORT
+import { VitePWA } from 'vite-plugin-pwa'
 
 export default defineConfig({
   plugins: [
     react(),
-    tailwindcss(),
     VitePWA({
-      registerType: 'autoUpdate',
+      registerType: 'autoUpdate', // Automatically updates the app when you push new code
       devOptions: {
-        enabled: true  // <--- THIS IS THE MAGIC LINE
+        enabled: true // Allows us to test the service worker in localhost!
       },
-      includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'mask-icon.svg'],
+      workbox: {
+        // This tells the service worker to cache ALL static files
+        globPatterns: ['**/*.{js,css,html,ico,png,svg,json}'],
+        // Ignore URL parameters for caching purposes
+        ignoreURLParametersMatching: [/.*/] 
+      },
       manifest: {
         name: 'VIT Command Center',
         short_name: 'CommandCenter',
-        description: 'Personal Student Dashboard for VIT',
-        theme_color: '#0f172a', // This is Tailwind's slate-900 color!
+        description: 'Personal Student OS & Task Manager',
+        theme_color: '#0f172a',
         background_color: '#0f172a',
-        display: 'standalone', // This is what hides the browser tabs/URL bar
+        display: 'standalone',
+        orientation: 'portrait',
         icons: [
           {
-            src: '/icon-192x192.png',
+            src: '/vite.svg', // Temporary icon until you design a custom one
             sizes: '192x192',
-            type: 'image/png'
-          },
-          {
-            src: '/icon-512x512.png',
-            sizes: '512x512',
-            type: 'image/png'
+            type: 'image/svg+xml',
+            purpose: 'any maskable'
           }
         ]
       }
     })
-  ],
+  ]
 })
