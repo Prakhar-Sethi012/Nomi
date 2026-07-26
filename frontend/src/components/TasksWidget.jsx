@@ -14,8 +14,8 @@ function TasksWidget() {
 
   const fetchTasks = async () => {
     try {
-      const data = await api.getTodoTasks();
-      setTasks(data); // 🔥 Backend now auto-sorts these by date!
+      const data = await api.getTodoList(); // 🔥 FIXED: Changed from getTodoTasks to getTodoList
+      setTasks(data); 
     } catch (err) {
       setError('Connection error.');
     } finally {
@@ -93,19 +93,15 @@ function TasksWidget() {
       try {
         await api.deleteTask(id);
         
-        // 🔥 STRICT GAMIFICATION ENGINE FIX
         const today = new Date();
-        today.setHours(0, 0, 0, 0); // Lock to midnight today
+        today.setHours(0, 0, 0, 0);
 
-        // Only count tasks that are overdue or due today
         const pendingDailyTasks = tasks.filter(t => {
           const taskDate = new Date(t.due_date);
           taskDate.setHours(0, 0, 0, 0);
           return taskDate <= today;
         });
 
-        // If the only daily task left is the one we are deleting, you hit Inbox Zero!
-        // (Future tasks are completely ignored by this logic)
         const isPerfectDay = pendingDailyTasks.length === 1 && pendingDailyTasks[0].id === id;
 
         if (isPerfectDay) {

@@ -1,38 +1,32 @@
 import React, { useState, useEffect } from 'react';
-import { calculateForecast } from '../utils/attendanceEngine'; // ✅ NEW IMPORT
-
+import { calculateForecast } from '../utils/attendanceEngine'; 
+import { api } from '../services/api';
 
 function AttendanceStrategyView() {
   const [realSubjects, setRealSubjects] = useState([]);
   const [simulatedSubjects, setSimulatedSubjects] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  // NEW: State to track which subject's "Total Classes" is currently being edited
   const [editingTotalFor, setEditingTotalFor] = useState(null);
   const [newTotalStr, setNewTotalStr] = useState("");
 
-  const DEFAULT_TOTAL_CLASSES = 60; 
-useEffect(() => {
+  useEffect(() => {
     const fetchSubjects = async () => {
       try {
-        const response = await fetch('http://127.0.0.1:8000/subjects/');
-        if (response.ok) {
-          const dbData = await response.json();
-          
-          // 🗺️ MAPPING: Convert PostgreSQL column names to our Crystal Ball engine variables
-          const liveData = dbData.map(sub => ({
-            id: sub.id,
-            name: sub.name,
-            attended: sub.attended_classes,
-            conducted: sub.conducted_classes,
-            total: sub.total_classes
-          }));
+        const dbData = await api.getSubjects();
+        
+        const liveData = dbData.map(sub => ({
+          id: sub.id,
+          name: sub.name,
+          attended: sub.attended_classes,
+          conducted: sub.conducted_classes,
+          total: sub.total_classes
+        }));
 
-          setRealSubjects(liveData);
-          setSimulatedSubjects(JSON.parse(JSON.stringify(liveData))); // Deep copy for Sandbox
-        }
+        setRealSubjects(liveData);
+        setSimulatedSubjects(JSON.parse(JSON.stringify(liveData)));
       } catch (err) {
-        console.error("Failed to load live subjects from database");
+        console.error("Failed to load live subjects from database", err);
       } finally {
         setIsLoading(false);
       }
@@ -41,8 +35,6 @@ useEffect(() => {
     fetchSubjects();
   }, []);
 
-  
-  // 🎮 SIMULATION CONTROLS
   const simulateBunk = (id) => {
     setSimulatedSubjects(prev => prev.map(sub => {
       if (sub.id === id && sub.conducted < sub.total) {
@@ -66,7 +58,6 @@ useEffect(() => {
     setSimulatedSubjects(prev => prev.map(sub => sub.id === id ? { ...originalSubject } : sub));
   };
 
-  // ⚙️ INLINE TOTAL CLASSES EDITOR
   const handleEditTotal = (sub) => {
     setEditingTotalFor(sub.id);
     setNewTotalStr(sub.total.toString());
@@ -75,30 +66,18 @@ useEffect(() => {
   const saveNewTotal = async (id, currentConducted) => {
     const parsedTotal = parseInt(newTotalStr, 10);
     
-    // Validation: Must be a number, and cannot be less than classes already conducted
     if (!isNaN(parsedTotal) && parsedTotal >= currentConducted) {
       try {
-        // 🔥 THE FIX: Send the update to PostgreSQL
-        const res = await fetch(`http://127.0.0.1:8000/subjects/${id}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ total_classes: parsedTotal })
-        });
+        await api.updateSubject(id, { total_classes: parsedTotal });
 
-        if (res.ok) {
-          // Update the "Real" memory so it persists through resets
-          setRealSubjects(prev => prev.map(s => s.id === id ? { ...s, total: parsedTotal } : s));
-          // Update the active Simulation memory
-          setSimulatedSubjects(prev => prev.map(s => s.id === id ? { ...s, total: parsedTotal } : s));
-        } else {
-          console.error("Failed to save total classes to database");
-        }
+        setRealSubjects(prev => prev.map(s => s.id === id ? { ...s, total: parsedTotal } : s));
+        setSimulatedSubjects(prev => prev.map(s => s.id === id ? { ...s, total: parsedTotal } : s));
       } catch (err) {
-        console.error("Network error while saving total classes");
+        console.error("Failed to save total classes to database", err);
       }
     }
     
-    setEditingTotalFor(null); // Close the editor
+    setEditingTotalFor(null);
   };
 
   if (isLoading) return <div className="text-white text-center mt-20 animate-pulse">Initializing Crystal Ball...</div>;
@@ -125,7 +104,7 @@ useEffect(() => {
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 overflow-y-auto custom-scrollbar pr-2 pb-4">
         {simulatedSubjects.map(sub => {
           const original = realSubjects.find(s => s.id === sub.id);
-          const isSimulated = sub.attended !== original.attended || sub.conducted !== original.conducted;
+          const isSimulated = original ? (sub.attended !== original.attended || sub.conducted !== original.conducted) : false;
           const forecast = calculateForecast(sub.attended, sub.conducted, sub.total);
           
           return (
@@ -196,7 +175,6 @@ useEffect(() => {
                 )}
               </div>
 
-              {/* ⚙️ THE NEW INLINE EDITOR UI */}
               <div className="pt-3 border-t border-slate-700/50 flex justify-between items-center h-8">
                 {editingTotalFor === sub.id ? (
                   <div className="flex gap-2 items-center w-full animate-fade-in">

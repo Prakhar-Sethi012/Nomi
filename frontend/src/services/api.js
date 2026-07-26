@@ -1,89 +1,65 @@
-import { offlineSync } from './offlineSync';
+const BASE_URL = 'http://localhost:8000'; // Changed from 127.0.0.1
 
-// Centralized configuration
-const BASE_URL = 'http://127.0.0.1:8000';
+const fetchAPI = async (endpoint, options = {}) => {
+  // 1. Grab the VIP wristband from local storage
+  const token = localStorage.getItem('token');
+  
+  // 2. Attach it to the headers if it exists
+  const headers = {
+    'Content-Type': 'application/json',
+    ...(token && { Authorization: `Bearer ${token}` }),
+    ...options.headers,
+  };
 
-/**
- * Core Fetch Wrapper
- * Automatically handles JSON headers, error parsing, URL routing, AND Offline Syncing.
- */
-async function fetchAPI(endpoint, options = {}) {
-  try {
-    const response = await fetch(`${BASE_URL}${endpoint}`, {
-      ...options,
-      headers: {
-        'Content-Type': 'application/json',
-        ...options.headers,
-      },
-    });
-
-    // Global Error Interceptor for valid backend rejections (like a 400 Bad Request)
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.detail || `API Error: ${response.status}`);
+  const response = await fetch(`${BASE_URL}${endpoint}`, { ...options, headers });
+  
+  if (!response.ok) {
+    if (response.status === 401) {
+      // 🚨 If the token expired or is invalid, kick the user back to the login screen
+      localStorage.removeItem('token');
+      window.location.reload(); 
     }
-
-    return await response.json();
-    
-  } catch (error) {
-    const method = (options.method || 'GET').toUpperCase();
-    
-    // 🔥 THE OFFLINE INTERCEPTOR
-    // If it's a mutative request (changing data) and the network failed...
-    if (['POST', 'PUT', 'DELETE'].includes(method)) {
-      const isNetworkError = !navigator.onLine || error.name === 'TypeError' || error.message.includes('fetch');
-      
-      if (isNetworkError) {
-        console.warn(`[Offline Intercept] Network down. Queuing ${method} to ${endpoint}`);
-        
-        // Parse the body back into a JS object so we can save it to IndexedDB
-        const payload = options.body ? JSON.parse(options.body) : null;
-        
-        // Save the action to our local database queue
-        await offlineSync.addToQueue(`${BASE_URL}${endpoint}`, method, payload);
-        
-        // Return a mock successful response so the UI optimistically updates!
-        return { 
-          _offline: true, 
-          message: "Saved to offline queue",
-          ...(payload || {}) 
-        };
-      }
-    }
-
-    // If it's a GET request, or a legitimate backend error, throw normally
-    console.error(`[Network Failed] ${endpoint}:`, error.message);
-    throw error; 
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.detail || 'API request failed');
   }
-}
+  return response.json();
+};
 
-/**
- * The Command Center API SDK
- * Your React components will import and call these functions instead of raw fetch().
- */
 export const api = {
-  // Profile
+  // 🔥 NEW: Authentication Endpoints
+  login: (data) => fetchAPI('/auth/login', { method: 'POST', body: JSON.stringify(data) }),
+  register: (data) => fetchAPI('/auth/register', { method: 'POST', body: JSON.stringify(data) }),
+
+  // Profile (Notice we removed setupProfile since register handles it now!)
   getProfile: () => fetchAPI('/profile/'),
-  setupProfile: (data) => fetchAPI('/profile/setup', { method: 'POST', body: JSON.stringify(data) }),
   updateProfile: (data) => fetchAPI('/profile/', { method: 'PUT', body: JSON.stringify(data) }),
+
+  // Tasks
+  getTasks: (start_date, end_date) => {
+    let url = '/tasks/';
+    const params = new URLSearchParams();
+    if (start_date) params.append('start_date', start_date);
+    if (end_date) params.append('end_date', end_date);
+    if (params.toString()) url += `?${params.toString()}`;
+    return fetchAPI(url);
+  },
+  getTodoList: () => fetchAPI('/tasks/todo'),
+  addTask: (data) => fetchAPI('/tasks/', { method: 'POST', body: JSON.stringify(data) }),
+  updateTask: (id, data) => fetchAPI(`/tasks/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  deleteTask: (id) => fetchAPI(`/tasks/${id}`, { method: 'DELETE' }),
 
   // Subjects & Attendance
   getSubjects: () => fetchAPI('/subjects/'),
   addSubject: (data) => fetchAPI('/subjects/', { method: 'POST', body: JSON.stringify(data) }),
   updateSubject: (id, data) => fetchAPI(`/subjects/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  updateAttendance: (id, attended) => fetchAPI(`/subjects/${id}/attendance?attended=${attended}`, { method: 'PUT' }),
+  markAttendance: (id, attended) => fetchAPI(`/subjects/${id}/attendance?attended=${attended}`, { method: 'PUT' }), // 🔥 ADDED THIS ALIAS
   deleteSubject: (id) => fetchAPI(`/subjects/${id}`, { method: 'DELETE' }),
-  markAttendance: (id, attended) => fetchAPI(`/subjects/${id}/attendance?attended=${attended}`, { method: 'PUT' }),
-
-  // Tasks
-  getTodoTasks: () => fetchAPI('/tasks/todo'),
-  updateTask: (id, data) => fetchAPI(`/tasks/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
-  addTask: (data) => fetchAPI('/tasks/', { method: 'POST', body: JSON.stringify(data) }),
-  deleteTask: (id) => fetchAPI(`/tasks/${id}`, { method: 'DELETE' }),
 
   // Expenses
   getExpenses: () => fetchAPI('/expenses/'),
-  updateExpense: (id, data) => fetchAPI(`/expenses/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   addExpense: (data) => fetchAPI('/expenses/', { method: 'POST', body: JSON.stringify(data) }),
+  updateExpense: (id, data) => fetchAPI(`/expenses/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   deleteExpense: (id) => fetchAPI(`/expenses/${id}`, { method: 'DELETE' }),
 
   // Portfolio
@@ -92,7 +68,7 @@ export const api = {
   addPortfolioItem: (data) => fetchAPI('/portfolio/', { method: 'POST', body: JSON.stringify(data) }),
   deletePortfolioItem: (id) => fetchAPI(`/portfolio/${id}`, { method: 'DELETE' }),
 
-  // Social & Privacy Layer
+  // Social & Privacy
   toggleGhostMode: (isGhost) => fetchAPI(`/social/ghost-mode?is_ghost=${isGhost}`, { method: 'PUT' }),
   createCircle: (data) => fetchAPI('/social/circles', { method: 'POST', body: JSON.stringify(data) })
 };

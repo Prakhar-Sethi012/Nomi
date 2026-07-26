@@ -1,36 +1,40 @@
 import React, { useState, useEffect } from 'react';
+import { api } from './services/api';
+import { offlineSync } from './services/offlineSync';
+
+// --- Views & Components ---
 import Dashboard from './components/Dashboard';
 import LinksView from './components/LinksView';
 import ScratchpadView from './components/ScratchpadView';
 import AttendanceStrategyView from './components/AttendanceStrategyView';
 import TimetableView from './components/TimetableView';
 import ExpensesView from './components/ExpensesView';
-import SetupForm from './components/SetupForm'; 
-import { offlineSync } from './services/offlineSync';
-import { api } from './services/api'; // 🔥 Brought in the API SDK
+import AuthScreen from './components/AuthScreen';
 
 function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [profile, setProfile] = useState(null);
-  const [isAuthenticating, setIsAuthenticating] = useState(true);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isAuthenticated, setIsAuthenticated] = useState(!!localStorage.getItem('token'));
 
   // =========================================
   // 1. AUTHENTICATE & FETCH PROFILE
   // =========================================
   useEffect(() => {
-    const authenticateCommander = async () => {
-      try {
-        const data = await api.getProfile();
-        setProfile(data);
-      } catch (err) {
-        console.error("Database connection failed or profile not found.");
-      } finally {
-        setIsAuthenticating(false);
-      }
-    };
-
-    authenticateCommander();
-  }, []);
+    if (isAuthenticated) {
+      api.getProfile()
+        .then(data => {
+          setProfile(data);
+          setIsLoading(false);
+        })
+        .catch(err => {
+          console.error("Database connection failed or profile not found.", err);
+          setIsLoading(false);
+        });
+    } else {
+      setIsLoading(false);
+    }
+  }, [isAuthenticated]);
 
   // =========================================
   // 2. THE GLOBAL OFFLINE-FIRST LISTENER
@@ -59,39 +63,64 @@ function App() {
   }, []);
 
   // =========================================
+  // 3. LOGOUT HANDLER
+  // =========================================
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    setIsAuthenticated(false);
+    setProfile(null);
+  };
+
+  // =========================================
   // RENDER BLOCKS
   // =========================================
 
-  if (isAuthenticating) {
+  if (isLoading) {
     return (
       <div className="min-h-screen bg-background transition-colors duration-300 flex items-center justify-center font-mono text-accent animate-pulse">
-        Establishing secure connection to Command Center Database...
+        Decrypting Terminal...
       </div>
     );
   }
 
-  if (!profile) {
+  // 🛡️ SECURITY GATE: If not authenticated, show Login/Register screen
+  if (!isAuthenticated) {
     return (
-      <div className="min-h-screen bg-background transition-colors duration-300 flex items-center justify-center p-4 font-sans animate-fade-in">
-        <SetupForm onSetupComplete={(newProfile) => setProfile(newProfile)} />
-      </div>
+      <AuthScreen onLoginSuccess={(userData) => {
+        setProfile(userData);
+        setIsAuthenticated(true);
+      }} />
     );
   }
 
   return (
+    // 🔥 LAYOUT FIX: No strict flex locks, allows natural scrolling
     <div className="min-h-screen bg-background transition-colors duration-300 flex flex-col items-center pt-6 px-4 font-sans">
       
-      {/* 🔥 REFACTORED NAVBAR: Uses semantic theme colors so it changes with the toggle */}
-      <nav className="flex gap-1 mb-6 bg-surface p-1.5 rounded-lg border border-border shadow-lg z-10 sticky top-4 flex-wrap justify-center transition-colors duration-300">
-        <button onClick={() => setActiveTab('dashboard')} className={`px-4 py-2 rounded-md text-sm font-bold transition-all duration-200 ${activeTab === 'dashboard' ? 'bg-accent text-white shadow' : 'text-textSecondary hover:text-textPrimary hover:bg-surfaceHover'}`}>Dashboard</button>
-        <button onClick={() => setActiveTab('scratchpad')} className={`px-4 py-2 rounded-md text-sm font-bold transition-all duration-200 ${activeTab === 'scratchpad' ? 'bg-accent text-white shadow' : 'text-textSecondary hover:text-textPrimary hover:bg-surfaceHover'}`}>Scratchpad</button>
-        <button onClick={() => setActiveTab('links')} className={`px-4 py-2 rounded-md text-sm font-bold transition-all duration-200 ${activeTab === 'links' ? 'bg-accent text-white shadow' : 'text-textSecondary hover:text-textPrimary hover:bg-surfaceHover'}`}>Directory</button>
-        <button onClick={() => setActiveTab('strategy')} className={`px-4 py-2 rounded-md text-sm font-bold transition-all duration-200 ${activeTab === 'strategy' ? 'bg-accent text-white shadow' : 'text-textSecondary hover:text-textPrimary hover:bg-surfaceHover'}`}>Strategy</button>
-        <button onClick={() => setActiveTab('timetable')} className={`px-4 py-2 rounded-md text-sm font-bold transition-all duration-200 ${activeTab === 'timetable' ? 'bg-accent text-white shadow' : 'text-textSecondary hover:text-textPrimary hover:bg-surfaceHover'}`}>Timetable</button>
-        <button onClick={() => setActiveTab('expenses')} className={`px-4 py-2 rounded-md text-sm font-bold transition-all duration-200 flex items-center gap-2 ${activeTab === 'expenses' ? 'bg-success text-white shadow' : 'text-textSecondary hover:text-textPrimary hover:bg-surfaceHover'}`}>Finance</button>
+      {/* 🔥 REFACTORED NAVBAR: Restored all tabs + added Logout */}
+      <nav className="w-full max-w-6xl flex justify-between items-center mb-6 bg-surface p-1.5 rounded-lg border border-border shadow-lg z-10 sticky top-4 transition-colors duration-300">
+        
+        {/* Navigation Tabs */}
+        <div className="flex flex-wrap gap-1 justify-center md:justify-start items-center flex-1">
+          <button onClick={() => setActiveTab('dashboard')} className={`px-4 py-2 rounded-md text-sm font-bold transition-all duration-200 ${activeTab === 'dashboard' ? 'bg-accent text-white shadow' : 'text-textSecondary hover:text-textPrimary hover:bg-surfaceHover'}`}>Dashboard</button>
+          <button onClick={() => setActiveTab('scratchpad')} className={`px-4 py-2 rounded-md text-sm font-bold transition-all duration-200 ${activeTab === 'scratchpad' ? 'bg-accent text-white shadow' : 'text-textSecondary hover:text-textPrimary hover:bg-surfaceHover'}`}>Scratchpad</button>
+          <button onClick={() => setActiveTab('links')} className={`px-4 py-2 rounded-md text-sm font-bold transition-all duration-200 ${activeTab === 'links' ? 'bg-accent text-white shadow' : 'text-textSecondary hover:text-textPrimary hover:bg-surfaceHover'}`}>Directory</button>
+          <button onClick={() => setActiveTab('strategy')} className={`px-4 py-2 rounded-md text-sm font-bold transition-all duration-200 ${activeTab === 'strategy' ? 'bg-accent text-white shadow' : 'text-textSecondary hover:text-textPrimary hover:bg-surfaceHover'}`}>Strategy</button>
+          <button onClick={() => setActiveTab('timetable')} className={`px-4 py-2 rounded-md text-sm font-bold transition-all duration-200 ${activeTab === 'timetable' ? 'bg-accent text-white shadow' : 'text-textSecondary hover:text-textPrimary hover:bg-surfaceHover'}`}>Timetable</button>
+          <button onClick={() => setActiveTab('expenses')} className={`px-4 py-2 rounded-md text-sm font-bold transition-all duration-200 flex items-center gap-2 ${activeTab === 'expenses' ? 'bg-success text-white shadow' : 'text-textSecondary hover:text-textPrimary hover:bg-surfaceHover'}`}>Finance</button>
+        </div>
+
+        {/* Logout Button */}
+        <button 
+          onClick={handleLogout}
+          className="ml-2 px-4 py-2 text-danger hover:bg-danger/10 rounded-md text-sm font-bold transition-colors shrink-0"
+        >
+          Logout
+        </button>
+
       </nav>
 
-      <div className="w-full flex justify-center">
+      <div className="w-full max-w-6xl flex justify-center">
         {activeTab === 'dashboard' && <Dashboard profile={profile} setProfile={setProfile} setActiveTab={setActiveTab} />}
         {activeTab === 'scratchpad' && <ScratchpadView />}
         {activeTab === 'links' && <LinksView />}

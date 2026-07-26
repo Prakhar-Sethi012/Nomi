@@ -3,13 +3,19 @@ from sqlalchemy.orm import Session
 from typing import List
 import models, schemas
 from database import get_db
+from auth import get_current_user # 🛡️ THE BOUNCER
 
 router = APIRouter(prefix="/expenses", tags=["Money Manager"])
 
 # 1. LOG A NEW EXPENSE
 @router.post("/", response_model=schemas.ExpenseResponse)
-def log_expense(expense_data: schemas.ExpenseCreate, db: Session = Depends(get_db)):
-    new_expense = models.Expense(**expense_data.model_dump())
+def log_expense(
+    expense_data: schemas.ExpenseCreate, 
+    db: Session = Depends(get_db), 
+    current_user: models.Profile = Depends(get_current_user) # 🛡️
+):
+    # 🛡️ Tag with user_id
+    new_expense = models.Expense(**expense_data.model_dump(), user_id=current_user.id)
     db.add(new_expense)
     db.commit()
     db.refresh(new_expense)
@@ -17,26 +23,43 @@ def log_expense(expense_data: schemas.ExpenseCreate, db: Session = Depends(get_d
 
 # 2. GET ALL EXPENSES
 @router.get("/", response_model=List[schemas.ExpenseResponse])
-def get_expenses(db: Session = Depends(get_db)):
-    # Order by date descending (newest first)
-    return db.query(models.Expense).order_by(models.Expense.date.desc()).all()
+def get_expenses(
+    db: Session = Depends(get_db), 
+    current_user: models.Profile = Depends(get_current_user) # 🛡️
+):
+    # 🛡️ Filter by user_id and keep your custom descending date order
+    return db.query(models.Expense).filter(
+        models.Expense.user_id == current_user.id
+    ).order_by(models.Expense.date.desc()).all()
 
 # 3. DELETE AN EXPENSE
 @router.delete("/{expense_id}")
-def delete_expense(expense_id: int, db: Session = Depends(get_db)):
-    expense = db.query(models.Expense).filter(models.Expense.id == expense_id).first()
+def delete_expense(
+    expense_id: int, 
+    db: Session = Depends(get_db), 
+    current_user: models.Profile = Depends(get_current_user) # 🛡️
+):
+    # 🛡️ Verify ownership
+    expense = db.query(models.Expense).filter(models.Expense.id == expense_id, models.Expense.user_id == current_user.id).first()
     if not expense:
-        raise HTTPException(status_code=404, detail="Expense not found")
+        raise HTTPException(status_code=404, detail="Expense not found or unauthorized")
     
     db.delete(expense)
     db.commit()
     return {"status": "success", "detail": "Expense deleted"}
 
+# 4. UPDATE AN EXPENSE
 @router.put("/{expense_id}", response_model=schemas.ExpenseResponse)
-def update_expense(expense_id: int, expense_data: schemas.ExpenseUpdate, db: Session = Depends(get_db)):
-    expense = db.query(models.Expense).filter(models.Expense.id == expense_id).first()
+def update_expense(
+    expense_id: int, 
+    expense_data: schemas.ExpenseUpdate, 
+    db: Session = Depends(get_db), 
+    current_user: models.Profile = Depends(get_current_user) # 🛡️
+):
+    # 🛡️ Verify ownership
+    expense = db.query(models.Expense).filter(models.Expense.id == expense_id, models.Expense.user_id == current_user.id).first()
     if not expense:
-        raise HTTPException(status_code=404, detail="Expense not found")
+        raise HTTPException(status_code=404, detail="Expense not found or unauthorized")
         
     update_data = expense_data.model_dump(exclude_unset=True)
     for key, value in update_data.items():

@@ -3,35 +3,48 @@ from sqlalchemy.orm import Session
 from typing import List
 import models, schemas
 from database import get_db
+from auth import get_current_user # 🛡️ THE BOUNCER
 
 router = APIRouter(prefix="/subjects", tags=["Subjects & Attendance"])
 
 # 1. ADD A NEW SUBJECT
 @router.post("/", response_model=schemas.SubjectResponse)
-def add_subject(subject_data: schemas.SubjectCreate, db: Session = Depends(get_db)):
-    new_subject = models.Subject(**subject_data.model_dump())
+def add_subject(
+    subject_data: schemas.SubjectCreate, 
+    db: Session = Depends(get_db), 
+    current_user: models.Profile = Depends(get_current_user) # 🛡️
+):
+    # 🛡️ Tag with user_id
+    new_subject = models.Subject(**subject_data.model_dump(), user_id=current_user.id)
     db.add(new_subject)
     db.commit()
     db.refresh(new_subject)
     return new_subject
 
-# 2. GET ALL SUBJECTS (To render your timetable & strategy room)
+# 2. GET ALL SUBJECTS
 @router.get("/", response_model=List[schemas.SubjectResponse])
-def get_subjects(db: Session = Depends(get_db)):
-    return db.query(models.Subject).all()
+def get_subjects(
+    db: Session = Depends(get_db), 
+    current_user: models.Profile = Depends(get_current_user) # 🛡️
+):
+    # 🛡️ Only get subjects belonging to the logged-in user
+    return db.query(models.Subject).filter(models.Subject.user_id == current_user.id).all()
 
-# 3. UPDATE ATTENDANCE (Incrementing reality)
+# 3. UPDATE ATTENDANCE
 @router.put("/{subject_id}/attendance", response_model=schemas.SubjectResponse)
-def update_attendance(subject_id: int, attended: bool, db: Session = Depends(get_db)):
-    subject = db.query(models.Subject).filter(models.Subject.id == subject_id).first()
+def update_attendance(
+    subject_id: int, 
+    attended: bool, 
+    db: Session = Depends(get_db), 
+    current_user: models.Profile = Depends(get_current_user) # 🛡️
+):
+    # 🛡️ Verify ownership
+    subject = db.query(models.Subject).filter(models.Subject.id == subject_id, models.Subject.user_id == current_user.id).first()
     
     if not subject:
-        raise HTTPException(status_code=404, detail="Subject not found")
+        raise HTTPException(status_code=404, detail="Subject not found or unauthorized")
 
-    # Increment conducted classes (the class happened). 
     subject.conducted_classes += 1
-    
-    # If the user was present, increment attended_classes too.
     if attended:
         subject.attended_classes += 1
         
@@ -39,26 +52,36 @@ def update_attendance(subject_id: int, attended: bool, db: Session = Depends(get
     db.refresh(subject)
     return subject
 
-# 4. DELETE A SUBJECT (Removing it from the grid)
+# 4. DELETE A SUBJECT
 @router.delete("/{subject_id}")
-def delete_subject(subject_id: int, db: Session = Depends(get_db)):
-    subject = db.query(models.Subject).filter(models.Subject.id == subject_id).first()
+def delete_subject(
+    subject_id: int, 
+    db: Session = Depends(get_db), 
+    current_user: models.Profile = Depends(get_current_user) # 🛡️
+):
+    # 🛡️ Verify ownership
+    subject = db.query(models.Subject).filter(models.Subject.id == subject_id, models.Subject.user_id == current_user.id).first()
     if not subject:
-        raise HTTPException(status_code=404, detail="Subject not found")
+        raise HTTPException(status_code=404, detail="Subject not found or unauthorized")
     
     db.delete(subject)
     db.commit()
     return {"message": "Subject completely removed from the grid"}
 
-# --- NEW: GENERAL UPDATE ROUTE (For editing Total Classes or Rooms) ---
+# 5. GENERAL UPDATE ROUTE
 @router.put("/{subject_id}", response_model=schemas.SubjectResponse)
-def update_subject(subject_id: int, subject_data: schemas.SubjectUpdate, db: Session = Depends(get_db)):
-    subject = db.query(models.Subject).filter(models.Subject.id == subject_id).first()
+def update_subject(
+    subject_id: int, 
+    subject_data: schemas.SubjectUpdate, 
+    db: Session = Depends(get_db), 
+    current_user: models.Profile = Depends(get_current_user) # 🛡️
+):
+    # 🛡️ Verify ownership
+    subject = db.query(models.Subject).filter(models.Subject.id == subject_id, models.Subject.user_id == current_user.id).first()
     
     if not subject:
-        raise HTTPException(status_code=404, detail="Subject not found")
+        raise HTTPException(status_code=404, detail="Subject not found or unauthorized")
 
-    # Only update the fields the frontend explicitly sends over
     update_data = subject_data.model_dump(exclude_unset=True)
     for key, value in update_data.items():
         setattr(subject, key, value)
