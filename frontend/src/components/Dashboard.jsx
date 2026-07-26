@@ -5,7 +5,7 @@ import PortfolioWidget from './PortfolioWidget';
 import WeatherWidget from './WeatherWidget';
 import DashboardAttendance from './DashboardAttendance';
 import DailyQuote from './DailyQuote'; 
-import ThemeToggle from './ThemeToggle'; // 🔥 NEW: Import the toggle
+import ThemeToggle from './ThemeToggle';
 import { api } from '../services/api'; 
 import NextClassWidget from './NextClassWidget';
 
@@ -16,6 +16,7 @@ function Dashboard({ profile, setProfile, setActiveTab }) {
   const today = new Date();
   const dateString = today.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' });
 
+  // ✅ FIXED: Properly closed handleCgpaSave
   const handleCgpaSave = async (e) => {
     e.preventDefault();
     let val = parseFloat(tempCgpa);
@@ -31,17 +32,30 @@ function Dashboard({ profile, setProfile, setActiveTab }) {
     } catch (err) {
       console.error("Failed to update CGPA", err);
     }
+  }; // <-- This bracket was missing!
+
+  // ✅ FIXED: Separated handleGhostModeToggle into its own function
+  const handleGhostModeToggle = async () => {
+    // Optimistic UI update: flip it immediately so it feels snappy
+    const newGhostState = !profile.is_ghost;
+    setProfile({ ...profile, is_ghost: newGhostState });
+
+    try {
+      await api.toggleGhostMode(newGhostState);
+    } catch (err) {
+      console.error("Failed to toggle Ghost Mode", err);
+      // If it fails, revert it back
+      setProfile({ ...profile, is_ghost: !newGhostState });
+    }
   };
 
   return (
     <div className="w-full max-w-6xl mx-auto pb-10 animate-fade-in flex flex-col h-full">
       
-      {/* 🔥 THEME REFACTOR: Replaced bg-slate-800 with bg-surface, border-slate-700 with border-border */}
       <header className="flex flex-col md:flex-row justify-between items-start md:items-center bg-surface p-6 rounded-xl border border-border mb-6 shadow-lg gap-4 shrink-0 transition-colors duration-300">
         
         {/* COLUMN 1 (LEFT) */}
         <div className="flex-1 w-full">
-          {/* 🔥 THEME REFACTOR: text-white -> text-textPrimary */}
           <h1 className="text-2xl font-bold text-textPrimary mb-1">Welcome back, {profile.name.split(' ')[0]}</h1>
           <div className="flex items-center gap-2 mb-3">
             <span className="text-accent text-sm font-medium">{dateString}</span>
@@ -86,8 +100,21 @@ function Dashboard({ profile, setProfile, setActiveTab }) {
         </div>
 
         {/* COLUMN 3 (RIGHT) */}
-        <div className="flex-1 w-full flex justify-start md:justify-end shrink-0 gap-4 items-center">
-          {/* 🔥 NEW: Theme Toggle Button */}
+        <div className="flex-1 w-full flex flex-wrap justify-start md:justify-end shrink-0 gap-4 items-center">
+          
+          {/* 🔥 NEW: Ghost Mode Toggle Button */}
+          <button 
+            onClick={handleGhostModeToggle}
+            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition-all duration-300 shadow-sm ${
+              profile.is_ghost 
+                ? 'bg-danger text-white shadow-[0_0_10px_rgba(239,68,68,0.3)]' 
+                : 'bg-background border border-border text-textSecondary hover:text-textPrimary hover:bg-surfaceHover'
+            }`}
+            title={profile.is_ghost ? "Your timetable is hidden from friends" : "Your timetable is visible to friends"}
+          >
+            {profile.is_ghost ? '👻 Ghost: ON' : '👁️ Ghost: OFF'}
+          </button>
+
           <ThemeToggle />
 
           <div className="text-left md:text-right border-l border-border pl-4">

@@ -1,4 +1,6 @@
-from sqlalchemy import Column, Integer, String, Float, Date, ARRAY, DateTime, Boolean
+from sqlalchemy import Column, Integer, String, Float, Date, ARRAY, DateTime, Boolean, ForeignKey
+from sqlalchemy.orm import relationship
+import datetime
 from database import Base
 
 class Profile(Base):
@@ -11,7 +13,8 @@ class Profile(Base):
     app_pin = Column(String, nullable=False)          
     current_streak = Column(Integer, default=0)
     last_active_date = Column(Date, nullable=True)
-    custom_task_tags = Column(ARRAY(String), default=[]) # Stores 2-3 customizable tags
+    custom_task_tags = Column(ARRAY(String), default=[]) 
+    is_ghost = Column(Boolean, default=False) # 🔥 NEW: Ghost Mode Toggle
 
 class Task(Base):
     __tablename__ = "tasks"
@@ -23,24 +26,17 @@ class Task(Base):
     status = Column(String, default="Pending")        
     tags = Column(ARRAY(String), nullable=False)      
     completed_at = Column(DateTime, nullable=True)    
-    
-    #  NEW FEATURE TOGGLE
     is_todo = Column(Boolean, default=False)
-from sqlalchemy import Column, Integer, String
-# Assuming you have your Base imported at the top of the file
 
 class Subject(Base):
     __tablename__ = "subjects"
 
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, index=True)
-    subject_type = Column(String) # Will store: 'THEORY', 'LAB', or 'EMBEDDED'
-    
-    # Slots
-    theory_slot = Column(String, nullable=True) # e.g., 'A1+TA1'
-    lab_slot = Column(String, nullable=True)    # e.g., 'L31+L32'
+    subject_type = Column(String) 
+    theory_slot = Column(String, nullable=True) 
+    lab_slot = Column(String, nullable=True)    
     room_number = Column(String, nullable=True)
-    # Crystal Ball / Attendance Tracking
     total_classes = Column(Integer, default=60)
     attended_classes = Column(Integer, default=0)
     conducted_classes = Column(Integer, default=0)
@@ -52,13 +48,40 @@ class Expense(Base):
     amount = Column(Float, nullable=False)
     reason = Column(String, nullable=False)
     date = Column(Date, nullable=False)
-    tags = Column(ARRAY(String), nullable=False)      # e.g., ["Food", "Books"]
+    tags = Column(ARRAY(String), nullable=False)      
 
 class PortfolioItem(Base):
     __tablename__ = "portfolio"
 
     id = Column(Integer, primary_key=True, index=True)
-    item_type = Column(String, nullable=False)        # "Skill" or "Project"
+    item_type = Column(String, nullable=False)        
     title = Column(String, nullable=False)
     description = Column(String, nullable=True)
-    links = Column(ARRAY(String), default=[])         # Array of links (GitHub, etc.)
+    links = Column(ARRAY(String), default=[])         
+
+# ==========================================
+# 🔥 NEW: MULTIPLAYER SOCIAL MODELS
+# ==========================================
+class Friendship(Base):
+    __tablename__ = "friendships"
+    
+    # Links two profiles together
+    user_id_1 = Column(Integer, ForeignKey("profile.id", ondelete="CASCADE"), primary_key=True)
+    user_id_2 = Column(Integer, ForeignKey("profile.id", ondelete="CASCADE"), primary_key=True)
+    status = Column(String, default="pending") 
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+
+class Circle(Base):
+    __tablename__ = "circles"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, nullable=False)
+    join_token = Column(String, unique=True, nullable=False) # Powers the QR codes
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+
+class CircleMember(Base):
+    __tablename__ = "circle_members"
+    
+    circle_id = Column(Integer, ForeignKey("circles.id", ondelete="CASCADE"), primary_key=True)
+    user_id = Column(Integer, ForeignKey("profile.id", ondelete="CASCADE"), primary_key=True)
+    joined_at = Column(DateTime, default=datetime.datetime.utcnow)

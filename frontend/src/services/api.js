@@ -90,5 +90,9 @@ export const api = {
   getPortfolio: () => fetchAPI('/portfolio/'),
   updatePortfolioItem: (id, data) => fetchAPI(`/portfolio/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   addPortfolioItem: (data) => fetchAPI('/portfolio/', { method: 'POST', body: JSON.stringify(data) }),
-  deletePortfolioItem: (id) => fetchAPI(`/portfolio/${id}`, { method: 'DELETE' })
+  deletePortfolioItem: (id) => fetchAPI(`/portfolio/${id}`, { method: 'DELETE' }),
+
+  // Social & Privacy Layer
+  toggleGhostMode: (isGhost) => fetchAPI(`/social/ghost-mode?is_ghost=${isGhost}`, { method: 'PUT' }),
+  createCircle: (data) => fetchAPI('/social/circles', { method: 'POST', body: JSON.stringify(data) })
 };

@@ -5,7 +5,7 @@ from sqlalchemy import text
 from database import engine, get_db
 from routers import weather
 import models
-from routes import profile
+from routes import profile, portfolio, tasks, subjects, expenses, social
 
 from routes import profile, portfolio, tasks, subjects, expenses
 
@@ -29,6 +29,7 @@ app.include_router(tasks.router)
 app.include_router(subjects.router)
 app.include_router(expenses.router)
 app.include_router(weather.router)
+app.include_router(social.router)
 
 @app.get("/")
 def read_root(db: Session = Depends(get_db)):

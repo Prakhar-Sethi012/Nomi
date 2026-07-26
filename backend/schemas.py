@@ -1,6 +1,6 @@
 from pydantic import BaseModel, Field
 from typing import List, Optional
-import datetime # 🛡️ THE FIX: Imported the entire module to prevent name shadowing
+import datetime 
 
 # ==========================================
 # 1. PROFILE SCHEMAS (User Data & Settings)
@@ -18,16 +18,17 @@ class ProfileUpdate(BaseModel):
     current_streak: Optional[int] = Field(None, ge=0)
     last_active_date: Optional[datetime.date] = None
     custom_task_tags: Optional[List[str]] = None
+    is_ghost: Optional[bool] = None # 🔥 NEW: Ghost Mode Toggle
 
 class ProfileResponse(BaseModel):
     id: int
     name: str
     reg_no: str
-    # 🚨 SECURITY FIX: app_pin has been permanently removed from the response model.
     cgpa: Optional[float] = None
     current_streak: int
     last_active_date: Optional[datetime.date] = None
     custom_task_tags: List[str]
+    is_ghost: bool # 🔥 NEW: So the frontend knows your privacy status
 
     class Config:
         from_attributes = True
@@ -130,6 +131,34 @@ class ExpenseResponse(BaseModel):
     reason: str
     date: datetime.date
     tags: List[str]
+
+    class Config:
+        from_attributes = True
+
+# ==========================================
+# 6. SOCIAL SCHEMAS (Friends, Circles, Privacy)
+# ==========================================
+class FriendRequestCreate(BaseModel):
+    friend_reg_no: str = Field(..., description="The registration number of the user you want to add")
+
+class FriendResponse(BaseModel):
+    id: int
+    name: str
+    reg_no: str
+    is_ghost: bool
+    status: str # 'pending' or 'accepted'
+
+    class Config:
+        from_attributes = True
+
+class CircleCreate(BaseModel):
+    name: str = Field(..., min_length=2, max_length=100)
+
+class CircleResponse(BaseModel):
+    id: int
+    name: str
+    join_token: str # This powers the QR Code!
+    created_at: datetime.datetime
 
     class Config:
         from_attributes = True
