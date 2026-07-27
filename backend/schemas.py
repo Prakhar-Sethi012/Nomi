@@ -162,3 +162,15 @@ class CircleResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+# ==========================================
+# MULTIPLAYER SOCIAL SCHEMAS
+# ==========================================
+class CircleCreate(BaseModel):
+    name: str
+
+class CircleJoin(BaseModel):
+    join_token: str
+
+class GhostModeUpdate(BaseModel):
+    is_ghost: bool

@@ -69,6 +69,8 @@ export const api = {
   deletePortfolioItem: (id) => fetchAPI(`/portfolio/${id}`, { method: 'DELETE' }),
 
   // Social & Privacy
-  toggleGhostMode: (isGhost) => fetchAPI(`/social/ghost-mode?is_ghost=${isGhost}`, { method: 'PUT' }),
-  createCircle: (data) => fetchAPI('/social/circles', { method: 'POST', body: JSON.stringify(data) })
+  toggleGhostMode: (isGhost) => fetchAPI('/social/ghost-mode', { method: 'PUT', body: JSON.stringify({ is_ghost: isGhost }) }),
+  createCircle: (data) => fetchAPI('/social/circles', { method: 'POST', body: JSON.stringify(data) }),
+  joinCircle: (data) => fetchAPI('/social/circles/join', { method: 'POST', body: JSON.stringify(data) }),
+  getRadar: () => fetchAPI('/social/circles/radar')
 };

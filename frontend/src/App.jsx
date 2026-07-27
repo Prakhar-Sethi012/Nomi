@@ -10,6 +10,7 @@ import AttendanceStrategyView from './components/AttendanceStrategyView';
 import TimetableView from './components/TimetableView';
 import ExpensesView from './components/ExpensesView';
 import AuthScreen from './components/AuthScreen';
+import SocialRadar from './components/SocialRadar';
 
 function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -108,6 +109,7 @@ function App() {
           <button onClick={() => setActiveTab('strategy')} className={`px-4 py-2 rounded-md text-sm font-bold transition-all duration-200 ${activeTab === 'strategy' ? 'bg-accent text-white shadow' : 'text-textSecondary hover:text-textPrimary hover:bg-surfaceHover'}`}>Strategy</button>
           <button onClick={() => setActiveTab('timetable')} className={`px-4 py-2 rounded-md text-sm font-bold transition-all duration-200 ${activeTab === 'timetable' ? 'bg-accent text-white shadow' : 'text-textSecondary hover:text-textPrimary hover:bg-surfaceHover'}`}>Timetable</button>
           <button onClick={() => setActiveTab('expenses')} className={`px-4 py-2 rounded-md text-sm font-bold transition-all duration-200 flex items-center gap-2 ${activeTab === 'expenses' ? 'bg-success text-white shadow' : 'text-textSecondary hover:text-textPrimary hover:bg-surfaceHover'}`}>Finance</button>
+          <button onClick={() => setActiveTab('radar')} className={`px-4 py-2 rounded-md text-sm font-bold transition-all duration-200 ${activeTab === 'radar' ? 'bg-accent text-white shadow' : 'text-textSecondary hover:text-textPrimary hover:bg-surfaceHover'}`}>Radar</button>
         </div>
 
         {/* Logout Button */}
@@ -127,6 +129,7 @@ function App() {
         {activeTab === 'timetable' && <TimetableView />}
         {activeTab === 'strategy' && <AttendanceStrategyView />}
         {activeTab === 'expenses' && <ExpensesView />}
+        {activeTab === 'radar' && <SocialRadar />}
       </div>
     </div>
   );
