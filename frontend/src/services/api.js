@@ -72,5 +72,7 @@ export const api = {
   toggleGhostMode: (isGhost) => fetchAPI('/social/ghost-mode', { method: 'PUT', body: JSON.stringify({ is_ghost: isGhost }) }),
   createCircle: (data) => fetchAPI('/social/circles', { method: 'POST', body: JSON.stringify(data) }),
   joinCircle: (data) => fetchAPI('/social/circles/join', { method: 'POST', body: JSON.stringify(data) }),
-  getRadar: () => fetchAPI('/social/circles/radar')
+  getMyCircles: () => fetchAPI('/social/circles/my-circles'),
+  getCircleRoster: (circleId) => fetchAPI(`/social/circles/${circleId}/roster`),
+  getFriendTimetable: (userId) => fetchAPI(`/social/member/${userId}/timetable`),
 };
