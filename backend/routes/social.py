@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from typing import List
 import string, random
+from utils.slot_engine import get_current_active_slots, check_user_status, get_next_class
 
 import models, schemas
 from database import get_db
@@ -93,15 +94,18 @@ def get_circle_roster(circle_id: int, db: Session = Depends(get_db), current_use
             
         if profile.is_ghost:
             status = {"is_free": None, "message": "Classified"}
+            next_class = None
         else:
             subjects = db.query(models.Subject).filter(models.Subject.user_id == m.user_id).all()
             status = check_user_status(subjects, active_slots)
+            next_class = get_next_class(subjects) # 🔥 NEW: Calculate the next class!
             
         roster.append({
             "user_id": profile.id,
             "name": profile.name,
             "is_ghost": profile.is_ghost,
-            "live_status": status
+            "live_status": status,
+            "next_class": next_class 
         })
         
     return roster

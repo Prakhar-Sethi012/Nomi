@@ -1,6 +1,5 @@
-from datetime import datetime
+from datetime import datetime,timedelta
 import pytz
-
 # All times are converted to 24-hour format for easy mathematical comparison.
 
 THEORY_TIMES = [
@@ -106,3 +105,70 @@ def check_user_status(subjects, active_slots):
                     }
                     
     return {"is_free": True, "message": "Free right now"}
+# ---------------------------------------------------------
+# 🔥 NEW: ADVANCED "NEXT CLASS" PREDICTION ENGINE
+# ---------------------------------------------------------
+from datetime import timedelta
+
+DAYS_OF_WEEK = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+
+def get_all_user_slots(subjects):
+    user_slots = []
+    for sub in subjects:
+        if sub.theory_slot:
+            for slot in sub.theory_slot.split('+'):
+                user_slots.append({"slot": slot.strip(), "name": sub.name, "room": sub.room_number, "type": "Theory"})
+        if sub.lab_slot:
+            for slot in sub.lab_slot.split('+'):
+                user_slots.append({"slot": slot.strip(), "name": sub.name, "room": sub.room_number, "type": "Lab"})
+    return user_slots
+
+def get_next_class(subjects):
+    ist = pytz.timezone('Asia/Kolkata')
+    now = datetime.now(ist)
+    current_day_idx = now.weekday()
+    current_time_str = now.strftime("%H:%M")
+
+    user_slots = get_all_user_slots(subjects)
+    if not user_slots:
+        return None
+
+    schedule = []
+    for d_idx, day_name in enumerate(DAYS_OF_WEEK):
+        theory_slots, lab_slots = DAY_MAP.get(day_name, ([], []))
+        
+        for us in user_slots:
+            if us["slot"] in theory_slots:
+                idx = theory_slots.index(us["slot"])
+                schedule.append({"day_idx": d_idx, "start_time": THEORY_TIMES[idx][0], **us})
+            elif us["slot"] in lab_slots:
+                idx = lab_slots.index(us["slot"])
+                schedule.append({"day_idx": d_idx, "start_time": LAB_TIMES[idx][0], **us})
+
+    if not schedule:
+        return None
+
+    # Sort strictly by Day of the Week, then Time of Day
+    schedule.sort(key=lambda x: (x["day_idx"], x["start_time"]))
+
+    # Scan for the first class that is strictly in the future
+    for cls in schedule:
+        if cls["day_idx"] > current_day_idx or (cls["day_idx"] == current_day_idx and cls["start_time"] > current_time_str):
+            return _calculate_time_diff(now, cls)
+
+    # If nothing is found this week, it wraps around to their first class next week
+    return _calculate_time_diff(now, schedule[0], next_week=True)
+
+def _calculate_time_diff(now, cls, next_week=False):
+    days_ahead = cls["day_idx"] - now.weekday()
+    if next_week or days_ahead < 0:
+        days_ahead += 7
+
+    target_date = now + timedelta(days=days_ahead)
+    target_time = datetime.strptime(cls["start_time"], "%H:%M").time()
+    target_datetime = datetime.combine(target_date.date(), target_time)
+    target_datetime = pytz.timezone('Asia/Kolkata').localize(target_datetime)
+
+    minutes = int((target_datetime - now).total_seconds() // 60)
+    cls["minutes_until"] = minutes
+    return cls
