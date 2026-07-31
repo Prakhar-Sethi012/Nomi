@@ -2,12 +2,23 @@ import React, { useState, useEffect } from 'react';
 import { api } from '../services/api';
 import { getTodayClasses, getNextClassInfo } from '../utils/timetableUtils';
 
+// 🔥 NEW: Smart Time Formatter
+const formatSmartTime = (minutes) => {
+  if (minutes < 0) return { value: 'Now', unit: '' };
+  if (minutes < 60) return { value: minutes, unit: `min${minutes !== 1 ? 's' : ''}` };
+  if (minutes < 1440) {
+    const hours = Math.floor(minutes / 60);
+    return { value: hours, unit: `hr${hours !== 1 ? 's' : ''}` };
+  }
+  const days = Math.floor(minutes / 1440);
+  return { value: days, unit: `day${days !== 1 ? 's' : ''}` };
+};
+
 function NextClassWidget() {
   const [subjects, setSubjects] = useState([]);
   const [timeInfo, setTimeInfo] = useState({ status: 'LOADING' });
   const [isLoading, setIsLoading] = useState(true);
 
-  // Fetch subjects once on mount
   useEffect(() => {
     const fetchSubjects = async () => {
       try {
@@ -23,19 +34,16 @@ function NextClassWidget() {
     fetchSubjects();
   }, []);
 
-  // Update the countdown clock every 60 seconds
   useEffect(() => {
     if (subjects.length === 0) return;
-
     const calculateTime = () => {
       const todayClasses = getTodayClasses(subjects);
       const info = getNextClassInfo(todayClasses);
       setTimeInfo(info);
     };
 
-    calculateTime(); // Run immediately
-    const timer = setInterval(calculateTime, 60000); // Update every minute
-    
+    calculateTime();
+    const timer = setInterval(calculateTime, 60000);
     return () => clearInterval(timer);
   }, [subjects]);
 
@@ -43,7 +51,6 @@ function NextClassWidget() {
     return <div className="bg-surface p-6 rounded-xl border border-border animate-pulse h-32 flex items-center justify-center text-textSecondary">Scanning Schedule...</div>;
   }
 
-  // RENDER STATES
   if (timeInfo.status === 'FREE_DAY') {
     return (
       <div className="bg-surface p-6 rounded-xl border border-border shadow-lg flex items-center justify-between h-32 transition-colors duration-300">
@@ -70,6 +77,9 @@ function NextClassWidget() {
 
   const { classInfo, status, minutesLeft, minutesUntil } = timeInfo;
   const isHappeningNow = status === 'CURRENT';
+  
+  // 🔥 Apply Smart Formatting
+  const timeData = formatSmartTime(isHappeningNow ? minutesLeft : minutesUntil);
 
   return (
     <div className={`p-6 rounded-xl border shadow-lg flex flex-col justify-center h-32 transition-all duration-300 relative overflow-hidden ${
@@ -102,8 +112,9 @@ function NextClassWidget() {
         </p>
 
         <div className="text-right">
+          {/* 🔥 Styled Smart Output */}
           <p className={`text-2xl font-black leading-none ${isHappeningNow ? 'text-success' : 'text-textPrimary'}`}>
-            {isHappeningNow ? minutesLeft : minutesUntil} <span className="text-sm font-medium text-textSecondary">min</span>
+            {timeData.value} {timeData.unit && <span className="text-sm font-medium text-textSecondary">{timeData.unit}</span>}
           </p>
           <p className="text-[10px] text-textSecondary font-bold uppercase tracking-widest mt-1">
             {isHappeningNow ? 'Remaining' : 'Until Start'}
