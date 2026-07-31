@@ -18,7 +18,8 @@ class ProfileUpdate(BaseModel):
     current_streak: Optional[int] = Field(None, ge=0)
     last_active_date: Optional[datetime.date] = None
     custom_task_tags: Optional[List[str]] = None
-    is_ghost: Optional[bool] = None # 🔥 NEW: Ghost Mode Toggle
+    is_ghost: Optional[bool] = None 
+    monthly_limit: Optional[float] = None
 
 class ProfileResponse(BaseModel):
     id: int
@@ -28,7 +29,8 @@ class ProfileResponse(BaseModel):
     current_streak: int
     last_active_date: Optional[datetime.date] = None
     custom_task_tags: List[str]
-    is_ghost: bool # 🔥 NEW: So the frontend knows your privacy status
+    is_ghost: bool 
+    monthly_limit: Optional[float] = None
 
     class Config:
         from_attributes = True
@@ -174,3 +176,23 @@ class CircleJoin(BaseModel):
 
 class GhostModeUpdate(BaseModel):
     is_ghost: bool
+
+# ==========================================
+# NOTES SCHEMAS (Scratchpad)
+# ==========================================
+class NoteCreate(BaseModel):
+    title: Optional[str] = None
+    content: str
+
+class NoteUpdate(BaseModel):
+    title: Optional[str] = None
+    content: Optional[str] = None
+
+class NoteResponse(BaseModel):
+    id: int
+    title: Optional[str] = None
+    content: str
+    updated_at: datetime.datetime
+
+    class Config:
+        from_attributes = True

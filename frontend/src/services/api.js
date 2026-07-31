@@ -75,4 +75,10 @@ export const api = {
   getMyCircles: () => fetchAPI('/social/circles/my-circles'),
   getCircleRoster: (circleId) => fetchAPI(`/social/circles/${circleId}/roster`),
   getFriendTimetable: (userId) => fetchAPI(`/social/member/${userId}/timetable`),
+
+  // Notes / Scratchpad
+  getNotes: () => fetchAPI('/notes/'),
+  addNote: (data) => fetchAPI('/notes/', { method: 'POST', body: JSON.stringify(data) }),
+  updateNote: (id, data) => fetchAPI(`/notes/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  deleteNote: (id) => fetchAPI(`/notes/${id}`, { method: 'DELETE' }),
 };

@@ -4,7 +4,6 @@ import { api } from '../services/api';
 const numberToWords = (num) => {
   const a = ['', 'One ', 'Two ', 'Three ', 'Four ', 'Five ', 'Six ', 'Seven ', 'Eight ', 'Nine ', 'Ten ', 'Eleven ', 'Twelve ', 'Thirteen ', 'Fourteen ', 'Fifteen ', 'Sixteen ', 'Seventeen ', 'Eighteen ', 'Nineteen '];
   const b = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
-
   if ((num = num.toString()).length > 9) return 'Overflow';
   let n = ('000000000' + num).substr(-9).match(/^(\d{2})(\d{2})(\d{2})(\d{1})(\d{2})$/);
   if (!n) return;
@@ -27,37 +26,47 @@ const StatCard = ({ title, value, subtitle, valueColor = "text-white" }) => (
 
 function ExpensesView() {
   const [expenses, setExpenses] = useState([]);
+  const [monthlyLimit, setMonthlyLimit] = useState(0); // 🔥 NEW LIMIT STATE
   const [isLoading, setIsLoading] = useState(true);
   
   const [viewDate, setViewDate] = useState(new Date());
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  // Timezone fix for India
   const getLocalDate = () => {
     const tzOffset = (new Date()).getTimezoneOffset() * 60000;
     return new Date(Date.now() - tzOffset).toISOString().split('T')[0];
   };
 
-  const [formData, setFormData] = useState({
-    amount: '', reason: '', tags: 'food',
-    date: getLocalDate()
-  });
+  const [formData, setFormData] = useState({ amount: '', reason: '', tags: 'food', date: getLocalDate() });
 
-  const fetchExpenses = async () => {
+  const fetchFinanceData = async () => {
     try {
-      const data = await api.getExpenses();
+      const [data, profile] = await Promise.all([
+        api.getExpenses(),
+        api.getProfile()
+      ]);
       setExpenses(data);
+      setMonthlyLimit(profile.monthly_limit || 0);
     } catch (err) {
-      console.error('Failed to fetch expenses', err);
+      console.error('Failed to fetch finance data', err);
     } finally {
       setIsLoading(false);
     }
   };
 
-  useEffect(() => {
-    fetchExpenses();
-  }, []);
+  useEffect(() => { fetchFinanceData(); }, []);
+
+  const handleUpdateLimit = async () => {
+    const newLimit = prompt("Set your monthly spending limit (₹):", monthlyLimit);
+    const parsedLimit = parseFloat(newLimit);
+    if (!isNaN(parsedLimit) && parsedLimit >= 0) {
+      try {
+        await api.updateProfile({ monthly_limit: parsedLimit });
+        setMonthlyLimit(parsedLimit);
+      } catch (err) { alert("Failed to update limit."); }
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -66,32 +75,21 @@ function ExpensesView() {
       alert("Please enter a valid expense amount greater than 0.");
       return;
     }
-
     try {
-      const payload = { 
-        amount: finalAmount, 
-        reason: formData.reason, 
-        date: formData.date, 
-        tags: [formData.tags] 
-      };
+      const payload = { amount: finalAmount, reason: formData.reason, date: formData.date, tags: [formData.tags] };
       await api.addExpense(payload);
-      
-      fetchExpenses(); 
+      fetchFinanceData(); 
       setIsModalOpen(false); 
       setFormData({ ...formData, amount: '', reason: '' }); 
-    } catch (err) {
-      console.error('Error saving expense', err);
-    }
+    } catch (err) { console.error('Error saving expense', err); }
   };
 
   const deleteExpense = async (id) => {
     if (!window.confirm("Delete this transaction permanently?")) return;
     try {
       await api.deleteExpense(id);
-      fetchExpenses();
-    } catch (err) { 
-      console.error("Failed to delete expense", err); 
-    }
+      fetchFinanceData();
+    } catch (err) { console.error("Failed to delete expense", err); }
   };
 
   const viewMonth = viewDate.getMonth();
@@ -106,7 +104,11 @@ function ExpensesView() {
   });
   const monthTotal = monthlyExpenses.reduce((sum, item) => sum + item.amount, 0);
 
+  // 🔥 NEW FIXED MATH FOR DAILY AVERAGE
   const todayObj = new Date();
+  const daysElapsed = isCurrentMonth ? (todayObj.getDate() || 1) : new Date(viewYear, viewMonth + 1, 0).getDate();
+  const dailyAverage = monthTotal / daysElapsed;
+
   const todayStr = getLocalDate();
   const todayTotal = expenses.filter(e => e.date === todayStr).reduce((sum, item) => sum + item.amount, 0);
   const todaySubtitle = `${todayObj.getDate()} ${todayObj.toLocaleDateString('default', { month: 'long' })}`;
@@ -115,13 +117,11 @@ function ExpensesView() {
   startOfWeek.setHours(0, 0, 0, 0);
   const endOfWeek = new Date(todayObj.getFullYear(), todayObj.getMonth(), todayObj.getDate() - todayObj.getDay() + 6);
   endOfWeek.setHours(23, 59, 59, 999);
-
   const weekTotal = expenses.filter(e => {
     const d = new Date(e.date);
     d.setHours(0,0,0,0);
     return d >= startOfWeek && d <= endOfWeek;
   }).reduce((sum, item) => sum + item.amount, 0);
-
   const weekSubtitle = startOfWeek.getMonth() === endOfWeek.getMonth()
     ? `${startOfWeek.getDate()}-${endOfWeek.getDate()} ${endOfWeek.toLocaleDateString('default', { month: 'long' })}`
     : `${startOfWeek.getDate()} ${startOfWeek.toLocaleDateString('default', { month: 'short' })} - ${endOfWeek.getDate()} ${endOfWeek.toLocaleDateString('default', { month: 'short' })}`;
@@ -132,14 +132,9 @@ function ExpensesView() {
     return d.getMonth() === lastMonthDate.getMonth() && d.getFullYear() === lastMonthDate.getFullYear();
   });
   const lastMonthTotal = lastMonthExpenses.reduce((sum, item) => sum + item.amount, 0);
-  
   let change = 0;
   if (lastMonthTotal === 0 && monthTotal > 0) change = 100; 
   else if (lastMonthTotal > 0) change = ((monthTotal - lastMonthTotal) / lastMonthTotal) * 100;
-
-  const daysInViewMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
-  const currentDay = isCurrentMonth ? (new Date().getDate() || 1) : daysInViewMonth;
-  const dailyAverage = monthTotal / currentDay;
 
   const handlePrevMonth = () => { setViewDate(new Date(viewYear, viewMonth - 1, 1)); setSelectedCategory(null); };
   const handleNextMonth = () => { setViewDate(new Date(viewYear, viewMonth + 1, 1)); setSelectedCategory(null); };
@@ -189,29 +184,47 @@ function ExpensesView() {
         +
       </button>
 
-      <div className="w-full max-w-6xl pb-24 relative z-10 animate-fade-in mx-auto">
+      <div className="w-full max-w-6xl pb-24 relative z-10 animate-fade-in mx-auto mt-8">
         <div className="relative overflow-hidden rounded-[32px] p-10 mb-8 bg-gradient-to-r from-emerald-600/20 via-slate-900 to-blue-600/20 border border-slate-700 shadow-2xl">
-          <div className="absolute top-6 right-6 md:top-8 md:right-8 flex items-center gap-3 bg-slate-950/50 backdrop-blur-md px-3 py-1.5 rounded-full border border-slate-700/50">
+          <div className="absolute top-6 right-6 md:top-8 md:right-8 flex items-center gap-3 bg-slate-950/50 backdrop-blur-md px-3 py-1.5 rounded-full border border-slate-700/50 z-10">
             <button onClick={handlePrevMonth} className="w-8 h-8 rounded-full hover:bg-slate-800 text-slate-300 font-bold transition-colors">←</button>
             <span className="text-xs font-bold text-white uppercase tracking-widest min-w-[100px] text-center">{viewDate.toLocaleString('default', { month: 'short', year: 'numeric' })}</span>
             <button onClick={handleNextMonth} disabled={isCurrentMonth} className={`w-8 h-8 rounded-full font-bold transition-colors ${isCurrentMonth ? 'opacity-20 cursor-not-allowed' : 'hover:bg-slate-800 text-slate-300'}`}>→</button>
           </div>
-          <p className="text-slate-400 uppercase tracking-[0.3em] text-xs font-bold">Expense Dashboard</p>
-          <h1 className="text-5xl md:text-6xl font-black text-white mt-4 drop-shadow-md">₹{monthTotal.toLocaleString('en-IN')}</h1>
-          <p className="text-emerald-400/80 font-mono text-[10px] uppercase tracking-wider mt-2">{numberToWords(Math.floor(monthTotal))} Rupees</p>
-          <div className="mt-8 flex flex-wrap gap-3">
-            <span className="bg-emerald-500/20 text-emerald-400 px-5 py-2.5 rounded-full text-sm font-bold border border-emerald-500/30">Avg ₹{dailyAverage.toFixed(0)} / day</span>
-            <span className="px-5 py-2.5 rounded-full text-sm font-bold border capitalize" style={{ backgroundColor: `${topCategoryColor}20`, color: topCategoryColor, borderColor: `${topCategoryColor}40` }}>Top: {topCategoryName}</span>
+          
+          <p className="text-slate-400 uppercase tracking-[0.3em] text-xs font-bold relative z-10">Expense Dashboard</p>
+          <h1 className="text-5xl md:text-6xl font-black text-white mt-4 drop-shadow-md relative z-10">₹{monthTotal.toLocaleString('en-IN')}</h1>
+          <p className="text-emerald-400/80 font-mono text-[10px] uppercase tracking-wider mt-2 relative z-10">{numberToWords(Math.floor(monthTotal))} Rupees</p>
+          
+          {/* 🔥 NEW PROGRESS BAR LOGIC */}
+          <div className="mt-8 max-w-md relative z-10">
+            <div className="flex justify-between items-end mb-2">
+              <span className="text-[10px] text-slate-400 uppercase font-bold tracking-widest">Monthly Limit</span>
+              <button onClick={handleUpdateLimit} className="text-xs text-emerald-400 font-bold hover:text-emerald-300 transition-colors">
+                {monthlyLimit > 0 ? `₹${monthlyLimit.toLocaleString('en-IN')}` : 'Set Limit +'}
+              </button>
+            </div>
+            {monthlyLimit > 0 && (
+              <div className="h-3 w-full bg-slate-950 rounded-full overflow-hidden shadow-inner border border-slate-800">
+                <div 
+                  className={`h-full rounded-full transition-all duration-1000 ${monthTotal > monthlyLimit ? 'bg-red-500' : 'bg-emerald-500'}`} 
+                  style={{ width: `${Math.min((monthTotal / monthlyLimit) * 100, 100)}%` }} 
+                />
+              </div>
+            )}
+            {monthlyLimit > 0 && monthTotal > monthlyLimit && (
+               <p className="text-xs text-red-400 font-bold mt-2">⚠️ You have exceeded your budget!</p>
+            )}
           </div>
         </div>
 
-        <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
+        {/* REPLACED EXTRA DAILY AVG CARD WITH LIFETIME */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
           <StatCard title="Today" value={`₹${todayTotal.toLocaleString('en-IN')}`} subtitle={todaySubtitle} />
           <StatCard title="This Week" value={`₹${weekTotal.toLocaleString('en-IN')}`} subtitle={weekSubtitle} />
-          <StatCard title="Daily Avg" value={`₹${dailyAverage.toFixed(0)}`} subtitle="This Month" />
-          <StatCard title="Lifetime" value={`₹${lifetimeTotal.toLocaleString('en-IN')}`} subtitle="All Time" />
+          <StatCard title="Daily Avg" value={`₹${dailyAverage.toFixed(0)}`} subtitle={`${daysElapsed} Days Elapsed`} />
           
-          <div className="col-span-2 lg:col-span-1 bg-slate-900/70 backdrop-blur-xl rounded-3xl p-6 border border-slate-800 flex flex-col justify-center">
+          <div className="bg-slate-900/70 backdrop-blur-xl rounded-3xl p-6 border border-slate-800 flex flex-col justify-center relative group">
             <p className="text-slate-500 text-[10px] uppercase tracking-widest font-bold mb-1">Monthly Trend</p>
             <h2 className={`text-2xl lg:text-3xl font-black ${change > 0 ? 'text-red-400' : 'text-emerald-400'}`}>
               {change > 0 ? '+' : ''}{change.toFixed(1)}%
@@ -221,7 +234,6 @@ function ExpensesView() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-          
           <div className="lg:col-span-5 bg-slate-900/40 backdrop-blur-xl p-8 rounded-[32px] border border-slate-800 shadow-xl flex flex-col items-center">
             <div className="relative w-64 h-64 rounded-full flex items-center justify-center shadow-[0_0_30px_rgba(0,0,0,0.5)] transition-transform hover:scale-105 duration-700 mt-4" style={chartStyle}>
               <div className="absolute w-48 h-48 bg-slate-950 rounded-full flex flex-col items-center justify-center border-[8px] border-slate-900 shadow-inner z-10">

@@ -15,6 +15,7 @@ class Profile(Base):
     last_active_date = Column(Date, nullable=True)
     custom_task_tags = Column(ARRAY(String), default=[]) 
     is_ghost = Column(Boolean, default=False)
+    monthly_limit = Column(Float, nullable=True, default=0.0)
 
 class Task(Base):
     __tablename__ = "tasks"
@@ -88,3 +89,11 @@ class CircleMember(Base):
     circle_id = Column(Integer, ForeignKey("circles.id", ondelete="CASCADE"), primary_key=True)
     user_id = Column(Integer, ForeignKey("profile.id", ondelete="CASCADE"), primary_key=True)
     joined_at = Column(DateTime, default=datetime.datetime.utcnow)
+
+class Note(Base):
+    __tablename__ = "notes"
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("profile.id", ondelete="CASCADE")) 
+    title = Column(String, nullable=True)
+    content = Column(String, nullable=False)
+    updated_at = Column(DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)
