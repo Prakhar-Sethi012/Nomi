@@ -97,3 +97,4 @@ class Note(Base):
     title = Column(String, nullable=True)
     content = Column(String, nullable=False)
     updated_at = Column(DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)
+    
