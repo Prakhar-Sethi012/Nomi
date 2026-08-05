@@ -75,6 +75,8 @@ export const api = {
   getMyCircles: () => fetchAPI('/social/circles/my-circles'),
   getCircleRoster: (circleId) => fetchAPI(`/social/circles/${circleId}/roster`),
   getFriendTimetable: (userId) => fetchAPI(`/social/member/${userId}/timetable`),
+  // Social & Privacy (Phase 2 Additions)
+  setNickname: (friendId, nickname) => fetchAPI(`/social/member/${friendId}/nickname`, { method: 'PUT', body: JSON.stringify({ nickname }) }),
 
   // Notes / Scratchpad
   getNotes: () => fetchAPI('/notes/'),
