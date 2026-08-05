@@ -155,6 +155,7 @@ class FriendResponse(BaseModel):
 
 class CircleCreate(BaseModel):
     name: str = Field(..., min_length=2, max_length=100)
+    custom_token: Optional[str] = Field(None, min_length=6, max_length=10)
 
 class CircleResponse(BaseModel):
     id: int
@@ -196,3 +197,29 @@ class NoteResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+# ==========================================
+# 8. MEETUPS & NICKNAMES (Phase 2)
+# ==========================================
+class FriendSettingUpdate(BaseModel):
+    nickname: str
+
+class MeetupCreate(BaseModel):
+    receiver_id: int
+    location: str
+    meet_time: datetime.datetime
+
+class MeetupResponse(BaseModel):
+    id: int
+    sender_id: int
+    receiver_id: int
+    location: str
+    meet_time: datetime.datetime
+    status: str
+    
+    class Config:
+        from_attributes = True
+        
+class NPCCreate(BaseModel):
+    name: str
+    reg_no: str # Used as a dummy ID

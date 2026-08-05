@@ -16,6 +16,8 @@ class Profile(Base):
     custom_task_tags = Column(ARRAY(String), default=[]) 
     is_ghost = Column(Boolean, default=False)
     monthly_limit = Column(Float, nullable=True, default=0.0)
+    is_npc = Column(Boolean, default=False)
+    managed_by = Column(Integer, ForeignKey("profile.id", ondelete="CASCADE"), nullable=True)
 
 class Task(Base):
     __tablename__ = "tasks"
@@ -97,4 +99,23 @@ class Note(Base):
     title = Column(String, nullable=True)
     content = Column(String, nullable=False)
     updated_at = Column(DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)
+
+# 🔥 NEW: Nicknames mapping
+class FriendSetting(Base):
+    __tablename__ = "friend_settings"
     
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("profile.id", ondelete="CASCADE"))
+    friend_id = Column(Integer, ForeignKey("profile.id", ondelete="CASCADE"))
+    nickname = Column(String, nullable=False)
+
+# 🔥 NEW: Request Room / Meetups
+class Meetup(Base):
+    __tablename__ = "meetups"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    sender_id = Column(Integer, ForeignKey("profile.id", ondelete="CASCADE"))
+    receiver_id = Column(Integer, ForeignKey("profile.id", ondelete="CASCADE"))
+    location = Column(String, nullable=False)
+    meet_time = Column(DateTime, nullable=False)
+    status = Column(String, default="pending")    
