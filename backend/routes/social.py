@@ -22,7 +22,15 @@ def toggle_ghost_mode(data: schemas.GhostModeUpdate, db: Session = Depends(get_d
 
 @router.post("/circles")
 def create_circle(circle_data: schemas.CircleCreate, db: Session = Depends(get_db), current_user: models.Profile = Depends(get_current_user)):
-    token = ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
+    # 🔥 NEW: Custom Token Logic
+    if circle_data.custom_token:
+        token = circle_data.custom_token.upper()
+        existing = db.query(models.Circle).filter(models.Circle.join_token == token).first()
+        if existing:
+            raise HTTPException(status_code=400, detail="This custom token is already taken!")
+    else:
+        token = ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
+        
     new_circle = models.Circle(name=circle_data.name, join_token=token)
     db.add(new_circle)
     db.commit()
@@ -68,23 +76,18 @@ def get_my_circles(db: Session = Depends(get_db), current_user: models.Profile =
 # ==========================================
 @router.get("/circles/{circle_id}/roster")
 def get_circle_roster(circle_id: int, db: Session = Depends(get_db), current_user: models.Profile = Depends(get_current_user)):
-    # 🛡️ SECURITY: Verify user is actually in this circle
     is_member = db.query(models.CircleMember).filter(
-        models.CircleMember.circle_id == circle_id,
-        models.CircleMember.user_id == current_user.id
+        models.CircleMember.circle_id == circle_id, models.CircleMember.user_id == current_user.id
     ).first()
     
     if not is_member:
         raise HTTPException(status_code=403, detail="You do not have access to this circle.")
         
-    # ⏱️ ENGINE: Get active FFCS slots right now
     active_slots = get_current_active_slots()
-    
     members = db.query(models.CircleMember).filter(models.CircleMember.circle_id == circle_id).all()
     roster = []
     
     for m in members:
-        # Skip current user (you don't need to see yourself in the roster)
         if m.user_id == current_user.id:
             continue
             
@@ -92,20 +95,25 @@ def get_circle_roster(circle_id: int, db: Session = Depends(get_db), current_use
         if not profile:
             continue
             
+        # 🔥 NEW: Nickname Override
+        friend_setting = db.query(models.FriendSetting).filter_by(user_id=current_user.id, friend_id=profile.id).first()
+        display_name = friend_setting.nickname if friend_setting else profile.name
+            
         if profile.is_ghost:
             status = {"is_free": None, "message": "Classified"}
             next_class = None
         else:
             subjects = db.query(models.Subject).filter(models.Subject.user_id == m.user_id).all()
             status = check_user_status(subjects, active_slots)
-            next_class = get_next_class(subjects) # 🔥 NEW: Calculate the next class!
+            next_class = get_next_class(subjects)
             
         roster.append({
             "user_id": profile.id,
-            "name": profile.name,
+            "name": display_name,         # Will show nickname if set
+            "real_name": profile.name,    # Keeps real name just in case UI needs it
             "is_ghost": profile.is_ghost,
             "live_status": status,
-            "next_class": next_class 
+            "next_class": next_class
         })
         
     return roster
@@ -134,3 +142,26 @@ def get_friend_timetable(target_user_id: int, db: Session = Depends(get_db), cur
     # Send data exactly how the frontend TimetableView expects it
     subjects = db.query(models.Subject).filter(models.Subject.user_id == target_user_id).all()
     return subjects
+
+# ==========================================
+# NEW: SET FRIEND NICKNAME
+# ==========================================
+@router.put("/member/{friend_id}/nickname")
+def set_nickname(friend_id: int, data: schemas.FriendSettingUpdate, db: Session = Depends(get_db), current_user: models.Profile = Depends(get_current_user)):
+    setting = db.query(models.FriendSetting).filter_by(user_id=current_user.id, friend_id=friend_id).first()
+    
+    # If they send an empty string, delete the nickname to revert to real name
+    if not data.nickname.strip(): 
+        if setting:
+            db.delete(setting)
+            db.commit()
+        return {"message": "Nickname removed"}
+        
+    if setting:
+        setting.nickname = data.nickname
+    else:
+        setting = models.FriendSetting(user_id=current_user.id, friend_id=friend_id, nickname=data.nickname)
+        db.add(setting)
+        
+    db.commit()
+    return {"message": "Nickname updated", "nickname": data.nickname}
