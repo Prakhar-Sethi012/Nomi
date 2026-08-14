@@ -169,8 +169,6 @@ class CircleResponse(BaseModel):
 # ==========================================
 # MULTIPLAYER SOCIAL SCHEMAS
 # ==========================================
-class CircleCreate(BaseModel):
-    name: str
 
 class CircleJoin(BaseModel):
     join_token: str

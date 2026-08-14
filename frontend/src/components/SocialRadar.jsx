@@ -1,16 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../services/api';
 
-// 🔥 SMART TIME FORMATTER
 const formatSmartTime = (minutes) => {
-  if (minutes < 0) return 'Right Now';
-  if (minutes < 60) return `${minutes} min${minutes !== 1 ? 's' : ''}`;
+  if (minutes < 0) return { value: 'Now', unit: '' };
+  if (minutes < 60) return { value: minutes, unit: `min${minutes !== 1 ? 's' : ''}` };
   if (minutes < 1440) {
     const hours = Math.floor(minutes / 60);
-    return `${hours} hr${hours !== 1 ? 's' : ''}`;
+    return { value: hours, unit: `hr${hours !== 1 ? 's' : ''}` };
   }
   const days = Math.floor(minutes / 1440);
-  return `${days} day${days !== 1 ? 's' : ''}`;
+  return { value: days, unit: `day${days !== 1 ? 's' : ''}` };
 };
 
 function SocialRadar() {
@@ -25,8 +24,14 @@ function SocialRadar() {
   const [friendTimetable, setFriendTimetable] = useState([]);
   const [isGhost, setIsGhost] = useState(false);
 
+  // Forms & Inputs
   const [newCircleName, setNewCircleName] = useState('');
+  const [customToken, setCustomToken] = useState(''); // 🔥 NEW
   const [joinToken, setJoinToken] = useState('');
+  
+  // Nickname State 🔥 NEW
+  const [editingNicknameId, setEditingNicknameId] = useState(null);
+  const [newNickname, setNewNickname] = useState('');
 
   const loadLobby = async () => {
     setIsLoading(true);
@@ -44,8 +49,15 @@ function SocialRadar() {
 
   const handleCreateCircle = async (e) => {
     e.preventDefault();
-    try { await api.createCircle({ name: newCircleName }); setNewCircleName(''); loadLobby(); } 
-    catch (err) { setError(err.message || 'Failed to create circle.'); }
+    try {
+      const payload = { name: newCircleName };
+      if (customToken.trim()) payload.custom_token = customToken.trim(); // 🔥 NEW
+      
+      await api.createCircle(payload);
+      setNewCircleName('');
+      setCustomToken('');
+      loadLobby();
+    } catch (err) { setError(err.message || 'Failed to create circle. That token might be taken!'); }
   };
 
   const handleJoinCircle = async (e) => {
@@ -87,6 +99,17 @@ function SocialRadar() {
     finally { setIsLoading(false); }
   };
 
+  // 🔥 NEW: Save Nickname Handler
+  const handleSaveNickname = async (e, friendId) => {
+    e.preventDefault();
+    e.stopPropagation();
+    try {
+      await api.setNickname(friendId, newNickname);
+      setEditingNicknameId(null);
+      loadRoster(activeCircle); // Refresh to show new name instantly
+    } catch (err) { setError('Failed to update nickname.'); }
+  };
+
   if (isLoading) return <div className="text-indigo-400 text-center mt-20 animate-pulse font-mono">Syncing Database...</div>;
 
   return (
@@ -108,18 +131,24 @@ function SocialRadar() {
         {viewLevel === 1 && (
           <div className="flex flex-col gap-8 animate-fade-in">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              
+              {/* 🔥 UPDATED: Create Circle with Custom Token */}
               <div className="bg-slate-800 p-5 rounded-xl border border-slate-700 shadow-lg">
                 <h3 className="text-white font-bold mb-3 text-sm uppercase tracking-wider">Create a Circle</h3>
-                <form onSubmit={handleCreateCircle} className="flex gap-2">
-                  <input type="text" placeholder="Circle Name..." required value={newCircleName} onChange={e => setNewCircleName(e.target.value)} className="flex-1 bg-slate-900 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white outline-none focus:border-indigo-500" />
-                  <button type="submit" className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-4 py-2 rounded-lg text-sm transition-colors">+</button>
+                <form onSubmit={handleCreateCircle} className="flex flex-col gap-3">
+                  <input type="text" placeholder="Circle Name (e.g. Hostel Squad)" required value={newCircleName} onChange={e => setNewCircleName(e.target.value)} className="w-full bg-slate-900 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white outline-none focus:border-indigo-500" />
+                  <div className="flex gap-2">
+                    <input type="text" placeholder="Custom Code (Optional)" maxLength="10" value={customToken} onChange={e => setCustomToken(e.target.value.toUpperCase().replace(/\s/g, ''))} className="flex-1 bg-slate-900 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white outline-none focus:border-indigo-500 uppercase tracking-widest font-mono" />
+                    <button type="submit" className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-4 py-2 rounded-lg text-sm transition-colors">Create</button>
+                  </div>
                 </form>
               </div>
+
               <div className="bg-slate-800 p-5 rounded-xl border border-slate-700 shadow-lg">
                 <h3 className="text-white font-bold mb-3 text-sm uppercase tracking-wider">Join a Circle</h3>
-                <form onSubmit={handleJoinCircle} className="flex gap-2">
-                  <input type="text" placeholder="6-Digit Token" required maxLength="6" value={joinToken} onChange={e => setJoinToken(e.target.value.toUpperCase())} className="flex-1 bg-slate-900 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white outline-none focus:border-indigo-500 uppercase tracking-widest font-mono" />
-                  <button type="submit" className="bg-slate-700 hover:bg-slate-600 text-white font-bold px-4 py-2 rounded-lg text-sm transition-colors">Join</button>
+                <form onSubmit={handleJoinCircle} className="flex gap-2 h-full items-start">
+                  <input type="text" placeholder="Enter Token..." required value={joinToken} onChange={e => setJoinToken(e.target.value.toUpperCase().replace(/\s/g, ''))} className="flex-1 bg-slate-900 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white outline-none focus:border-indigo-500 uppercase tracking-widest font-mono mt-1" />
+                  <button type="submit" className="bg-slate-700 hover:bg-slate-600 text-white font-bold px-4 py-2 rounded-lg text-sm transition-colors mt-1">Join</button>
                 </form>
               </div>
             </div>
@@ -164,11 +193,41 @@ function SocialRadar() {
                   const statusBg = friend.is_ghost ? 'bg-slate-900 border-slate-700' : isFree ? 'bg-emerald-900/20 border-emerald-500/30' : 'bg-red-900/20 border-red-500/30';
                   
                   return (
-                    <div key={friend.user_id} onClick={() => !friend.is_ghost && loadFriendTimetable(friend)} className={`p-5 rounded-xl border shadow-lg transition-all flex flex-col h-full ${statusBg} ${friend.is_ghost ? 'cursor-not-allowed opacity-75' : 'cursor-pointer hover:scale-[1.02]'}`}>
-                      <div className="flex justify-between items-start mb-3">
-                        <h3 className="text-lg font-bold text-white">{friend.name}</h3>
-                        <div className={`w-3 h-3 rounded-full ${friend.is_ghost ? 'bg-slate-500' : isFree ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)]' : 'bg-red-500'}`}></div>
-                      </div>
+                    <div key={friend.user_id} onClick={() => !friend.is_ghost && loadFriendTimetable(friend)} className={`group p-5 rounded-xl border shadow-lg transition-all flex flex-col h-full ${statusBg} ${friend.is_ghost ? 'cursor-not-allowed opacity-75' : 'cursor-pointer hover:scale-[1.02]'}`}>
+                      
+                      {/* 🔥 NEW: Nickname Editing UI */}
+                      {editingNicknameId === friend.user_id ? (
+                        <form onSubmit={(e) => handleSaveNickname(e, friend.user_id)} className="flex items-center gap-2 mb-3" onClick={e => e.stopPropagation()}>
+                          <input 
+                            type="text" 
+                            value={newNickname} 
+                            onChange={e => setNewNickname(e.target.value)} 
+                            placeholder="Set Nickname..."
+                            className="bg-slate-950 text-white text-sm px-3 py-1 rounded border border-indigo-500 outline-none w-full"
+                            autoFocus
+                          />
+                          <button type="submit" className="text-xs bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-1.5 rounded font-bold transition-colors">Save</button>
+                          <button type="button" onClick={(e) => { e.stopPropagation(); setEditingNicknameId(null); }} className="text-xs text-slate-400 hover:text-white px-2">✕</button>
+                        </form>
+                      ) : (
+                        <div className="flex justify-between items-start mb-3">
+                          <div className="flex items-center gap-2">
+                            <h3 className="text-lg font-bold text-white">{friend.name}</h3>
+                            <button 
+                              onClick={(e) => { 
+                                e.stopPropagation(); 
+                                setEditingNicknameId(friend.user_id); 
+                                setNewNickname(friend.name !== friend.real_name ? friend.name : ''); 
+                              }} 
+                              className="text-xs opacity-0 group-hover:opacity-100 text-slate-500 hover:text-indigo-400 transition-opacity bg-slate-900/80 px-2 py-1 rounded-md"
+                              title="Set Nickname"
+                            >
+                              ✏️ Edit
+                            </button>
+                          </div>
+                          <div className={`w-3 h-3 rounded-full ${friend.is_ghost ? 'bg-slate-500' : isFree ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)]' : 'bg-red-500'}`}></div>
+                        </div>
+                      )}
 
                       {friend.is_ghost ? (
                         <p className="text-xs text-slate-500 font-mono uppercase tracking-widest font-bold">👻 User is in Ghost Mode</p>
@@ -182,14 +241,13 @@ function SocialRadar() {
                         </div>
                       )}
 
-                      {/* 🔥 NEW: Next Class Status Footer */}
                       <div className="mt-auto">
                         {friend.next_class && !friend.is_ghost && (
                           <div className="mt-4 pt-4 border-t border-slate-700/50">
                             <div className="flex justify-between items-end mb-1">
                               <p className="text-[10px] uppercase tracking-widest text-slate-500 font-bold">Next Class</p>
                               <span className="text-[10px] font-black text-indigo-400 bg-indigo-900/20 px-2 py-0.5 rounded border border-indigo-500/20 uppercase tracking-wider">
-                                In {formatSmartTime(friend.next_class.minutes_until)}
+                                In {formatSmartTime(friend.next_class.minutes_until).value} {formatSmartTime(friend.next_class.minutes_until).unit}
                               </span>
                             </div>
                             <p className="text-sm text-slate-300 font-bold truncate">{friend.next_class.name}</p>
