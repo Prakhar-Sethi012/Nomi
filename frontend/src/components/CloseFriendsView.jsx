@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../services/api';
+import ReadOnlyTimetable from './ReadOnlyTimetable';
 
 const formatSmartTime = (minutes) => {
   if (minutes < 0) return { value: 'Now', unit: '' };
@@ -139,33 +140,14 @@ function CloseFriendsView() {
           <div className="animate-fade-in flex flex-col gap-6">
             <button onClick={() => setActiveFriend(null)} className="self-start text-sm text-slate-400 hover:text-white flex items-center gap-2 transition-colors">← Back to Directory</button>
             <div className="bg-slate-800 p-6 rounded-xl border border-slate-700 shadow-lg">
-              <h2 className="text-xl font-black text-white mb-1">{activeFriend.name}'s Cloned Schedule</h2>
+              <h2 className="text-xl font-black text-white mb-2">{activeFriend.name}'s Cloned Schedule</h2>
               <p className="text-slate-400 text-sm mb-6">Read-only offline copy.</p>
               
+              {/* 🔥 REPLACED LIST WITH NEW VISUAL COMPONENT */}
               {friendTimetable.length === 0 ? (
                 <p className="text-slate-500 text-center italic py-10">No subjects logged.</p>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {friendTimetable.map(sub => (
-                    <div key={sub.id} className="bg-slate-900 border border-slate-700 p-4 rounded-lg">
-                      <h3 className="font-bold text-emerald-300 text-sm mb-2 truncate">{sub.name}</h3>
-                      <div className="grid grid-cols-2 gap-2 text-xs text-slate-400">
-                        <div className="bg-slate-800 p-2 rounded">
-                          <span className="block text-[9px] uppercase font-bold text-slate-500">Theory Slot</span>
-                          <span className="font-mono text-white">{sub.theory_slot || 'N/A'}</span>
-                        </div>
-                        <div className="bg-slate-800 p-2 rounded">
-                          <span className="block text-[9px] uppercase font-bold text-slate-500">Lab Slot</span>
-                          <span className="font-mono text-white">{sub.lab_slot || 'N/A'}</span>
-                        </div>
-                        <div className="bg-slate-800 p-2 rounded col-span-2">
-                          <span className="block text-[9px] uppercase font-bold text-slate-500">Room</span>
-                          <span className="font-mono text-white">{sub.room_number || 'TBA'}</span>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                <ReadOnlyTimetable subjects={friendTimetable} />
               )}
             </div>
           </div>

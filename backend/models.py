@@ -120,3 +120,12 @@ class Meetup(Base):
     location = Column(String, nullable=False)
     meet_time = Column(DateTime, nullable=False)
     status = Column(String, default="pending")    
+
+# 🔥 NEW: Circle Audit Log
+class CircleHistory(Base):
+    __tablename__ = "circle_history"
+    id = Column(Integer, primary_key=True, index=True)
+    circle_id = Column(Integer, ForeignKey("circles.id", ondelete="CASCADE"))
+    user_name = Column(String, nullable=False)
+    action = Column(String, nullable=False)
+    timestamp = Column(DateTime, default=datetime.datetime.utcnow)

@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from typing import List
-import string, random
+import string, random,datetime
 
 import models, schemas
 from database import get_db
@@ -50,6 +50,7 @@ def join_circle(data: schemas.CircleJoin, db: Session = Depends(get_db), current
         raise HTTPException(status_code=400, detail="Already in this circle.")
         
     db.add(models.CircleMember(circle_id=circle.id, user_id=current_user.id))
+    db.add(models.CircleHistory(circle_id=circle.id, user_name=current_user.name, action="joined"))
     db.commit()
     return {"message": f"Joined {circle.name}!"}
 
@@ -58,8 +59,25 @@ def leave_circle(circle_id: int, db: Session = Depends(get_db), current_user: mo
     member = db.query(models.CircleMember).filter_by(circle_id=circle_id, user_id=current_user.id).first()
     if not member: raise HTTPException(status_code=404, detail="Not in circle.")
     db.delete(member)
+    # 🔥 LOG HISTORY
+    db.add(models.CircleHistory(circle_id=circle_id, user_name=current_user.name, action="left"))
     db.commit()
     return {"message": "Left circle."}
+
+@router.get("/circles/{circle_id}/history")
+def get_circle_history(circle_id: int, db: Session = Depends(get_db), current_user: models.Profile = Depends(get_current_user)):
+    circle = db.query(models.Circle).filter_by(id=circle_id).first()
+    if not circle or circle.creator_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Only the leader can view history.")
+        
+    # Get last 30 days of history, ordered newest first
+    thirty_days_ago = datetime.datetime.utcnow() - datetime.timedelta(days=30)
+    history = db.query(models.CircleHistory).filter(
+        models.CircleHistory.circle_id == circle_id,
+        models.CircleHistory.timestamp >= thirty_days_ago
+    ).order_by(models.CircleHistory.timestamp.desc()).all()
+    
+    return [{"user_name": h.user_name, "action": h.action, "timestamp": h.timestamp} for h in history]
 
 @router.delete("/circles/{circle_id}")
 def delete_circle(circle_id: int, db: Session = Depends(get_db), current_user: models.Profile = Depends(get_current_user)):

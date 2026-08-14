@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../services/api';
+import ReadOnlyTimetable from './ReadOnlyTimetable';
 
 const formatSmartTime = (minutes) => {
   if (minutes < 0) return { value: 'Now', unit: '' };
@@ -17,7 +18,7 @@ function SocialRadar() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
   const [myProfileId, setMyProfileId] = useState(null);
-
+  const [historyLog, setHistoryLog] = useState(null); 
   const [circles, setCircles] = useState([]);
   const [activeCircle, setActiveCircle] = useState(null);
   const [roster, setRoster] = useState([]);
@@ -36,9 +37,15 @@ function SocialRadar() {
   const [editingNicknameId, setEditingNicknameId] = useState(null);
   const [newNickname, setNewNickname] = useState('');
 
-  // 🔥 NEW: In-Line Confirmation States
-  const [pendingCircleAction, setPendingCircleAction] = useState(null); // 'leave' or 'delete'
-  const [cloningId, setCloningId] = useState(null); // Tracks which user is being cloned
+  const [pendingCircleAction, setPendingCircleAction] = useState(null); 
+  const [cloningId, setCloningId] = useState(null); 
+
+  const fetchHistory = async () => {
+    try {
+      const data = await api.getCircleHistory(activeCircle.id);
+      setHistoryLog(data);
+    } catch (err) { alert(err.message); }
+  };
 
   const loadLobby = async () => {
     setIsLoading(true); setError('');
@@ -83,7 +90,6 @@ function SocialRadar() {
     } catch (err) { setError(err.message || 'Failed to join. Invalid passcode.'); }
   };
 
-  // 🔥 NEW: Executes after the user hits "Yes"
   const executeLeaveOrDelete = async () => {
     try {
       if (pendingCircleAction === 'delete') await api.deleteCircle(activeCircle.id);
@@ -93,12 +99,10 @@ function SocialRadar() {
     } catch (err) { setError(err.message); }
   };
 
-  // 🔥 NEW: Executes after the user hits "Yes" on clone
   const executeClone = async (friendId) => {
     try {
       await api.cloneFriend(friendId);
       setCloningId(null);
-      // Give a subtle UI success indicator instead of an alert
       const oldRoster = [...roster];
       setRoster(roster.map(f => f.user_id === friendId ? { ...f, cloneSuccess: true } : f));
       setTimeout(() => setRoster(oldRoster), 2000);
@@ -196,7 +200,7 @@ function SocialRadar() {
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
                   {circles.map(circle => (
                     <div key={circle.id} onClick={() => loadRoster(circle)} className="bg-slate-800 hover:bg-slate-750 p-5 rounded-xl border border-slate-700 hover:border-indigo-500 shadow-lg cursor-pointer transition-all group relative overflow-hidden">
-                      {circle.creator_id == myProfileId && <div className="absolute top-0 right-0 bg-indigo-500 text-white text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded-bl-lg">Leader</div>}
+                      {circle.creator_id === myProfileId && <div className="absolute top-0 right-0 bg-indigo-500 text-white text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded-bl-lg">Leader</div>}
                       <h3 className="text-lg font-black text-white group-hover:text-indigo-400 transition-colors mb-2 pr-8">{circle.name}</h3>
                       <div className="inline-flex items-center gap-2 bg-slate-900 px-2 py-1 rounded border border-slate-600">
                         <span className="text-[10px] uppercase text-slate-500 font-bold">Passcode:</span>
@@ -215,21 +219,28 @@ function SocialRadar() {
             <div className="flex justify-between items-center">
               <button onClick={() => setViewLevel(1)} className="text-sm text-slate-400 hover:text-white flex items-center gap-2 transition-colors">← Back to Lobby</button>
               
-              {/* 🔥 NEW: Inline Confirmation for Leave/Delete */}
-              {pendingCircleAction ? (
-                <div className="flex items-center gap-2 animate-fade-in">
-                  <span className="text-[10px] text-red-400 font-bold uppercase tracking-widest mr-2">Are you sure?</span>
-                  <button onClick={() => setPendingCircleAction(null)} className="text-xs bg-slate-700 hover:bg-slate-600 text-white px-3 py-1.5 rounded transition-all font-bold">No</button>
-                  <button onClick={executeLeaveOrDelete} className="text-xs bg-red-600 hover:bg-red-500 text-white shadow-[0_0_10px_rgba(220,38,38,0.5)] px-3 py-1.5 rounded transition-all font-bold">Yes</button>
-                </div>
-              ) : (
-                <button 
-                  onClick={() => setPendingCircleAction(activeCircle.creator_id == myProfileId ? 'delete' : 'leave')} 
-                  className="text-xs bg-red-900/20 hover:bg-red-600 text-red-400 hover:text-white border border-red-500/30 px-3 py-1.5 rounded transition-all font-bold tracking-wider uppercase"
-                >
-                  {activeCircle.creator_id == myProfileId ? '🗑️ Destroy Circle' : '🚪 Leave Circle'}
-                </button>
-              )}
+              <div className="flex items-center gap-4">
+                {activeCircle.creator_id === myProfileId && (
+                  <button onClick={fetchHistory} className="text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-600 px-3 py-1.5 rounded transition-all font-bold tracking-wider uppercase">
+                    📜 Audit Log
+                  </button>
+                )}
+
+                {pendingCircleAction ? (
+                  <div className="flex items-center gap-2 animate-fade-in">
+                    <span className="text-[10px] text-red-400 font-bold uppercase tracking-widest mr-2">Are you sure?</span>
+                    <button onClick={() => setPendingCircleAction(null)} className="text-xs bg-slate-700 hover:bg-slate-600 text-white px-3 py-1.5 rounded transition-all font-bold">No</button>
+                    <button onClick={executeLeaveOrDelete} className="text-xs bg-red-600 hover:bg-red-500 text-white shadow-[0_0_10px_rgba(220,38,38,0.5)] px-3 py-1.5 rounded transition-all font-bold">Yes</button>
+                  </div>
+                ) : (
+                  <button 
+                    onClick={() => setPendingCircleAction(activeCircle.creator_id === myProfileId ? 'delete' : 'leave')} 
+                    className="text-xs bg-red-900/20 hover:bg-red-600 text-red-400 hover:text-white border border-red-500/30 px-3 py-1.5 rounded transition-all font-bold tracking-wider uppercase"
+                  >
+                    {activeCircle.creator_id === myProfileId ? '🗑️ Destroy Circle' : '🚪 Leave Circle'}
+                  </button>
+                )}
+              </div>
             </div>
             
             <div>
@@ -245,7 +256,6 @@ function SocialRadar() {
                 return (
                   <div key={friend.user_id} onClick={() => !friend.is_ghost && loadFriendTimetable(friend)} className={`group p-5 rounded-xl border shadow-lg transition-all flex flex-col h-full relative ${statusBg} ${friend.is_ghost ? 'cursor-not-allowed opacity-75' : 'cursor-pointer hover:scale-[1.02]'}`}>
                     
-                    {/* Nickname Form */}
                     {editingNicknameId === friend.user_id ? (
                       <form onSubmit={(e) => handleSaveNickname(e, friend.user_id)} className="flex items-center gap-2 mb-3" onClick={e => e.stopPropagation()}>
                         <input type="text" value={newNickname} onChange={e => setNewNickname(e.target.value)} placeholder="Set Nickname..." className="bg-slate-950 text-white text-sm px-3 py-1 rounded border border-indigo-500 outline-none w-full" autoFocus/>
@@ -263,7 +273,6 @@ function SocialRadar() {
                       </div>
                     )}
 
-                    {/* 🔥 NEW: In-Line Clone Confirmation */}
                     {!friend.is_ghost && (
                       cloningId === friend.user_id ? (
                         <div className="absolute bottom-4 right-4 flex items-center gap-2 bg-slate-900 border border-emerald-500/50 p-1.5 rounded z-10 animate-fade-in shadow-xl">
@@ -315,36 +324,18 @@ function SocialRadar() {
           </div>
         )}
 
+        {/* 🔥 LEVEL 3 UPGRADE: Replaced with ReadOnlyTimetable */}
         {viewLevel === 3 && activeFriend && (
           <div className="animate-fade-in flex flex-col gap-6">
             <button onClick={() => setViewLevel(2)} className="self-start text-sm text-slate-400 hover:text-white flex items-center gap-2 transition-colors">← Back to {activeCircle.name} Roster</button>
             <div className="bg-slate-800 p-6 rounded-xl border border-slate-700 shadow-lg">
-              <h2 className="text-xl font-black text-white mb-1">{activeFriend.name}'s Schedule</h2>
+              <h2 className="text-xl font-black text-white mb-2">{activeFriend.name}'s Schedule</h2>
               <p className="text-slate-400 text-sm mb-6">Read-only view.</p>
+              
               {friendTimetable.length === 0 ? (
                 <p className="text-slate-500 text-center italic py-10">No subjects logged by this user.</p>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {friendTimetable.map(sub => (
-                    <div key={sub.id} className="bg-slate-900 border border-slate-700 p-4 rounded-lg">
-                      <h3 className="font-bold text-indigo-300 text-sm mb-2 truncate">{sub.name}</h3>
-                      <div className="grid grid-cols-2 gap-2 text-xs text-slate-400">
-                        <div className="bg-slate-800 p-2 rounded">
-                          <span className="block text-[9px] uppercase font-bold text-slate-500">Theory Slot</span>
-                          <span className="font-mono text-white">{sub.theory_slot || 'N/A'}</span>
-                        </div>
-                        <div className="bg-slate-800 p-2 rounded">
-                          <span className="block text-[9px] uppercase font-bold text-slate-500">Lab Slot</span>
-                          <span className="font-mono text-white">{sub.lab_slot || 'N/A'}</span>
-                        </div>
-                        <div className="bg-slate-800 p-2 rounded col-span-2">
-                          <span className="block text-[9px] uppercase font-bold text-slate-500">Room</span>
-                          <span className="font-mono text-white">{sub.room_number || 'TBA'}</span>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                <ReadOnlyTimetable subjects={friendTimetable} />
               )}
             </div>
           </div>
@@ -363,6 +354,32 @@ function SocialRadar() {
                 <button type="submit" className="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white py-2 rounded-lg font-bold transition-colors shadow-[0_0_15px_rgba(79,70,229,0.3)]">Enter</button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* 🔥 NEW: Audit Log Modal */}
+      {historyLog && (
+        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in" onClick={() => setHistoryLog(null)}>
+          <div className="bg-slate-900 border border-slate-700 rounded-xl p-6 shadow-2xl max-w-md w-full max-h-[80vh] flex flex-col" onClick={e => e.stopPropagation()}>
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-xl font-black text-white">📜 Audit Log (30 Days)</h3>
+              <button onClick={() => setHistoryLog(null)} className="text-slate-400 hover:text-white">✕</button>
+            </div>
+            <div className="flex-1 overflow-y-auto custom-scrollbar pr-2 flex flex-col gap-2">
+              {historyLog.length === 0 ? <p className="text-slate-500 text-center italic mt-10">No recent activity.</p> : historyLog.map((log, i) => (
+                <div key={i} className="flex justify-between items-center bg-slate-800 p-3 rounded-lg border border-slate-700">
+                  <div className="flex items-center gap-3">
+                    <span className="text-xl">{log.action === 'joined' ? '👋' : '🚪'}</span>
+                    <div>
+                      <p className="text-sm font-bold text-white">{log.user_name}</p>
+                      <p className={`text-[10px] font-bold uppercase tracking-widest ${log.action === 'joined' ? 'text-emerald-400' : 'text-red-400'}`}>{log.action}</p>
+                    </div>
+                  </div>
+                  <span className="text-[10px] text-slate-500 font-mono">{new Date(log.timestamp).toLocaleDateString()}</span>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       )}

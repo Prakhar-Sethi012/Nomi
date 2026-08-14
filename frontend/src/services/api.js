@@ -90,4 +90,5 @@ export const api = {
   cloneFriend: (userId) => fetchAPI(`/social/member/${userId}/clone`, { method: 'POST' }),
   getCloseFriends: () => fetchAPI('/social/close-friends'),
   deleteCloseFriend: (npcId) => fetchAPI(`/social/close-friends/${npcId}`, { method: 'DELETE' }),
+  getCircleHistory: (circleId) => fetchAPI(`/social/circles/${circleId}/history`),
 };
