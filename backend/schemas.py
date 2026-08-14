@@ -129,7 +129,7 @@ class ExpenseUpdate(BaseModel):
 
 class ExpenseResponse(BaseModel):
     id: int
-    amount: float
+    amount: float  
     reason: str
     date: datetime.date
     tags: List[str]
@@ -160,9 +160,17 @@ class CircleCreate(BaseModel):
 class CircleResponse(BaseModel):
     id: int
     name: str
-    join_token: str # This powers the QR Code!
+    join_token: str 
     created_at: datetime.datetime
+    creator_id: Optional[int] = None # 🔥 NEW
 
+    class Config:
+        from_attributes = True
+
+class CircleSearchResponse(BaseModel):
+    id: int
+    name: str
+    
     class Config:
         from_attributes = True
 

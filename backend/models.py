@@ -84,6 +84,7 @@ class Circle(Base):
     name = Column(String, nullable=False)
     join_token = Column(String, unique=True, nullable=False)
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    creator_id = Column(Integer, ForeignKey("profile.id", ondelete="CASCADE"), nullable=True) # 🔥 NEW: Leader tracking
 
 class CircleMember(Base):
     __tablename__ = "circle_members"

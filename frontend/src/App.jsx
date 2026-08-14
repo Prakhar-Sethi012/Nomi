@@ -11,6 +11,7 @@ import TimetableView from './components/TimetableView';
 import ExpensesView from './components/ExpensesView';
 import AuthScreen from './components/AuthScreen';
 import SocialRadar from './components/SocialRadar';
+import CloseFriendsView from './components/CloseFriendsView'; // 🔥 NEW: Imported the directory!
 
 function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -95,10 +96,8 @@ function App() {
   }
 
   return (
-    // 🔥 LAYOUT FIX: No strict flex locks, allows natural scrolling
     <div className="min-h-screen bg-background transition-colors duration-300 flex flex-col items-center pt-6 px-4 font-sans">
       
-      {/* 🔥 REFACTORED NAVBAR: Restored all tabs + added Logout */}
       <nav className="w-full max-w-6xl flex justify-between items-center mb-6 bg-surface p-1.5 rounded-lg border border-border shadow-lg z-10 sticky top-4 transition-colors duration-300">
         
         {/* Navigation Tabs */}
@@ -110,6 +109,9 @@ function App() {
           <button onClick={() => setActiveTab('timetable')} className={`px-4 py-2 rounded-md text-sm font-bold transition-all duration-200 ${activeTab === 'timetable' ? 'bg-accent text-white shadow' : 'text-textSecondary hover:text-textPrimary hover:bg-surfaceHover'}`}>Timetable</button>
           <button onClick={() => setActiveTab('expenses')} className={`px-4 py-2 rounded-md text-sm font-bold transition-all duration-200 flex items-center gap-2 ${activeTab === 'expenses' ? 'bg-success text-white shadow' : 'text-textSecondary hover:text-textPrimary hover:bg-surfaceHover'}`}>Finance</button>
           <button onClick={() => setActiveTab('radar')} className={`px-4 py-2 rounded-md text-sm font-bold transition-all duration-200 ${activeTab === 'radar' ? 'bg-accent text-white shadow' : 'text-textSecondary hover:text-textPrimary hover:bg-surfaceHover'}`}>Radar</button>
+          
+          {/* 🔥 NEW: Close Friends Directory Tab */}
+          <button onClick={() => setActiveTab('closeFriends')} className={`px-4 py-2 rounded-md text-sm font-bold transition-all duration-200 ${activeTab === 'closeFriends' ? 'bg-accent text-white shadow' : 'text-textSecondary hover:text-textPrimary hover:bg-surfaceHover'}`}>Close Friends</button>
         </div>
 
         {/* Logout Button */}
@@ -130,6 +132,7 @@ function App() {
         {activeTab === 'strategy' && <AttendanceStrategyView />}
         {activeTab === 'expenses' && <ExpensesView />}
         {activeTab === 'radar' && <SocialRadar />}
+        {activeTab === 'closeFriends' && <CloseFriendsView />} {/* 🔥 NEW: Renders the component */}
       </div>
     </div>
   );

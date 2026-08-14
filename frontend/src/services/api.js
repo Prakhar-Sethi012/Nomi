@@ -75,7 +75,6 @@ export const api = {
   getMyCircles: () => fetchAPI('/social/circles/my-circles'),
   getCircleRoster: (circleId) => fetchAPI(`/social/circles/${circleId}/roster`),
   getFriendTimetable: (userId) => fetchAPI(`/social/member/${userId}/timetable`),
-  // Social & Privacy (Phase 2 Additions)
   setNickname: (friendId, nickname) => fetchAPI(`/social/member/${friendId}/nickname`, { method: 'PUT', body: JSON.stringify({ nickname }) }),
 
   // Notes / Scratchpad
@@ -83,4 +82,12 @@ export const api = {
   addNote: (data) => fetchAPI('/notes/', { method: 'POST', body: JSON.stringify(data) }),
   updateNote: (id, data) => fetchAPI(`/notes/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   deleteNote: (id) => fetchAPI(`/notes/${id}`, { method: 'DELETE' }),
+
+  // Social Expansions
+  searchCircles: (query) => fetchAPI(`/social/circles/search?q=${query}`),
+  leaveCircle: (circleId) => fetchAPI(`/social/circles/${circleId}/leave`, { method: 'DELETE' }),
+  deleteCircle: (circleId) => fetchAPI(`/social/circles/${circleId}`, { method: 'DELETE' }),
+  cloneFriend: (userId) => fetchAPI(`/social/member/${userId}/clone`, { method: 'POST' }),
+  getCloseFriends: () => fetchAPI('/social/close-friends'),
+  deleteCloseFriend: (npcId) => fetchAPI(`/social/close-friends/${npcId}`, { method: 'DELETE' }),
 };
