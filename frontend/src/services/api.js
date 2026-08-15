@@ -1,5 +1,4 @@
-const BASE_URL = 'http://localhost:8000'; // Changed from 127.0.0.1
-
+const BASE_URL = 'http://127.0.0.1:8000';
 const fetchAPI = async (endpoint, options = {}) => {
   // 1. Grab the VIP wristband from local storage
   const token = localStorage.getItem('token');
@@ -91,4 +90,10 @@ export const api = {
   getCloseFriends: () => fetchAPI('/social/close-friends'),
   deleteCloseFriend: (npcId) => fetchAPI(`/social/close-friends/${npcId}`, { method: 'DELETE' }),
   getCircleHistory: (circleId) => fetchAPI(`/social/circles/${circleId}/history`),
+
+  // Phase 2: Meetup Room
+  sendMeetup: (data) => fetchAPI('/social/meetups', { method: 'POST', body: JSON.stringify(data) }),
+  getIncomingMeetups: () => fetchAPI('/social/meetups/incoming'),
+  getOutgoingMeetups: () => fetchAPI('/social/meetups/outgoing'),
+  updateMeetupStatus: (id, status) => fetchAPI(`/social/meetups/${id}/status?status=${status}`, { method: 'PUT' }),
 };

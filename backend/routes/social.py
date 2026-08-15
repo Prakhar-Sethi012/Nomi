@@ -186,3 +186,61 @@ def delete_close_friend(npc_id: int, db: Session = Depends(get_db), current_user
     db.delete(npc)
     db.commit()
     return {"message": "Clone removed"}
+
+
+# ==========================================
+# PHASE 2: THE MEETUP REQUEST ROOM
+# ==========================================
+@router.post("/meetups", response_model=schemas.MeetupResponse)
+def send_meetup_request(data: schemas.MeetupCreate, db: Session = Depends(get_db), current_user: models.Profile = Depends(get_current_user)):
+    receiver = db.query(models.Profile).filter_by(id=data.receiver_id).first()
+    if not receiver or receiver.is_ghost:
+        raise HTTPException(status_code=400, detail="Cannot send request to this user. They might be a Ghost.")
+    
+    meetup = models.Meetup(sender_id=current_user.id, receiver_id=data.receiver_id, location=data.location, meet_time=data.meet_time)
+    db.add(meetup)
+    db.commit()
+    db.refresh(meetup)
+    return meetup
+
+@router.get("/meetups/incoming")
+def get_incoming_meetups(db: Session = Depends(get_db), current_user: models.Profile = Depends(get_current_user)):
+    # Fetch pending or accepted requests sent TO you
+    meetups = db.query(models.Meetup).filter(
+        models.Meetup.receiver_id == current_user.id, 
+        models.Meetup.status.in_(["pending", "accepted"])
+    ).order_by(models.Meetup.meet_time.asc()).all()
+    
+    result = []
+    for m in meetups:
+        sender = db.query(models.Profile).filter_by(id=m.sender_id).first()
+        result.append({
+            "id": m.id, "location": m.location, "meet_time": m.meet_time, "status": m.status,
+            "friend_name": sender.name if sender else "Unknown"
+        })
+    return result
+
+@router.get("/meetups/outgoing")
+def get_outgoing_meetups(db: Session = Depends(get_db), current_user: models.Profile = Depends(get_current_user)):
+    # Fetch requests sent BY you
+    meetups = db.query(models.Meetup).filter(
+        models.Meetup.sender_id == current_user.id
+    ).order_by(models.Meetup.meet_time.asc()).all()
+    
+    result = []
+    for m in meetups:
+        receiver = db.query(models.Profile).filter_by(id=m.receiver_id).first()
+        result.append({
+            "id": m.id, "location": m.location, "meet_time": m.meet_time, "status": m.status,
+            "friend_name": receiver.name if receiver else "Unknown"
+        })
+    return result
+
+@router.put("/meetups/{meetup_id}/status")
+def update_meetup_status(meetup_id: int, status: str, db: Session = Depends(get_db), current_user: models.Profile = Depends(get_current_user)):
+    meetup = db.query(models.Meetup).filter_by(id=meetup_id, receiver_id=current_user.id).first()
+    if not meetup: raise HTTPException(status_code=404, detail="Meetup not found.")
+    
+    meetup.status = status # 'accepted' or 'declined'
+    db.commit()
+    return {"message": f"Meetup {status}"}

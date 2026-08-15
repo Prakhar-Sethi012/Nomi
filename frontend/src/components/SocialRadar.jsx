@@ -40,6 +40,12 @@ function SocialRadar() {
   const [pendingCircleAction, setPendingCircleAction] = useState(null); 
   const [cloningId, setCloningId] = useState(null); 
 
+  // 🔥 NEW: MEETUP ROOM STATES
+  const [incomingMeetups, setIncomingMeetups] = useState([]);
+  const [outgoingMeetups, setOutgoingMeetups] = useState([]);
+  const [meetupModalUser, setMeetupModalUser] = useState(null); // Which friend are we asking out?
+  const [meetupData, setMeetupData] = useState({ location: '', meet_time: '' });
+
   const fetchHistory = async () => {
     try {
       const data = await api.getCircleHistory(activeCircle.id);
@@ -50,10 +56,17 @@ function SocialRadar() {
   const loadLobby = async () => {
     setIsLoading(true); setError('');
     try {
-      const [circlesData, profile] = await Promise.all([ api.getMyCircles(), api.getProfile() ]);
+      const [circlesData, profile, incoming, outgoing] = await Promise.all([ 
+        api.getMyCircles(), 
+        api.getProfile(),
+        api.getIncomingMeetups(),
+        api.getOutgoingMeetups()
+      ]);
       setCircles(circlesData);
       setIsGhost(profile.is_ghost);
       setMyProfileId(profile.id);
+      setIncomingMeetups(incoming);
+      setOutgoingMeetups(outgoing);
       setViewLevel(1);
     } catch (err) { setError('Failed to load lobby data.'); } 
     finally { setIsLoading(false); }
@@ -116,6 +129,30 @@ function SocialRadar() {
       setEditingNicknameId(null);
       loadRoster(activeCircle); 
     } catch (err) { setError('Failed to update nickname.'); }
+  };
+
+  // 🔥 NEW: Send Meetup Request
+  const handleSendMeetup = async (e) => {
+    e.preventDefault();
+    try {
+      await api.sendMeetup({ 
+        receiver_id: meetupModalUser.user_id, 
+        location: meetupData.location, 
+        meet_time: new Date(meetupData.meet_time).toISOString() 
+      });
+      setMeetupModalUser(null);
+      setMeetupData({ location: '', meet_time: '' });
+      loadLobby(); // Refresh to see it in outgoing
+      alert("Meetup Request Sent!");
+    } catch (err) { setError("Failed to send meetup request."); }
+  };
+
+  // 🔥 NEW: Accept/Decline Meetup
+  const handleUpdateMeetup = async (id, status) => {
+    try {
+      await api.updateMeetupStatus(id, status);
+      loadLobby(); // Refresh lists
+    } catch (err) { setError("Failed to update status."); }
   };
 
   const loadRoster = async (circle) => {
@@ -211,6 +248,63 @@ function SocialRadar() {
                 </div>
               )}
             </div>
+
+            {/* 🔥 NEW: MEETUP REQUEST ROOM */}
+            <div className="mt-8 relative">
+              <div className="absolute -inset-1 bg-gradient-to-r from-indigo-500 to-fuchsia-600 rounded-xl blur opacity-20"></div>
+              <div className="relative bg-slate-900 border border-slate-700 p-6 rounded-xl shadow-2xl">
+                <h2 className="text-xl font-black text-white mb-1 flex items-center gap-2">☕ The Request Room</h2>
+                <p className="text-slate-400 text-xs mb-6 uppercase tracking-widest font-bold">Incoming & Outgoing Meetups</p>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                  {/* Incoming Column */}
+                  <div>
+                    <h3 className="text-sm font-bold text-slate-300 mb-3 border-b border-slate-700 pb-2">📥 Incoming Requests</h3>
+                    <div className="flex flex-col gap-3">
+                      {incomingMeetups.length === 0 ? <p className="text-xs text-slate-500 italic">No incoming requests.</p> : incomingMeetups.map(m => (
+                        <div key={m.id} className="bg-slate-800 border border-slate-700 p-4 rounded-lg flex flex-col gap-3 shadow-lg">
+                          <div className="flex justify-between items-start">
+                            <div>
+                              <p className="text-sm font-bold text-white"><span className="text-indigo-400">{m.friend_name}</span> wants to meet!</p>
+                              <p className="text-xs text-slate-400 mt-1">📍 {m.location}</p>
+                              <p className="text-xs text-slate-400">⏰ {new Date(m.meet_time).toLocaleString()}</p>
+                            </div>
+                            {m.status === 'accepted' && <span className="bg-emerald-900/40 text-emerald-400 text-[10px] px-2 py-1 rounded font-bold uppercase border border-emerald-500/30">Accepted</span>}
+                            {m.status === 'pending' && <span className="bg-amber-900/40 text-amber-400 text-[10px] px-2 py-1 rounded font-bold uppercase border border-amber-500/30">Pending</span>}
+                          </div>
+                          
+                          {m.status === 'pending' && (
+                            <div className="flex gap-2 mt-1">
+                              <button onClick={() => handleUpdateMeetup(m.id, 'accepted')} className="flex-1 bg-emerald-600/20 hover:bg-emerald-600 text-emerald-400 hover:text-white border border-emerald-500/30 px-3 py-1.5 rounded text-xs font-bold transition-all">Accept</button>
+                              <button onClick={() => handleUpdateMeetup(m.id, 'declined')} className="flex-1 bg-red-600/20 hover:bg-red-600 text-red-400 hover:text-white border border-red-500/30 px-3 py-1.5 rounded text-xs font-bold transition-all">Decline</button>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Outgoing Column */}
+                  <div>
+                    <h3 className="text-sm font-bold text-slate-300 mb-3 border-b border-slate-700 pb-2">📤 Sent Requests</h3>
+                    <div className="flex flex-col gap-3">
+                      {outgoingMeetups.length === 0 ? <p className="text-xs text-slate-500 italic">No outgoing requests.</p> : outgoingMeetups.map(m => (
+                        <div key={m.id} className="bg-slate-800 border border-slate-700 p-4 rounded-lg flex flex-col gap-2 opacity-80 hover:opacity-100 transition-opacity">
+                          <p className="text-sm text-slate-300">Sent to <span className="font-bold text-white">{m.friend_name}</span></p>
+                          <p className="text-xs text-slate-400">📍 {m.location} • ⏰ {new Date(m.meet_time).toLocaleString()}</p>
+                          <div className="mt-1">
+                            {m.status === 'accepted' && <span className="text-[10px] text-emerald-400 font-bold uppercase tracking-widest">✓ They Accepted</span>}
+                            {m.status === 'declined' && <span className="text-[10px] text-red-400 font-bold uppercase tracking-widest">✕ Declined</span>}
+                            {m.status === 'pending' && <span className="text-[10px] text-amber-400 font-bold uppercase tracking-widest">... Waiting for response</span>}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
           </div>
         )}
 
@@ -245,7 +339,7 @@ function SocialRadar() {
             
             <div>
               <h2 className="text-2xl font-black text-white">{activeCircle.name} <span className="text-slate-500 font-normal">Roster</span></h2>
-              <p className="text-slate-400 text-sm mt-1">Select a member to view their schedule, or hover to edit.</p>
+              <p className="text-slate-400 text-sm mt-1">Select a member to view their schedule, or hover to interact.</p>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -273,22 +367,31 @@ function SocialRadar() {
                       </div>
                     )}
 
+                    {/* 🔥 NEW: Interactive Hover Buttons (Clone & Meet) */}
                     {!friend.is_ghost && (
-                      cloningId === friend.user_id ? (
-                        <div className="absolute bottom-4 right-4 flex items-center gap-2 bg-slate-900 border border-emerald-500/50 p-1.5 rounded z-10 animate-fade-in shadow-xl">
-                          <span className="text-[9px] text-emerald-400 font-bold uppercase tracking-widest ml-1">Clone?</span>
-                          <button onClick={(e) => { e.stopPropagation(); executeClone(friend.user_id); }} className="text-[10px] bg-emerald-600 hover:bg-emerald-500 text-white px-2 py-1 rounded font-bold">Yes</button>
-                          <button onClick={(e) => { e.stopPropagation(); setCloningId(null); }} className="text-[10px] bg-slate-700 hover:bg-slate-600 text-white px-2 py-1 rounded">No</button>
-                        </div>
-                      ) : friend.cloneSuccess ? (
-                         <div className="absolute bottom-4 right-4 text-[10px] text-emerald-400 font-bold bg-emerald-900/40 px-2 py-1 rounded border border-emerald-500/30 animate-fade-in">
-                           ✓ Cloned
-                         </div>
-                      ) : (
-                        <button onClick={(e) => { e.stopPropagation(); setCloningId(friend.user_id); }} className="absolute bottom-4 right-4 opacity-0 group-hover:opacity-100 text-xs bg-slate-800 hover:bg-emerald-600/30 text-slate-400 hover:text-emerald-400 border border-slate-700 hover:border-emerald-500 px-2 py-1 rounded transition-all">
-                          💾 Clone
+                      <div className="absolute bottom-4 right-4 flex gap-2">
+                        {/* Clone Logic */}
+                        {cloningId === friend.user_id ? (
+                          <div className="flex items-center gap-2 bg-slate-900 border border-emerald-500/50 p-1.5 rounded z-10 animate-fade-in shadow-xl">
+                            <span className="text-[9px] text-emerald-400 font-bold uppercase tracking-widest ml-1">Clone?</span>
+                            <button onClick={(e) => { e.stopPropagation(); executeClone(friend.user_id); }} className="text-[10px] bg-emerald-600 hover:bg-emerald-500 text-white px-2 py-1 rounded font-bold">Yes</button>
+                            <button onClick={(e) => { e.stopPropagation(); setCloningId(null); }} className="text-[10px] bg-slate-700 hover:bg-slate-600 text-white px-2 py-1 rounded">No</button>
+                          </div>
+                        ) : friend.cloneSuccess ? (
+                           <div className="text-[10px] text-emerald-400 font-bold bg-emerald-900/40 px-2 py-1.5 rounded border border-emerald-500/30 animate-fade-in flex items-center">
+                             ✓ Cloned
+                           </div>
+                        ) : (
+                          <button onClick={(e) => { e.stopPropagation(); setCloningId(friend.user_id); }} className="opacity-0 group-hover:opacity-100 text-xs bg-slate-800 hover:bg-emerald-600/30 text-slate-400 hover:text-emerald-400 border border-slate-700 hover:border-emerald-500 px-2 py-1.5 rounded transition-all">
+                            💾 Clone
+                          </button>
+                        )}
+
+                        {/* Meetup Button */}
+                        <button onClick={(e) => { e.stopPropagation(); setMeetupModalUser(friend); }} className="opacity-0 group-hover:opacity-100 text-xs bg-slate-800 hover:bg-indigo-600/30 text-slate-400 hover:text-indigo-400 border border-slate-700 hover:border-indigo-500 px-2 py-1.5 rounded transition-all">
+                          🤝 Meet
                         </button>
-                      )
+                      </div>
                     )}
 
                     {friend.is_ghost ? (
@@ -298,7 +401,7 @@ function SocialRadar() {
                     ) : (
                       <div>
                         <p className="text-xs text-red-400 font-bold uppercase tracking-wider mb-1">Currently in {friend.live_status.type}</p>
-                        <p className="text-sm text-slate-300 font-medium truncate pr-16">{friend.live_status.class_name}</p>
+                        <p className="text-sm text-slate-300 font-medium truncate pr-32">{friend.live_status.class_name}</p>
                         <p className="text-xs text-slate-400 mt-1">Slot: {friend.live_status.slot} • Room: {friend.live_status.room}</p>
                       </div>
                     )}
@@ -312,7 +415,7 @@ function SocialRadar() {
                               In {formatSmartTime(friend.next_class.minutes_until).value} {formatSmartTime(friend.next_class.minutes_until).unit}
                             </span>
                           </div>
-                          <p className="text-sm text-slate-300 font-bold truncate pr-16">{friend.next_class.name}</p>
+                          <p className="text-sm text-slate-300 font-bold truncate pr-32">{friend.next_class.name}</p>
                           <p className="text-xs text-slate-400 mt-1">Slot {friend.next_class.slot} • {friend.next_class.room}</p>
                         </div>
                       )}
@@ -324,7 +427,6 @@ function SocialRadar() {
           </div>
         )}
 
-        {/* 🔥 LEVEL 3 UPGRADE: Replaced with ReadOnlyTimetable */}
         {viewLevel === 3 && activeFriend && (
           <div className="animate-fade-in flex flex-col gap-6">
             <button onClick={() => setViewLevel(2)} className="self-start text-sm text-slate-400 hover:text-white flex items-center gap-2 transition-colors">← Back to {activeCircle.name} Roster</button>
@@ -342,6 +444,7 @@ function SocialRadar() {
         )}
       </div>
 
+      {/* JOIN SEARCH CIRCLE MODAL */}
       {selectedSearchCircle && (
         <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in">
           <div className="bg-slate-900 border border-slate-700 rounded-xl p-6 shadow-2xl max-w-sm w-full">
@@ -358,7 +461,31 @@ function SocialRadar() {
         </div>
       )}
 
-      {/* 🔥 NEW: Audit Log Modal */}
+      {/* 🔥 NEW: SEND MEETUP REQUEST MODAL */}
+      {meetupModalUser && (
+        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in">
+          <div className="bg-slate-900 border border-slate-700 rounded-xl p-6 shadow-2xl max-w-sm w-full">
+            <h3 className="text-xl font-black text-white mb-2">🤝 Meet {meetupModalUser.name}</h3>
+            <p className="text-sm text-slate-400 mb-6">Send a quick ping to coordinate a meetup.</p>
+            <form onSubmit={handleSendMeetup} className="flex flex-col gap-4">
+              <div>
+                <label className="text-[10px] uppercase font-bold text-slate-500 block mb-1">Where?</label>
+                <input type="text" required placeholder="e.g., Foody, SJT Lobby..." value={meetupData.location} onChange={e => setMeetupData({...meetupData, location: e.target.value})} className="w-full bg-slate-950 border border-slate-600 rounded-lg px-4 py-2 text-white outline-none focus:border-indigo-500" />
+              </div>
+              <div>
+                <label className="text-[10px] uppercase font-bold text-slate-500 block mb-1">When?</label>
+                <input type="datetime-local" required value={meetupData.meet_time} onChange={e => setMeetupData({...meetupData, meet_time: e.target.value})} className="w-full bg-slate-950 border border-slate-600 rounded-lg px-4 py-2 text-white outline-none focus:border-indigo-500 font-mono text-sm" />
+              </div>
+              <div className="flex gap-2 mt-2">
+                <button type="button" onClick={() => setMeetupModalUser(null)} className="flex-1 bg-slate-800 hover:bg-slate-700 text-white py-2 rounded-lg font-bold transition-colors">Cancel</button>
+                <button type="submit" className="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white py-2 rounded-lg font-bold transition-colors shadow-[0_0_15px_rgba(79,70,229,0.3)]">Send Ping</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* AUDIT LOG MODAL */}
       {historyLog && (
         <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in" onClick={() => setHistoryLog(null)}>
           <div className="bg-slate-900 border border-slate-700 rounded-xl p-6 shadow-2xl max-w-md w-full max-h-[80vh] flex flex-col" onClick={e => e.stopPropagation()}>

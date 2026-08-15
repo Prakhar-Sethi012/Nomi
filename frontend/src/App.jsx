@@ -11,7 +11,7 @@ import TimetableView from './components/TimetableView';
 import ExpensesView from './components/ExpensesView';
 import AuthScreen from './components/AuthScreen';
 import SocialRadar from './components/SocialRadar';
-import CloseFriendsView from './components/CloseFriendsView'; // 🔥 NEW: Imported the directory!
+import CloseFriendsView from './components/CloseFriendsView';
 
 function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -95,6 +95,20 @@ function App() {
     );
   }
 
+  // 🔥 NEW SAFETY NET: Prevents the blank screen crash if backend fails!
+  if (!profile) {
+    return (
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center font-mono text-danger">
+        <span className="text-4xl mb-4">🔌</span>
+        <p className="font-bold">Cannot connect to backend server.</p>
+        <p className="text-sm text-textSecondary mt-2">Make sure your FastAPI server is running without errors!</p>
+        <button onClick={() => window.location.reload()} className="mt-6 px-6 py-2 bg-surface border border-border hover:bg-surfaceHover rounded-lg text-textPrimary font-bold transition-all">
+          Retry Connection
+        </button>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-background transition-colors duration-300 flex flex-col items-center pt-6 px-4 font-sans">
       
@@ -110,7 +124,7 @@ function App() {
           <button onClick={() => setActiveTab('expenses')} className={`px-4 py-2 rounded-md text-sm font-bold transition-all duration-200 flex items-center gap-2 ${activeTab === 'expenses' ? 'bg-success text-white shadow' : 'text-textSecondary hover:text-textPrimary hover:bg-surfaceHover'}`}>Finance</button>
           <button onClick={() => setActiveTab('radar')} className={`px-4 py-2 rounded-md text-sm font-bold transition-all duration-200 ${activeTab === 'radar' ? 'bg-accent text-white shadow' : 'text-textSecondary hover:text-textPrimary hover:bg-surfaceHover'}`}>Radar</button>
           
-          {/* 🔥 NEW: Close Friends Directory Tab */}
+          {/* Close Friends Directory Tab */}
           <button onClick={() => setActiveTab('closeFriends')} className={`px-4 py-2 rounded-md text-sm font-bold transition-all duration-200 ${activeTab === 'closeFriends' ? 'bg-accent text-white shadow' : 'text-textSecondary hover:text-textPrimary hover:bg-surfaceHover'}`}>Close Friends</button>
         </div>
 
@@ -132,7 +146,7 @@ function App() {
         {activeTab === 'strategy' && <AttendanceStrategyView />}
         {activeTab === 'expenses' && <ExpensesView />}
         {activeTab === 'radar' && <SocialRadar />}
-        {activeTab === 'closeFriends' && <CloseFriendsView />} {/* 🔥 NEW: Renders the component */}
+        {activeTab === 'closeFriends' && <CloseFriendsView />}
       </div>
     </div>
   );
