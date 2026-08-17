@@ -24,11 +24,9 @@ const StatCard = ({ title, value, subtitle, valueColor = "text-white" }) => (
   </div>
 );
 
-function ExpensesView() {
+function ExpensesView({ profile, setProfile }) {
   const [expenses, setExpenses] = useState([]);
-  const [monthlyLimit, setMonthlyLimit] = useState(0); // 🔥 NEW LIMIT STATE
   const [isLoading, setIsLoading] = useState(true);
-  
   const [viewDate, setViewDate] = useState(new Date());
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -42,12 +40,8 @@ function ExpensesView() {
 
   const fetchFinanceData = async () => {
     try {
-      const [data, profile] = await Promise.all([
-        api.getExpenses(),
-        api.getProfile()
-      ]);
+      const data = await api.getExpenses();
       setExpenses(data);
-      setMonthlyLimit(profile.monthly_limit || 0);
     } catch (err) {
       console.error('Failed to fetch finance data', err);
     } finally {
@@ -57,13 +51,23 @@ function ExpensesView() {
 
   useEffect(() => { fetchFinanceData(); }, []);
 
+  const viewMonth = viewDate.getMonth();
+  const viewYear = viewDate.getFullYear();
+  const isCurrentMonth = viewMonth === new Date().getMonth() && viewYear === new Date().getFullYear();
+
+  // 🔥 EXTRACT DYNAMIC PER-MONTH BUDGET
+  const viewMonthKey = `${viewYear}-${viewMonth}`;
+  const budgets = profile?.monthly_budgets || {};
+  const monthlyLimit = budgets[viewMonthKey] || 0;
+
   const handleUpdateLimit = async () => {
-    const newLimit = prompt("Set your monthly spending limit (₹):", monthlyLimit);
+    const newLimit = prompt(`Set your spending limit for ${viewDate.toLocaleString('default', { month: 'long', year: 'numeric' })} (₹):`, monthlyLimit);
     const parsedLimit = parseFloat(newLimit);
     if (!isNaN(parsedLimit) && parsedLimit >= 0) {
+      const newBudgets = { ...budgets, [viewMonthKey]: parsedLimit };
       try {
-        await api.updateProfile({ monthly_limit: parsedLimit });
-        setMonthlyLimit(parsedLimit);
+        await api.updateProfile({ monthly_budgets: newBudgets });
+        if (setProfile && profile) setProfile({ ...profile, monthly_budgets: newBudgets });
       } catch (err) { alert("Failed to update limit."); }
     }
   };
@@ -92,11 +96,32 @@ function ExpensesView() {
     } catch (err) { console.error("Failed to delete expense", err); }
   };
 
-  const viewMonth = viewDate.getMonth();
-  const viewYear = viewDate.getFullYear();
-  const isCurrentMonth = viewMonth === new Date().getMonth() && viewYear === new Date().getFullYear();
+  // 🔥 DUAL EXPORT LOGIC
+  const handleExport = async (type) => {
+    try {
+      const token = localStorage.getItem('token');
+      
+      let url = 'http://127.0.0.1:8000/expenses/export';
+      if (type === 'month') url += `?year=${viewYear}&month=${viewMonth + 1}`; // Backend extracts 1-12
+      else if (type === 'year') url += `?year=${viewYear}`;
 
-  const lifetimeTotal = expenses.reduce((sum, item) => sum + item.amount, 0);
+      const response = await fetch(url, { headers: { 'Authorization': `Bearer ${token}` } });
+      if (!response.ok) throw new Error("Failed to export data.");
+      
+      const blob = await response.blob();
+      const objUrl = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = objUrl;
+      a.download = type === 'month' ? `Expense_Report_${viewYear}_${viewMonth + 1}.txt` : `Expense_Report_${viewYear}.txt`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(objUrl);
+    } catch (err) {
+      console.error(err);
+      alert("Export failed. Make sure the backend is running.");
+    }
+  };
 
   const monthlyExpenses = expenses.filter(exp => {
     const d = new Date(exp.date);
@@ -104,7 +129,6 @@ function ExpensesView() {
   });
   const monthTotal = monthlyExpenses.reduce((sum, item) => sum + item.amount, 0);
 
-  // 🔥 NEW FIXED MATH FOR DAILY AVERAGE
   const todayObj = new Date();
   const daysElapsed = isCurrentMonth ? (todayObj.getDate() || 1) : new Date(viewYear, viewMonth + 1, 0).getDate();
   const dailyAverage = monthTotal / daysElapsed;
@@ -147,10 +171,6 @@ function ExpensesView() {
     acc[tag] = (acc[tag] || 0) + exp.amount;
     return acc;
   }, {});
-
-  const topCategory = Object.entries(categoryTotals).sort((a, b) => b[1] - a[1])[0];
-  const topCategoryName = topCategory ? topCategory[0] : 'None';
-  const topCategoryColor = topCategory ? categoryColors[topCategoryName] : '#64748b';
 
   let cumulativePercent = 0;
   const gradientStops = Object.entries(categoryTotals).map(([tag, amount]) => {
@@ -196,11 +216,10 @@ function ExpensesView() {
           <h1 className="text-5xl md:text-6xl font-black text-white mt-4 drop-shadow-md relative z-10">₹{monthTotal.toLocaleString('en-IN')}</h1>
           <p className="text-emerald-400/80 font-mono text-[10px] uppercase tracking-wider mt-2 relative z-10">{numberToWords(Math.floor(monthTotal))} Rupees</p>
           
-          {/* 🔥 NEW PROGRESS BAR LOGIC */}
           <div className="mt-8 max-w-md relative z-10">
             <div className="flex justify-between items-end mb-2">
               <span className="text-[10px] text-slate-400 uppercase font-bold tracking-widest">Monthly Limit</span>
-              <button onClick={handleUpdateLimit} className="text-xs text-emerald-400 font-bold hover:text-emerald-300 transition-colors">
+              <button onClick={handleUpdateLimit} className="text-xs text-emerald-400 font-bold hover:text-emerald-300 transition-colors bg-slate-900/50 px-2 py-1 rounded">
                 {monthlyLimit > 0 ? `₹${monthlyLimit.toLocaleString('en-IN')}` : 'Set Limit +'}
               </button>
             </div>
@@ -218,7 +237,6 @@ function ExpensesView() {
           </div>
         </div>
 
-        {/* REPLACED EXTRA DAILY AVG CARD WITH LIFETIME */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
           <StatCard title="Today" value={`₹${todayTotal.toLocaleString('en-IN')}`} subtitle={todaySubtitle} />
           <StatCard title="This Week" value={`₹${weekTotal.toLocaleString('en-IN')}`} subtitle={weekSubtitle} />
@@ -266,10 +284,21 @@ function ExpensesView() {
 
           <div className="lg:col-span-7 bg-slate-900/40 backdrop-blur-xl p-8 rounded-[32px] border border-slate-800 shadow-xl flex flex-col h-full min-h-[500px]">
             <div className="flex justify-between items-center mb-6">
-              <h3 className="text-xs font-bold text-slate-500 uppercase tracking-[0.2em]">{selectedCategory ? `${selectedCategory} Activity` : 'Recent Transactions'}</h3>
-              {selectedCategory && (
-                <button onClick={() => setSelectedCategory(null)} className="text-[10px] bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-1.5 rounded-full transition-colors uppercase tracking-wider font-bold">Clear Filter ✕</button>
-              )}
+              <div className="flex items-center gap-4">
+                <h3 className="text-xs font-bold text-slate-500 uppercase tracking-[0.2em]">{selectedCategory ? `${selectedCategory} Activity` : 'Recent Transactions'}</h3>
+                {selectedCategory && (
+                  <button onClick={() => setSelectedCategory(null)} className="text-[10px] bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-1.5 rounded-full transition-colors uppercase tracking-wider font-bold">Clear Filter ✕</button>
+                )}
+              </div>
+              
+              <div className="flex items-center gap-2">
+                <button onClick={() => handleExport('month')} className="text-[10px] bg-slate-800 hover:bg-emerald-600 hover:text-white text-slate-400 border border-slate-700 hover:border-emerald-500 px-3 py-1.5 rounded transition-all font-bold tracking-widest uppercase">
+                  ⬇ Month .txt
+                </button>
+                <button onClick={() => handleExport('year')} className="text-[10px] bg-slate-800 hover:bg-emerald-600 hover:text-white text-slate-400 border border-slate-700 hover:border-emerald-500 px-3 py-1.5 rounded transition-all font-bold tracking-widest uppercase">
+                  ⬇ Year .txt
+                </button>
+              </div>
             </div>
             
             {displayedExpenses.length === 0 ? (

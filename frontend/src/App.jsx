@@ -144,7 +144,7 @@ function App() {
         {activeTab === 'links' && <LinksView />}
         {activeTab === 'timetable' && <TimetableView />}
         {activeTab === 'strategy' && <AttendanceStrategyView />}
-        {activeTab === 'expenses' && <ExpensesView />}
+        {activeTab === 'expenses' && <ExpensesView profile={profile} setProfile={setProfile} />}
         {activeTab === 'radar' && <SocialRadar />}
         {activeTab === 'closeFriends' && <CloseFriendsView />}
       </div>

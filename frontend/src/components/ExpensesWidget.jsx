@@ -1,11 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../services/api';
 
-function ExpensesWidget({ setActiveTab }) {
+function ExpensesWidget({ profile, setActiveTab }) {
   const [expenses, setExpenses] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
-
-  const monthlyLimit = parseFloat(localStorage.getItem('command_center_budget')) || 5000;
 
   useEffect(() => {
     const fetchExpenses = async () => {
@@ -23,6 +21,11 @@ function ExpensesWidget({ setActiveTab }) {
 
   const currentMonth = new Date().getMonth();
   const currentYear = new Date().getFullYear();
+  
+  // Extract the specific limit for this exact month (e.g., "2023-8")
+  const currentMonthKey = `${currentYear}-${currentMonth}`;
+  const budgets = profile?.monthly_budgets || {};
+  const monthlyLimit = budgets[currentMonthKey] || 0;
 
   const thisMonthExpenses = expenses.filter(exp => {
     const expDate = new Date(exp.date);
@@ -53,12 +56,14 @@ function ExpensesWidget({ setActiveTab }) {
           <div className="flex justify-between text-xs mb-2">
             <span className="text-slate-400">Limit: ₹{monthlyLimit}</span>
             <span className={amountLeft >= 0 ? "text-emerald-400 font-bold" : "text-red-400 font-bold animate-pulse"}>
-              {amountLeft >= 0 ? 'Left:' : 'Over:'} ₹{Math.abs(amountLeft).toFixed(0)}
+              {monthlyLimit === 0 ? 'No Limit Set' : (amountLeft >= 0 ? `Left: ₹${Math.abs(amountLeft).toFixed(0)}` : `Over: ₹${Math.abs(amountLeft).toFixed(0)}`)}
             </span>
           </div>
-          <div className="w-full bg-slate-700 rounded-full h-2 overflow-hidden">
-            <div className={`h-2 rounded-full transition-all duration-1000 ${barColor}`} style={{ width: `${progressPercentage}%` }}></div>
-          </div>
+          {monthlyLimit > 0 && (
+            <div className="w-full bg-slate-700 rounded-full h-2 overflow-hidden">
+              <div className={`h-2 rounded-full transition-all duration-1000 ${barColor}`} style={{ width: `${progressPercentage}%` }}></div>
+            </div>
+          )}
         </div>
       </div>
 
@@ -68,7 +73,6 @@ function ExpensesWidget({ setActiveTab }) {
       >
         Manage Finances →
       </button>
-
     </div>
   );
 }

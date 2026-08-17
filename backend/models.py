@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Float, Date, ARRAY, DateTime, Boolean, ForeignKey
+from sqlalchemy import Column, Integer, String, Float, Date, ARRAY, DateTime, Boolean, ForeignKey,JSON
 from sqlalchemy.orm import relationship
 import datetime
 from database import Base
@@ -18,7 +18,8 @@ class Profile(Base):
     monthly_limit = Column(Float, nullable=True, default=0.0)
     is_npc = Column(Boolean, default=False)
     managed_by = Column(Integer, ForeignKey("profile.id", ondelete="CASCADE"), nullable=True)
-
+    monthly_budgets = Column(JSON, default={})
+    
 class Task(Base):
     __tablename__ = "tasks"
 

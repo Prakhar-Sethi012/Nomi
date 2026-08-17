@@ -141,7 +141,7 @@ function Dashboard({ profile, setProfile, setActiveTab }) {
           <TasksWidget />
         </div>
         <div className="lg:col-span-3 w-full">
-          <ExpensesWidget setActiveTab={setActiveTab} />
+          <ExpensesWidget profile={profile} setActiveTab={setActiveTab} />
         </div>
       </div>
       

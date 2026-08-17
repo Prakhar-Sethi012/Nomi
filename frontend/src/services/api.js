@@ -31,7 +31,7 @@ export const api = {
 
   // Profile (Notice we removed setupProfile since register handles it now!)
   getProfile: () => fetchAPI('/profile/'),
-  updateProfile: (data) => fetchAPI('/profile/', { method: 'PUT', body: JSON.stringify(data) }),
+  updateProfile: (data) => fetchAPI('/profile', { method: 'PUT', body: JSON.stringify(data) }),
 
   // Tasks
   getTasks: (start_date, end_date) => {

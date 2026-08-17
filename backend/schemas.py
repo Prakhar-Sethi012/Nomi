@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-from typing import List, Optional
+from typing import List, Optional,Dict
 import datetime 
 
 # ==========================================
@@ -20,6 +20,7 @@ class ProfileUpdate(BaseModel):
     custom_task_tags: Optional[List[str]] = None
     is_ghost: Optional[bool] = None 
     monthly_limit: Optional[float] = None
+    monthly_budgets: Optional[Dict[str, float]] = None
 
 class ProfileResponse(BaseModel):
     id: int
@@ -31,6 +32,7 @@ class ProfileResponse(BaseModel):
     custom_task_tags: List[str]
     is_ghost: bool 
     monthly_limit: Optional[float] = None
+    monthly_budgets: Optional[Dict[str, float]] = None
 
     class Config:
         from_attributes = True
