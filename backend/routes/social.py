@@ -170,11 +170,24 @@ def get_close_friends(db: Session = Depends(get_db), current_user: models.Profil
     npcs = db.query(models.Profile).filter_by(managed_by=current_user.id).all()
     active_slots = get_current_active_slots()
     roster = []
+    
     for npc in npcs:
         subjects = db.query(models.Subject).filter_by(user_id=npc.id).all()
+        
+        # 🔥 Extract the REAL friend's ID so meetups route correctly!
+        try:
+            real_user_id = int(npc.reg_no.split('_')[2])
+        except:
+            real_user_id = npc.id
+            
         roster.append({
-            "user_id": npc.id, "name": npc.name, "real_name": npc.name, "is_ghost": False,
-            "live_status": check_user_status(subjects, active_slots), "next_class": get_next_class(subjects)
+            "user_id": npc.id, 
+            "real_user_id": real_user_id, # Safely pass the true ID to the frontend
+            "name": npc.name, 
+            "real_name": npc.name, 
+            "is_ghost": False,
+            "live_status": check_user_status(subjects, active_slots), 
+            "next_class": get_next_class(subjects)
         })
     return roster
 
@@ -205,6 +218,11 @@ def send_meetup_request(data: schemas.MeetupCreate, db: Session = Depends(get_db
 
 @router.get("/meetups/incoming")
 def get_incoming_meetups(db: Session = Depends(get_db), current_user: models.Profile = Depends(get_current_user)):
+    # AUTO-CLEANUP: Destroy meetups where the meet_time was over 7 days ago
+    seven_days_ago = datetime.datetime.utcnow() - datetime.timedelta(days=7)
+    db.query(models.Meetup).filter(models.Meetup.meet_time < seven_days_ago).delete(synchronize_session=False)
+    db.commit()
+
     # Fetch pending or accepted requests sent TO you
     meetups = db.query(models.Meetup).filter(
         models.Meetup.receiver_id == current_user.id, 
@@ -222,6 +240,11 @@ def get_incoming_meetups(db: Session = Depends(get_db), current_user: models.Pro
 
 @router.get("/meetups/outgoing")
 def get_outgoing_meetups(db: Session = Depends(get_db), current_user: models.Profile = Depends(get_current_user)):
+    # AUTO-CLEANUP: Destroy meetups where the meet_time was over 7 days ago
+    seven_days_ago = datetime.datetime.utcnow() - datetime.timedelta(days=7)
+    db.query(models.Meetup).filter(models.Meetup.meet_time < seven_days_ago).delete(synchronize_session=False)
+    db.commit()
+
     # Fetch requests sent BY you
     meetups = db.query(models.Meetup).filter(
         models.Meetup.sender_id == current_user.id

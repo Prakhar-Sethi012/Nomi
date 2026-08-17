@@ -19,7 +19,11 @@ function CloseFriendsView() {
   
   const [activeFriend, setActiveFriend] = useState(null);
   const [friendTimetable, setFriendTimetable] = useState([]);
-  const [deletingId, setDeletingId] = useState(null); // Inline delete confirmation
+  const [deletingId, setDeletingId] = useState(null); 
+
+  // 🔥 MEETUP STATES
+  const [meetupModalUser, setMeetupModalUser] = useState(null);
+  const [meetupData, setMeetupData] = useState({ location: '', meet_time: '' });
 
   const loadDirectory = async () => {
     setIsLoading(true);
@@ -55,6 +59,25 @@ function CloseFriendsView() {
       loadDirectory();
     } catch (err) {
       console.error("Failed to delete clone", err);
+    }
+  };
+
+  // 🔥 SEND MEETUP LOGIC
+  const handleSendMeetup = async (e) => {
+    e.preventDefault();
+    try {
+      // Uses the real_user_id we extracted in the backend!
+      await api.sendMeetup({ 
+        receiver_id: meetupModalUser.real_user_id || meetupModalUser.user_id, 
+        location: meetupData.location, 
+        meet_time: new Date(meetupData.meet_time).toISOString() 
+      });
+      setMeetupModalUser(null);
+      setMeetupData({ location: '', meet_time: '' });
+      alert("Meetup Request Sent!");
+    } catch (err) { 
+      console.error(err);
+      alert("Failed to send request."); 
     }
   };
 
@@ -98,12 +121,11 @@ function CloseFriendsView() {
                       ) : (
                         <div>
                           <p className="text-xs text-red-400 font-bold uppercase tracking-wider mb-1">Currently in {friend.live_status.type}</p>
-                          <p className="text-sm text-slate-300 font-medium truncate pr-16">{friend.live_status.class_name}</p>
+                          <p className="text-sm text-slate-300 font-medium truncate pr-32">{friend.live_status.class_name}</p>
                           <p className="text-xs text-slate-400 mt-1">Slot: {friend.live_status.slot} • Room: {friend.live_status.room}</p>
                         </div>
                       )}
 
-                      {/* Inline Delete Confirmation */}
                       {deletingId === friend.user_id ? (
                          <div className="absolute top-4 right-4 flex items-center gap-2 bg-slate-900 border border-red-500/50 p-1.5 rounded z-10 animate-fade-in shadow-xl">
                            <span className="text-[9px] text-red-400 font-bold uppercase tracking-widest ml-1">Remove?</span>
@@ -116,6 +138,13 @@ function CloseFriendsView() {
                         </button>
                       )}
 
+                      {/* 🔥 NEW: MEETUP BUTTON */}
+                      <div className="absolute bottom-4 right-4 flex gap-2">
+                        <button onClick={(e) => { e.stopPropagation(); setMeetupModalUser(friend); }} className="opacity-0 group-hover:opacity-100 text-xs bg-slate-800 hover:bg-indigo-600/30 text-slate-400 hover:text-indigo-400 border border-slate-700 hover:border-indigo-500 px-2 py-1.5 rounded transition-all">
+                          🤝 Meet
+                        </button>
+                      </div>
+
                       <div className="mt-auto">
                         {friend.next_class && (
                           <div className="mt-4 pt-4 border-t border-slate-700/50">
@@ -125,7 +154,7 @@ function CloseFriendsView() {
                                 In {formatSmartTime(friend.next_class.minutes_until).value} {formatSmartTime(friend.next_class.minutes_until).unit}
                               </span>
                             </div>
-                            <p className="text-sm text-slate-300 font-bold truncate">{friend.next_class.name}</p>
+                            <p className="text-sm text-slate-300 font-bold truncate pr-32">{friend.next_class.name}</p>
                             <p className="text-xs text-slate-400 mt-1">Slot {friend.next_class.slot} • {friend.next_class.room}</p>
                           </div>
                         )}
@@ -143,7 +172,6 @@ function CloseFriendsView() {
               <h2 className="text-xl font-black text-white mb-2">{activeFriend.name}'s Cloned Schedule</h2>
               <p className="text-slate-400 text-sm mb-6">Read-only offline copy.</p>
               
-              {/* 🔥 REPLACED LIST WITH NEW VISUAL COMPONENT */}
               {friendTimetable.length === 0 ? (
                 <p className="text-slate-500 text-center italic py-10">No subjects logged.</p>
               ) : (
@@ -153,6 +181,31 @@ function CloseFriendsView() {
           </div>
         )}
       </div>
+
+      {/* 🔥 NEW: MEETUP MODAL */}
+      {meetupModalUser && (
+        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in">
+          <div className="bg-slate-900 border border-slate-700 rounded-xl p-6 shadow-2xl max-w-sm w-full">
+            <h3 className="text-xl font-black text-white mb-2">🤝 Meet {meetupModalUser.name}</h3>
+            <p className="text-sm text-slate-400 mb-6">Send a quick ping to coordinate a meetup.</p>
+            <form onSubmit={handleSendMeetup} className="flex flex-col gap-4">
+              <div>
+                <label className="text-[10px] uppercase font-bold text-slate-500 block mb-1">Where?</label>
+                <input type="text" required placeholder="e.g., Foody, SJT Lobby..." value={meetupData.location} onChange={e => setMeetupData({...meetupData, location: e.target.value})} className="w-full bg-slate-950 border border-slate-600 rounded-lg px-4 py-2 text-white outline-none focus:border-indigo-500" />
+              </div>
+              <div>
+                <label className="text-[10px] uppercase font-bold text-slate-500 block mb-1">When?</label>
+                <input type="datetime-local" required value={meetupData.meet_time} onChange={e => setMeetupData({...meetupData, meet_time: e.target.value})} className="w-full bg-slate-950 border border-slate-600 rounded-lg px-4 py-2 text-white outline-none focus:border-indigo-500 font-mono text-sm" />
+              </div>
+              <div className="flex gap-2 mt-2">
+                <button type="button" onClick={() => setMeetupModalUser(null)} className="flex-1 bg-slate-800 hover:bg-slate-700 text-white py-2 rounded-lg font-bold transition-colors">Cancel</button>
+                <button type="submit" className="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white py-2 rounded-lg font-bold transition-colors shadow-[0_0_15px_rgba(79,70,229,0.3)]">Send Ping</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }
