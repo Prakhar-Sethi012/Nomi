@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { api } from './services/api';
 import { offlineSync } from './services/offlineSync';
-
+import ProfileView from './components/ProfileView';
 // --- Views & Components ---
 import Dashboard from './components/Dashboard';
 import LinksView from './components/LinksView';
@@ -127,7 +127,7 @@ function App() {
           {/* Close Friends Directory Tab */}
           <button onClick={() => setActiveTab('closeFriends')} className={`px-4 py-2 rounded-md text-sm font-bold transition-all duration-200 ${activeTab === 'closeFriends' ? 'bg-accent text-white shadow' : 'text-textSecondary hover:text-textPrimary hover:bg-surfaceHover'}`}>Close Friends</button>
         </div>
-
+        <button onClick={() => setActiveTab('profile')} className={`px-4 py-2 rounded-md text-sm font-bold transition-all duration-200 ${activeTab === 'profile' ? 'bg-accent text-white shadow' : 'text-textSecondary hover:text-textPrimary hover:bg-surfaceHover'}`}>Profile</button>
         {/* Logout Button */}
         <button 
           onClick={handleLogout}
@@ -147,6 +147,7 @@ function App() {
         {activeTab === 'expenses' && <ExpensesView profile={profile} setProfile={setProfile} />}
         {activeTab === 'radar' && <SocialRadar />}
         {activeTab === 'closeFriends' && <CloseFriendsView />}
+        {activeTab === 'profile' && <ProfileView profile={profile} setProfile={setProfile} onLogout={handleLogout} />}
       </div>
     </div>
   );

@@ -19,6 +19,8 @@ class Profile(Base):
     is_npc = Column(Boolean, default=False)
     managed_by = Column(Integer, ForeignKey("profile.id", ondelete="CASCADE"), nullable=True)
     monthly_budgets = Column(JSON, default={})
+    security_question = Column(String, nullable=True)
+    security_answer = Column(String, nullable=True)
     
 class Task(Base):
     __tablename__ = "tasks"

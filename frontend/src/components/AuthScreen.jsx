@@ -2,29 +2,41 @@ import React, { useState } from 'react';
 import { api } from '../services/api';
 
 function AuthScreen({ onLoginSuccess }) {
-  const [isLogin, setIsLogin] = useState(true);
+  // Modes: 'login', 'register', 'recovery'
+  const [authMode, setAuthMode] = useState('login');
+  
   const [formData, setFormData] = useState({ name: '', reg_no: '', app_pin: '' });
+  const [recoveryData, setRecoveryData] = useState({ reg_no: '', security_answer: '', new_pin: '' });
+  
   const [error, setError] = useState('');
+  const [successMsg, setSuccessMsg] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    setSuccessMsg('');
     setIsLoading(true);
 
     try {
-      let response;
-      if (isLogin) {
-        response = await api.login({ reg_no: formData.reg_no, app_pin: formData.app_pin });
-      } else {
-        response = await api.register(formData);
+      if (authMode === 'recovery') {
+        // Run Recovery Logic
+        if (recoveryData.new_pin.length !== 4) throw new Error("PIN must be exactly 4 digits.");
+        const res = await api.resetPin(recoveryData);
+        setSuccessMsg(res.message);
+        setAuthMode('login'); // Send them back to login screen
+      } 
+      else {
+        // Run Normal Login / Register
+        let response;
+        if (authMode === 'login') {
+          response = await api.login({ reg_no: formData.reg_no, app_pin: formData.app_pin });
+        } else {
+          response = await api.register(formData);
+        }
+        localStorage.setItem('token', response.token);
+        onLoginSuccess(response.profile);
       }
-      
-      // Save the token to the browser's local storage
-      localStorage.setItem('token', response.token);
-      
-      // Pass the profile up to the main App component
-      onLoginSuccess(response.profile);
     } catch (err) {
       setError(err.message || "Authentication failed.");
     } finally {
@@ -34,82 +46,139 @@ function AuthScreen({ onLoginSuccess }) {
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4 transition-colors duration-300">
-      <div className="bg-surface border border-border p-8 rounded-2xl shadow-2xl w-full max-w-md animate-fade-in">
-        <div className="text-center mb-8">
-          <div className="text-5xl mb-4">🚀</div>
+      <div className="bg-surface border border-border p-8 rounded-2xl shadow-2xl w-full max-w-md animate-fade-in relative overflow-hidden">
+        
+        {/* Glow Effects */}
+        {authMode === 'recovery' ? (
+           <div className="absolute top-[-50px] right-[-50px] w-32 h-32 bg-orange-500/20 rounded-full blur-[50px] pointer-events-none"></div>
+        ) : (
+           <div className="absolute top-[-50px] right-[-50px] w-32 h-32 bg-indigo-500/20 rounded-full blur-[50px] pointer-events-none"></div>
+        )}
+
+        <div className="text-center mb-8 relative z-10">
+          <div className="text-5xl mb-4">{authMode === 'recovery' ? '🗝️' : '🚀'}</div>
           <h1 className="text-3xl font-black text-textPrimary">Command Center</h1>
           <p className="text-textSecondary mt-2 text-sm">
-            {isLogin ? "Authenticate to access your dashboard." : "Initialize your new campus terminal."}
+            {authMode === 'login' && "Authenticate to access your dashboard."}
+            {authMode === 'register' && "Initialize your new campus terminal."}
+            {authMode === 'recovery' && "Emergency account recovery protocol."}
           </p>
         </div>
 
         {error && (
-          <div className="bg-danger/10 border border-danger text-danger text-sm p-3 rounded-lg mb-6 font-bold text-center">
+          <div className="bg-danger/10 border border-danger text-danger text-sm p-3 rounded-lg mb-6 font-bold text-center relative z-10">
             {error}
           </div>
         )}
+        
+        {successMsg && (
+          <div className="bg-success/10 border border-success text-success text-sm p-3 rounded-lg mb-6 font-bold text-center relative z-10">
+            {successMsg}
+          </div>
+        )}
 
-        <form onSubmit={handleSubmit} className="flex flex-col gap-5">
-          {!isLogin && (
-            <div>
-              <label className="text-[10px] uppercase font-bold tracking-widest text-textSecondary mb-1 block">Full Name</label>
-              <input 
-                type="text" 
-                required 
-                placeholder="e.g. John Doe"
-                value={formData.name} 
-                onChange={e => setFormData({...formData, name: e.target.value})} 
-                className="w-full p-3 bg-background border border-border rounded-lg text-textPrimary outline-none focus:border-accent transition-colors"
-              />
-            </div>
+        <form onSubmit={handleSubmit} className="flex flex-col gap-5 relative z-10">
+          
+          {/* ================= RECOVERY FLOW ================= */}
+          {authMode === 'recovery' ? (
+            <>
+              <div>
+                <label className="text-[10px] uppercase font-bold tracking-widest text-textSecondary mb-1 block">Registration Number</label>
+                <input 
+                  type="text" required placeholder="e.g. 21BCE1234"
+                  value={recoveryData.reg_no} 
+                  onChange={e => setRecoveryData({...recoveryData, reg_no: e.target.value.toUpperCase()})} 
+                  className="w-full p-3 bg-background border border-border rounded-lg text-textPrimary outline-none focus:border-orange-500 transition-colors uppercase"
+                />
+              </div>
+              <div>
+                <label className="text-[10px] uppercase font-bold tracking-widest text-textSecondary mb-1 block">Secret Answer</label>
+                <input 
+                  type="text" required placeholder="Answer to your security question..."
+                  value={recoveryData.security_answer} 
+                  onChange={e => setRecoveryData({...recoveryData, security_answer: e.target.value})} 
+                  className="w-full p-3 bg-background border border-border rounded-lg text-textPrimary outline-none focus:border-orange-500 transition-colors"
+                />
+              </div>
+              <div>
+                <label className="text-[10px] uppercase font-bold tracking-widest text-textSecondary mb-1 block">Create New 4-Digit PIN</label>
+                <input 
+                  type="password" required maxLength="4" pattern="\d{4}" placeholder="••••"
+                  value={recoveryData.new_pin} 
+                  onChange={e => setRecoveryData({...recoveryData, new_pin: e.target.value.replace(/\D/g, '')})} 
+                  className="w-full p-3 bg-background border border-border rounded-lg text-textPrimary outline-none focus:border-orange-500 transition-colors tracking-[1em] font-mono text-xl text-center"
+                />
+              </div>
+              <button disabled={isLoading} type="submit" className="w-full bg-orange-600 hover:bg-orange-500 text-white font-black py-4 rounded-lg mt-2 transition-colors disabled:opacity-50 shadow-[0_0_15px_rgba(234,88,12,0.3)]">
+                {isLoading ? "VERIFYING..." : "RESET PIN"}
+              </button>
+              <button type="button" onClick={() => { setAuthMode('login'); setError(''); setSuccessMsg(''); }} className="text-xs text-textSecondary hover:text-textPrimary mt-2 font-bold transition-colors">
+                ← Cancel & Return to Login
+              </button>
+            </>
+          ) : (
+          
+          /* ================= LOGIN / REGISTER FLOW ================= */
+            <>
+              {authMode === 'register' && (
+                <div>
+                  <label className="text-[10px] uppercase font-bold tracking-widest text-textSecondary mb-1 block">Full Name</label>
+                  <input 
+                    type="text" required placeholder="e.g. John Doe"
+                    value={formData.name} 
+                    onChange={e => setFormData({...formData, name: e.target.value})} 
+                    className="w-full p-3 bg-background border border-border rounded-lg text-textPrimary outline-none focus:border-accent transition-colors"
+                  />
+                </div>
+              )}
+
+              <div>
+                <label className="text-[10px] uppercase font-bold tracking-widest text-textSecondary mb-1 block">Registration Number</label>
+                <input 
+                  type="text" required placeholder="e.g. 21BCE1234"
+                  value={formData.reg_no} 
+                  onChange={e => setFormData({...formData, reg_no: e.target.value.toUpperCase()})} 
+                  className="w-full p-3 bg-background border border-border rounded-lg text-textPrimary outline-none focus:border-accent transition-colors uppercase"
+                />
+              </div>
+
+              <div>
+                <div className="flex justify-between items-end mb-1">
+                  <label className="text-[10px] uppercase font-bold tracking-widest text-textSecondary block">4-Digit Security PIN</label>
+                  {authMode === 'login' && (
+                    <button type="button" onClick={() => { setAuthMode('recovery'); setError(''); }} className="text-[10px] text-accent font-bold hover:underline">
+                      Forgot PIN?
+                    </button>
+                  )}
+                </div>
+                <input 
+                  type="password" required maxLength="4" pattern="\d{4}" placeholder="••••"
+                  value={formData.app_pin} 
+                  onChange={e => setFormData({...formData, app_pin: e.target.value.replace(/\D/g, '')})} 
+                  className="w-full p-3 bg-background border border-border rounded-lg text-textPrimary outline-none focus:border-accent transition-colors tracking-[1em] font-mono text-xl text-center"
+                />
+              </div>
+
+              <button disabled={isLoading} type="submit" className="w-full bg-accent hover:bg-accentHover text-white font-black py-4 rounded-lg mt-2 transition-colors disabled:opacity-50">
+                {isLoading ? "AUTHENTICATING..." : (authMode === 'login' ? "LOGIN / DECRYPT" : "INITIALIZE PROFILE")}
+              </button>
+            </>
           )}
-
-          <div>
-            <label className="text-[10px] uppercase font-bold tracking-widest text-textSecondary mb-1 block">Registration Number</label>
-            <input 
-              type="text" 
-              required 
-              placeholder="e.g. 21BCE1234"
-              value={formData.reg_no} 
-              onChange={e => setFormData({...formData, reg_no: e.target.value.toUpperCase()})} 
-              className="w-full p-3 bg-background border border-border rounded-lg text-textPrimary outline-none focus:border-accent transition-colors uppercase"
-            />
-          </div>
-
-          <div>
-            <label className="text-[10px] uppercase font-bold tracking-widest text-textSecondary mb-1 block">4-Digit Security PIN</label>
-            <input 
-              type="password" 
-              required 
-              maxLength="4"
-              pattern="\d{4}"
-              placeholder="••••"
-              value={formData.app_pin} 
-              onChange={e => setFormData({...formData, app_pin: e.target.value})} 
-              className="w-full p-3 bg-background border border-border rounded-lg text-textPrimary outline-none focus:border-accent transition-colors tracking-[1em] font-mono text-xl text-center"
-            />
-          </div>
-
-          <button 
-            type="submit" 
-            disabled={isLoading}
-            className="w-full bg-accent hover:bg-accentHover text-white font-black py-4 rounded-lg mt-2 transition-colors disabled:opacity-50"
-          >
-            {isLoading ? "AUTHENTICATING..." : (isLogin ? "LOGIN / DECRYPT" : "INITIALIZE PROFILE")}
-          </button>
         </form>
 
-        <div className="mt-8 text-center border-t border-border pt-6">
-          <p className="text-sm text-textSecondary">
-            {isLogin ? "Don't have an account?" : "Already initialized?"}
-            <button 
-              onClick={() => { setIsLogin(!isLogin); setError(''); }} 
-              className="ml-2 text-accent font-bold hover:underline"
-            >
-              {isLogin ? "Register now" : "Login here"}
-            </button>
-          </p>
-        </div>
+        {authMode !== 'recovery' && (
+          <div className="mt-8 text-center border-t border-border pt-6 relative z-10">
+            <p className="text-sm text-textSecondary">
+              {authMode === 'login' ? "Don't have an account?" : "Already initialized?"}
+              <button 
+                onClick={() => { setAuthMode(authMode === 'login' ? 'register' : 'login'); setError(''); setSuccessMsg(''); }} 
+                className="ml-2 text-accent font-bold hover:underline"
+              >
+                {authMode === 'login' ? "Register now" : "Login here"}
+              </button>
+            </p>
+          </div>
+        )}
       </div>
     </div>
   );

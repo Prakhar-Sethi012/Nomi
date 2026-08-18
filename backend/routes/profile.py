@@ -41,3 +41,9 @@ def update_profile(
     db.refresh(current_user)
     
     return current_user
+
+@router.delete("/self-destruct")
+def self_destruct_account(db: Session = Depends(get_db), current_user: models.Profile = Depends(get_current_user)):
+    db.delete(current_user)
+    db.commit()
+    return {"message": "Account and all associated data permanently deleted."}

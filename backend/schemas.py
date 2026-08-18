@@ -21,6 +21,8 @@ class ProfileUpdate(BaseModel):
     is_ghost: Optional[bool] = None 
     monthly_limit: Optional[float] = None
     monthly_budgets: Optional[Dict[str, float]] = None
+    security_question: Optional[str] = None # 🔥 NEW
+    security_answer: Optional[str] = None   # 🔥 NEW
 
 class ProfileResponse(BaseModel):
     id: int
@@ -33,9 +35,15 @@ class ProfileResponse(BaseModel):
     is_ghost: bool 
     monthly_limit: Optional[float] = None
     monthly_budgets: Optional[Dict[str, float]] = None
+    security_question: Optional[str] = None # 🔥 NEW (No answer here for safety!)
 
     class Config:
         from_attributes = True
+
+class PinResetRequest(BaseModel):
+    reg_no: str
+    security_answer: str
+    new_pin: str
 
 # ==========================================
 # 2. PORTFOLIO SCHEMAS (Skills & Projects)

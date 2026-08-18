@@ -96,4 +96,8 @@ export const api = {
   getIncomingMeetups: () => fetchAPI('/social/meetups/incoming'),
   getOutgoingMeetups: () => fetchAPI('/social/meetups/outgoing'),
   updateMeetupStatus: (id, status) => fetchAPI(`/social/meetups/${id}/status?status=${status}`, { method: 'PUT' }),
+
+  // Security & Account
+  resetPin: (data) => fetchAPI('/auth/reset-pin', { method: 'POST', body: JSON.stringify(data) }),
+  selfDestruct: () => fetchAPI('/profile/self-destruct', { method: 'DELETE' }),
 };

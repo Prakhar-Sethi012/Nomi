@@ -40,7 +40,6 @@ def login_user(credentials: LoginRequest, db: Session = Depends(get_db)):
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     
-    # 🌟 SMART UPGRADE V2: Fix the passlib crash
     # First, check if the database still holds the old plain text PIN
     if user.app_pin == credentials.app_pin:
         # Upgrade it to a secure hash immediately!
@@ -52,9 +51,26 @@ def login_user(credentials: LoginRequest, db: Session = Depends(get_db)):
             if not auth.verify_password(credentials.app_pin, user.app_pin):
                 raise HTTPException(status_code=401, detail="Incorrect PIN")
         except Exception:
-            # Catch the UnknownHashError just in case the data is corrupted
             raise HTTPException(status_code=401, detail="Incorrect PIN or corrupted data")
     
-    # Generate the VIP wristband
     access_token = auth.create_access_token(user_id=user.id)
     return {"token": access_token, "profile": user}
+
+# 🔥 NEW: The Forgot PIN Recovery Endpoint
+@router.post("/reset-pin")
+def reset_forgotten_pin(data: schemas.PinResetRequest, db: Session = Depends(get_db)):
+    user = db.query(models.Profile).filter(models.Profile.reg_no == data.reg_no).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    if not user.security_question or not user.security_answer:
+        raise HTTPException(status_code=400, detail="No security question set up for this account.")
+        
+    # Simple case-insensitive check
+    if user.security_answer.strip().lower() != data.security_answer.strip().lower():
+        raise HTTPException(status_code=401, detail="Incorrect security answer")
+        
+    # Update PIN
+    user.app_pin = auth.get_password_hash(data.new_pin)
+    db.commit()
+    return {"message": "PIN successfully reset. You can now log in."}
