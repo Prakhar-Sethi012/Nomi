@@ -1,5 +1,5 @@
-from pydantic import BaseModel, Field
-from typing import List, Optional,Dict
+from pydantic import BaseModel, Field, validator
+from typing import List, Optional, Dict
 import datetime 
 
 # ==========================================
@@ -8,12 +8,13 @@ import datetime
 class ProfileCreate(BaseModel):
     name: str = Field(..., min_length=2, max_length=50)
     reg_no: str = Field(..., min_length=8)
-    app_pin: str = Field(..., pattern=r"^\d{4}$", description="Must be exactly 4 digits")
+    # 🔥 UPGRADED: Allows 4 characters (letters and numbers)
+    app_pin: str = Field(..., pattern=r"^[a-zA-Z0-9]{4}$", description="Must be exactly 4 letters/numbers")
 
 class ProfileUpdate(BaseModel):
     name: Optional[str] = Field(None, min_length=2, max_length=50)
     reg_no: Optional[str] = Field(None, min_length=8)
-    app_pin: Optional[str] = Field(None, pattern=r"^\d{4}$")
+    app_pin: Optional[str] = Field(None, pattern=r"^[a-zA-Z0-9]{4}$")
     cgpa: Optional[float] = Field(None, ge=0.0, le=10.0, description="CGPA must be between 0 and 10")
     current_streak: Optional[int] = Field(None, ge=0)
     last_active_date: Optional[datetime.date] = None
@@ -21,8 +22,15 @@ class ProfileUpdate(BaseModel):
     is_ghost: Optional[bool] = None 
     monthly_limit: Optional[float] = None
     monthly_budgets: Optional[Dict[str, float]] = None
-    security_question: Optional[str] = None # 🔥 NEW
-    security_answer: Optional[str] = None   # 🔥 NEW
+    security_question: Optional[str] = None
+    security_answer: Optional[str] = None
+
+    # 🔥 STRICT ONE-WORD VALIDATOR
+    @validator('security_answer')
+    def answer_must_be_one_word(cls, v):
+        if v is not None and " " in v.strip():
+            raise ValueError('Security answer must be exactly one word with no spaces.')
+        return v
 
 class ProfileResponse(BaseModel):
     id: int
@@ -35,7 +43,7 @@ class ProfileResponse(BaseModel):
     is_ghost: bool 
     monthly_limit: Optional[float] = None
     monthly_budgets: Optional[Dict[str, float]] = None
-    security_question: Optional[str] = None # 🔥 NEW (No answer here for safety!)
+    security_question: Optional[str] = None
 
     class Config:
         from_attributes = True
@@ -43,7 +51,7 @@ class ProfileResponse(BaseModel):
 class PinResetRequest(BaseModel):
     reg_no: str
     security_answer: str
-    new_pin: str
+    new_pin: str = Field(..., pattern=r"^[a-zA-Z0-9]{4}$")
 
 # ==========================================
 # 2. PORTFOLIO SCHEMAS (Skills & Projects)
