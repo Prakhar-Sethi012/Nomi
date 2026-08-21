@@ -9,8 +9,14 @@ function ProfileView({ profile, setProfile, onLogout }) {
 
   const handleUpdateSecurity = async (e) => {
     e.preventDefault();
+    
+    // Security Checks
     if (newPin && newPin.length !== 4) {
-      alert("PIN must be exactly 4 digits.");
+      alert("PIN must be exactly 4 characters (letters/numbers).");
+      return;
+    }
+    if (answer && answer.includes(" ")) {
+      alert("Answer must be strictly ONE word. No spaces allowed.");
       return;
     }
     
@@ -31,7 +37,7 @@ function ProfileView({ profile, setProfile, onLogout }) {
       setNewPin('');
       alert("Security settings updated successfully!");
     } catch (err) {
-      alert("Failed to update security settings.");
+      alert(err.message || "Failed to update security settings.");
     } finally {
       setIsLoading(false);
     }
@@ -50,7 +56,7 @@ function ProfileView({ profile, setProfile, onLogout }) {
     try {
       await api.selfDestruct();
       alert("Account deleted. Goodbye.");
-      onLogout(); // Log the user out immediately
+      onLogout(); 
     } catch (err) {
       alert("Failed to delete account. Please try again.");
     }
@@ -91,36 +97,33 @@ function ProfileView({ profile, setProfile, onLogout }) {
             <div>
               <label className="text-[10px] uppercase font-bold text-slate-500 tracking-widest block mb-1">New App PIN (Optional)</label>
               <input 
-                type="password" 
+                type="text" 
                 maxLength="4" 
                 placeholder="****"
                 value={newPin} 
-                onChange={(e) => setNewPin(e.target.value.replace(/\D/g, ''))}
-                className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-white font-mono tracking-[0.5em] focus:border-indigo-500 outline-none transition-all"
+                onChange={(e) => setNewPin(e.target.value.replace(/[^a-zA-Z0-9]/g, ''))}
+                className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-white font-mono tracking-[0.5em] focus:border-indigo-500 outline-none transition-all uppercase"
               />
+              <p className="text-[10px] text-slate-500 mt-1">4 Characters. Letters and numbers only.</p>
             </div>
             
             <div className="mt-4 pt-4 border-t border-slate-700/50">
-              <label className="text-[10px] uppercase font-bold text-slate-500 tracking-widest block mb-1">Account Recovery Question</label>
-              <p className="text-xs text-slate-400 mb-3">Set this so you can recover your account if you forget your PIN.</p>
-              
-              <select 
-                value={question} 
-                onChange={(e) => setQuestion(e.target.value)}
-                className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white focus:border-indigo-500 outline-none mb-3 appearance-none"
-              >
-                <option value="">Select a security question...</option>
-                <option value="What was the name of your first pet?">What was the name of your first pet?</option>
-                <option value="What city were you born in?">What city were you born in?</option>
-                <option value="What is your mother's maiden name?">What is your mother's maiden name?</option>
-                <option value="What was the name of your first school?">What was the name of your first school?</option>
-              </select>
+              <label className="text-[10px] uppercase font-bold text-slate-500 tracking-widest block mb-1">Custom Recovery Question</label>
+              <p className="text-xs text-slate-400 mb-3">Write a question only you know the answer to.</p>
               
               <input 
                 type="text" 
-                placeholder="Your Answer..."
+                placeholder="e.g. What is my dog's name?"
+                value={question} 
+                onChange={(e) => setQuestion(e.target.value)}
+                className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-white focus:border-indigo-500 outline-none transition-all text-sm mb-3"
+              />
+              
+              <input 
+                type="text" 
+                placeholder="Strictly ONE word answer..."
                 value={answer} 
-                onChange={(e) => setAnswer(e.target.value)}
+                onChange={(e) => setAnswer(e.target.value.replace(/\s/g, ''))} // Blocks spaces physically
                 className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-white focus:border-indigo-500 outline-none transition-all text-sm"
               />
             </div>

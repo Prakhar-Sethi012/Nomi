@@ -103,6 +103,8 @@ function ScratchpadView() {
   };
 
   const clearCanvas = () => {
+    if (!window.confirm("Are you sure you want to permanently wipe this doodle?")) return;
+    
     const canvas = canvasRef.current;
     const context = canvas.getContext('2d');
     context.fillStyle = '#1e293b';
