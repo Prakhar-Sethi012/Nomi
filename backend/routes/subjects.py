@@ -44,6 +44,10 @@ def update_attendance(
     if not subject:
         raise HTTPException(status_code=404, detail="Subject not found or unauthorized")
 
+    # 🔥 THE CAP: Prevent exceeding total classes
+    if subject.conducted_classes >= subject.total_classes:
+        raise HTTPException(status_code=400, detail="Maximum total classes reached.")
+
     subject.conducted_classes += 1
     if attended:
         subject.attended_classes += 1

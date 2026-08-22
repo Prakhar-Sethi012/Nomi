@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import TasksWidget from './TasksWidget';
 import ExpensesWidget from './ExpensesWidget';
 import PortfolioWidget from './PortfolioWidget';
@@ -11,12 +11,25 @@ import NextClassWidget from './NextClassWidget';
 
 function Dashboard({ profile, setProfile, setActiveTab }) {
   const [isEditingCgpa, setIsEditingCgpa] = useState(false);
-  const [tempCgpa, setTempCgpa] = useState(profile.cgpa ? profile.cgpa.toFixed(2) : "0.00");
+  const [tempCgpa, setTempCgpa] = useState(profile?.cgpa ? profile.cgpa.toFixed(2) : "0.00");
 
   const today = new Date();
   const dateString = today.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' });
 
-  // ✅ FIXED: Properly closed handleCgpaSave
+  // 🔥 NEW: Auto-Sync Profile on Mount
+  // If you changed Ghost Mode in Radar, this pulls the fresh data the second you open the Dashboard!
+  useEffect(() => {
+    const syncProfile = async () => {
+      try {
+        const freshProfile = await api.getProfile();
+        setProfile(freshProfile);
+      } catch (err) {
+        console.error("Failed to background sync profile", err);
+      }
+    };
+    syncProfile();
+  }, [setProfile]);
+
   const handleCgpaSave = async (e) => {
     e.preventDefault();
     let val = parseFloat(tempCgpa);
@@ -32,20 +45,23 @@ function Dashboard({ profile, setProfile, setActiveTab }) {
     } catch (err) {
       console.error("Failed to update CGPA", err);
     }
-  }; // <-- This bracket was missing!
+  };
 
-  // ✅ FIXED: Separated handleGhostModeToggle into its own function
   const handleGhostModeToggle = async () => {
-    // Optimistic UI update: flip it immediately so it feels snappy
+    // Optimistic UI update for snappy feel
     const newGhostState = !profile.is_ghost;
     setProfile({ ...profile, is_ghost: newGhostState });
 
     try {
-      await api.toggleGhostMode(newGhostState);
+      // Assuming you have an updateProfile or toggleGhostMode endpoint. 
+      // Using updateProfile is the standard way based on your schemas!
+      const updatedProfile = await api.updateProfile({ is_ghost: newGhostState });
+      setProfile(updatedProfile);
     } catch (err) {
       console.error("Failed to toggle Ghost Mode", err);
-      // If it fails, revert it back
+      // Revert if it fails
       setProfile({ ...profile, is_ghost: !newGhostState });
+      alert("Failed to toggle Ghost Mode. Check connection.");
     }
   };
 
@@ -56,7 +72,7 @@ function Dashboard({ profile, setProfile, setActiveTab }) {
         
         {/* COLUMN 1 (LEFT) */}
         <div className="flex-1 w-full">
-          <h1 className="text-2xl font-bold text-textPrimary mb-1">Welcome back, {profile.name.split(' ')[0]}</h1>
+          <h1 className="text-2xl font-bold text-textPrimary mb-1">Welcome back, {profile?.name?.split(' ')[0]}</h1>
           <div className="flex items-center gap-2 mb-3">
             <span className="text-accent text-sm font-medium">{dateString}</span>
             <span className="text-textSecondary text-sm hidden sm:inline">• VIT Command Center</span>
@@ -64,7 +80,7 @@ function Dashboard({ profile, setProfile, setActiveTab }) {
 
           <div className="flex items-center gap-3">
             <span className="text-xs bg-surfaceHover text-textSecondary px-3 py-1.5 rounded border border-border shadow-inner transition-colors duration-300">
-              Reg: {profile.reg_no}
+              Reg: {profile?.reg_no}
             </span>
 
             {isEditingCgpa ? (
@@ -83,11 +99,11 @@ function Dashboard({ profile, setProfile, setActiveTab }) {
               </form>
             ) : (
               <div
-                onClick={() => { setIsEditingCgpa(true); setTempCgpa(profile.cgpa ? profile.cgpa.toFixed(2) : "0.00"); }}
+                onClick={() => { setIsEditingCgpa(true); setTempCgpa(profile?.cgpa ? profile.cgpa.toFixed(2) : "0.00"); }}
                 className="text-xs bg-background text-accent px-3 py-1.5 rounded border border-accent/30 cursor-pointer hover:bg-surfaceHover hover:border-accent transition-all flex items-center gap-1.5 group shadow-inner"
                 title="Click to update CGPA"
               >
-                <span>CGPA: <strong className="text-textPrimary text-[13px]">{profile.cgpa ? profile.cgpa.toFixed(2) : "0.00"}</strong></span>
+                <span>CGPA: <strong className="text-textPrimary text-[13px]">{profile?.cgpa ? profile.cgpa.toFixed(2) : "0.00"}</strong></span>
                 <span className="text-[10px] opacity-0 group-hover:opacity-100 transition-opacity">✎</span>
               </div>
             )}
@@ -102,24 +118,23 @@ function Dashboard({ profile, setProfile, setActiveTab }) {
         {/* COLUMN 3 (RIGHT) */}
         <div className="flex-1 w-full flex flex-wrap justify-start md:justify-end shrink-0 gap-4 items-center">
           
-          {/* 🔥 NEW: Ghost Mode Toggle Button */}
           <button 
             onClick={handleGhostModeToggle}
             className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition-all duration-300 shadow-sm ${
-              profile.is_ghost 
+              profile?.is_ghost 
                 ? 'bg-danger text-white shadow-[0_0_10px_rgba(239,68,68,0.3)]' 
                 : 'bg-background border border-border text-textSecondary hover:text-textPrimary hover:bg-surfaceHover'
             }`}
-            title={profile.is_ghost ? "Your timetable is hidden from friends" : "Your timetable is visible to friends"}
+            title={profile?.is_ghost ? "Your timetable is hidden from friends" : "Your timetable is visible to friends"}
           >
-            {profile.is_ghost ? '👻 Ghost: ON' : '👁️ Ghost: OFF'}
+            {profile?.is_ghost ? '👻 Ghost: ON' : '👁️ Ghost: OFF'}
           </button>
 
           <ThemeToggle />
 
           <div className="text-left md:text-right border-l border-border pl-4">
             <div className="text-3xl font-black text-orange-500 flex items-center md:justify-end gap-2 drop-shadow-md">
-              <span className="animate-pulse">🔥</span> Day {profile.current_streak}
+              <span className="animate-pulse">🔥</span> Day {profile?.current_streak}
             </div>
             <p className="text-textSecondary text-sm mt-1 uppercase tracking-widest font-bold">Current Streak</p>
           </div>
