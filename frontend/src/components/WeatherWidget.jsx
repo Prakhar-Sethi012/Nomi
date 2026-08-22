@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 
-// 🔥 NEW: 105 Randomized Developer Weather Quotes (15 per condition)
+// 🔥 105 Randomized Developer Weather Quotes (15 per condition)
 const WEATHER_QUOTES = {
   clear: [
     "Clear skies. Go touch some grass.", "Sun's out, bugs out.", "Brightness set to 100%.", 
@@ -84,6 +84,7 @@ function WeatherWidget() {
   const fetchWeather = async () => {
     setIsRefreshing(true);
     try {
+      // 12.9165, 79.1325 is Vellore
       const res = await fetch('https://api.open-meteo.com/v1/forecast?latitude=12.9165&longitude=79.1325&current=temperature_2m,relative_humidity_2m,apparent_temperature,weather_code&timezone=auto');
       if (!res.ok) throw new Error("Network response was not ok");
       const data = await res.json();
