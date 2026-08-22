@@ -34,7 +34,8 @@ class Task(Base):
     tags = Column(ARRAY(String), nullable=False)      
     completed_at = Column(DateTime, nullable=True)    
     is_todo = Column(Boolean, default=False)
-
+    frequency = Column(String, default="Once", nullable=False)
+    
 class Subject(Base):
     __tablename__ = "subjects"
 

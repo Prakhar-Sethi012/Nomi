@@ -10,11 +10,11 @@ function TasksWidget() {
   const [showForm, setShowForm] = useState(false);
   const [editingTaskId, setEditingTaskId] = useState(null);
 
-  const [formData, setFormData] = useState({ title: '', due_date: '', tags: '' });
+  const [formData, setFormData] = useState({ title: '', due_date: '', tags: '', frequency: 'Once' });
 
   const fetchTasks = async () => {
     try {
-      const data = await api.getTodoList(); // 🔥 FIXED: Changed from getTodoTasks to getTodoList
+      const data = await api.getTodoList(); 
       setTasks(data); 
     } catch (err) {
       setError('Connection error.');
@@ -38,8 +38,10 @@ function TasksWidget() {
     setFormData({
       title: task.title,
       due_date: formatForInput(task.due_date),
-      tags: task.tags.join(', ')
+      tags: task.tags.join(', '),
+      frequency: task.frequency || 'Once'
     });
+    setShowForm(true);
   };
 
   const handleSubmit = async (e) => {
@@ -52,17 +54,17 @@ function TasksWidget() {
       catch (e) { return setError('Invalid date selection.'); }
 
       if (editingTaskId) {
-        const payload = { title: formData.title, due_date: isoDate, tags: tagsArray };
+        const payload = { title: formData.title, due_date: isoDate, tags: tagsArray, frequency: formData.frequency };
         await api.updateTask(editingTaskId, payload);
       } else {
-        const payload = { title: formData.title, task_type: 'Work', due_date: isoDate, tags: tagsArray, is_todo: true };
+        const payload = { title: formData.title, task_type: 'Work', due_date: isoDate, tags: tagsArray, is_todo: true, frequency: formData.frequency };
         await api.addTask(payload);
       }
       
       fetchTasks(); 
       setShowForm(false); 
       setEditingTaskId(null);
-      setFormData({ title: '', due_date: '', tags: '' });
+      setFormData({ title: '', due_date: '', tags: '', frequency: 'Once' });
       
     } catch (err) { 
       setError(err.message || 'Network failed.'); 
@@ -99,7 +101,7 @@ function TasksWidget() {
         const pendingDailyTasks = tasks.filter(t => {
           const taskDate = new Date(t.due_date);
           taskDate.setHours(0, 0, 0, 0);
-          return taskDate <= today;
+          return taskDate <= today && t.frequency === 'Once'; // Streak only counts for 'Once' tasks
         });
 
         const isPerfectDay = pendingDailyTasks.length === 1 && pendingDailyTasks[0].id === id;
@@ -134,13 +136,13 @@ function TasksWidget() {
           delete newState[id];
           return newState;
         });
-        setError("Failed to delete task from database.");
+        setError("Failed to process task completion.");
       }
-    }, 5000);
+    }, 3000);
 
     setCompletingTasks(prev => ({
       ...prev,
-      [id]: { timer: timerId, interval: intervalId, remaining: 5 }
+      [id]: { timer: timerId, interval: intervalId, remaining: 3 }
     }));
   };
 
@@ -158,10 +160,53 @@ function TasksWidget() {
       {showForm || editingTaskId ? (
         <form onSubmit={handleSubmit} className="flex-1 flex flex-col gap-3 overflow-y-auto custom-scrollbar pr-2">
           <input type="text" placeholder="Task Title" required value={formData.title} onChange={(e) => setFormData({...formData, title: e.target.value})} className="w-full p-2 bg-slate-700 rounded text-sm text-white border border-slate-600 focus:border-blue-500 outline-none" />
-          <input type="datetime-local" required value={formData.due_date} onChange={(e) => setFormData({...formData, due_date: e.target.value})} className="w-full p-2 bg-slate-700 rounded text-sm text-white border border-slate-600 focus:border-blue-500 outline-none" />
-          <input type="text" placeholder="Tags (comma separated)" required value={formData.tags} onChange={(e) => setFormData({...formData, tags: e.target.value})} className="w-full p-2 bg-slate-700 rounded text-sm text-white border border-slate-600 focus:border-blue-500 outline-none" />
+          
+          <div className="flex gap-2">
+            <input type="datetime-local" required value={formData.due_date} onChange={(e) => setFormData({...formData, due_date: e.target.value})} className="flex-1 p-2 bg-slate-700 rounded text-sm text-white border border-slate-600 focus:border-blue-500 outline-none" />
+            
+            <select 
+              value={formData.frequency} 
+              onChange={(e) => setFormData({...formData, frequency: e.target.value})} 
+              className="w-1/3 p-2 bg-slate-700 rounded text-sm text-white border border-slate-600 focus:border-blue-500 outline-none"
+            >
+              <option value="Once">Once</option>
+              <option value="Daily">Daily</option>
+              <option value="Weekly">Weekly</option>
+              <option value="Monthly">Monthly</option>
+            </select>
+          </div>
+
+          <div className="flex flex-col gap-2">
+            <input 
+              type="text" 
+              placeholder="Tags (e.g. urgent, project)" 
+              required 
+              value={formData.tags} 
+              onChange={(e) => setFormData({...formData, tags: e.target.value})} 
+              className="w-full p-2 bg-slate-700 rounded text-sm text-white border border-slate-600 focus:border-blue-500 outline-none" 
+            />
+            {/* Quick-Select Chips */}
+            <div className="flex flex-wrap gap-1">
+              {['important', 'cat', 'fat', 'quiz', 'club', 'others'].map(preset => (
+                <button 
+                  key={preset}
+                  type="button"
+                  onClick={() => {
+                    const currentTags = formData.tags ? formData.tags.split(',').map(t => t.trim()).filter(t => t !== '') : [];
+                    if (!currentTags.includes(preset)) {
+                      setFormData(prev => ({ ...prev, tags: currentTags.length > 0 ? `${currentTags.join(', ')}, ${preset}` : preset }));
+                    }
+                  }}
+                  className="text-[9px] uppercase tracking-wider font-bold bg-slate-800 hover:bg-blue-600/30 text-slate-400 hover:text-blue-300 border border-slate-600 hover:border-blue-500 px-2 py-1 rounded transition-colors"
+                >
+                  +{preset}
+                </button>
+              ))}
+            </div>
+          </div>
+
           <div className="flex gap-2 mt-auto pt-2">
-            <button type="button" onClick={() => { setShowForm(false); setEditingTaskId(null); setError(''); setFormData({ title: '', due_date: '', tags: '' }); }} className="flex-1 bg-slate-600 hover:bg-slate-500 text-white text-sm py-2 rounded transition-colors">Cancel</button>
+            <button type="button" onClick={() => { setShowForm(false); setEditingTaskId(null); setError(''); setFormData({ title: '', due_date: '', tags: '', frequency: 'Once' }); }} className="flex-1 bg-slate-600 hover:bg-slate-500 text-white text-sm py-2 rounded transition-colors">Cancel</button>
             <button type="submit" className="flex-1 bg-blue-600 hover:bg-blue-500 text-white text-sm py-2 rounded font-bold transition-colors">{editingTaskId ? 'Save Edits' : 'Add Task'}</button>
           </div>
         </form>
@@ -174,6 +219,7 @@ function TasksWidget() {
             <ul className="space-y-3 overflow-y-auto pr-2 custom-scrollbar flex-1">
               {tasks.map((task) => {
                 const isOverdue = new Date(task.due_date).setHours(0,0,0,0) < new Date().setHours(0,0,0,0);
+                const isRecurring = task.frequency && task.frequency !== 'Once';
 
                 return (
                   <li key={task.id} className={`group bg-slate-700 p-3 rounded-lg border transition-all duration-500 relative ${
@@ -201,12 +247,13 @@ function TasksWidget() {
                         </button>
                         <div>
                           <p className={`font-medium text-sm leading-tight transition-all ${completingTasks[task.id] ? 'text-slate-400 line-through' : isOverdue ? 'text-red-200' : 'text-slate-200'}`}>
+                            {isRecurring && <span className="text-blue-400 mr-1" title={`Repeats ${task.frequency}`}>↻</span>}
                             {task.title}
                             {isOverdue && !completingTasks[task.id] && <span className="ml-2 text-[9px] bg-red-900/80 text-red-300 px-1.5 py-0.5 rounded uppercase tracking-wider font-bold">Overdue</span>}
                           </p>
                           {completingTasks[task.id] && (
                             <p className="text-[10px] text-green-400 font-bold mt-1">
-                              Deleting in {completingTasks[task.id].remaining}s... Click circle to undo.
+                              {isRecurring ? 'Rescheduling...' : `Clearing in ${completingTasks[task.id].remaining}s...`} Undo?
                             </p>
                           )}
                         </div>

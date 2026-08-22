@@ -86,6 +86,7 @@ class TaskCreate(BaseModel):
     due_date: datetime.datetime  
     tags: List[str]
     is_todo: Optional[bool] = False
+    frequency: Optional[str] = "Once" # 🔥 NEW
 
 class TaskUpdate(BaseModel):
     title: Optional[str] = Field(None, min_length=1)
@@ -93,6 +94,7 @@ class TaskUpdate(BaseModel):
     tags: Optional[List[str]] = None
     status: Optional[str] = None
     is_todo: Optional[bool] = None
+    frequency: Optional[str] = None # 🔥 NEW
 
 class TaskResponse(BaseModel):
     id: int
@@ -103,7 +105,12 @@ class TaskResponse(BaseModel):
     tags: List[str]
     completed_at: Optional[datetime.datetime] = None
     is_todo: bool
+    frequency: str # 🔥 NEW
 
+    @validator('frequency', pre=True, always=True)
+    def set_default_frequency(cls, v):
+        return v or "Once"
+    
     class Config:
         from_attributes = True
 
