@@ -53,6 +53,10 @@ class PinResetRequest(BaseModel):
     security_answer: str
     new_pin: str = Field(..., pattern=r"^[a-zA-Z0-9]{4}$")
 
+
+class PinVerifyRequest(BaseModel):
+    app_pin: str
+
 # ==========================================
 # 2. PORTFOLIO SCHEMAS (Skills & Projects)
 # ==========================================

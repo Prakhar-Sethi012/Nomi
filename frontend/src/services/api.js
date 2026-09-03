@@ -100,4 +100,5 @@ export const api = {
   // Security & Account
   resetPin: (data) => fetchAPI('/auth/reset-pin', { method: 'POST', body: JSON.stringify(data) }),
   selfDestruct: () => fetchAPI('/profile/self-destruct', { method: 'DELETE' }),
+  verifyPin: (app_pin) => fetchAPI('/auth/verify-pin', { method: 'POST', body: JSON.stringify({ app_pin }) }),
 };

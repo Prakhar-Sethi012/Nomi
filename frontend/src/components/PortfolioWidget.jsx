@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../services/api';
+import PinConfirmModal from './PinConfirmModal';
 
 function PortfolioWidget() {
   const [projects, setProjects] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState(null); // Holds the ID of the project we want to delete
 
   const [formData, setFormData] = useState({
     title: '', description: '', tech_stack: '', github_link: ''
@@ -109,7 +111,7 @@ function PortfolioWidget() {
               <div key={proj.id} className="group relative bg-slate-700 p-4 rounded-lg border border-slate-600 hover:border-blue-500 transition-colors flex flex-col">
                 
                 <button 
-                  onClick={() => deleteProject(proj.id)}
+                  onClick={() => setDeleteTarget(proj.id)} // 🔥 MODIFIED: Opens Modal
                   className="absolute top-2 right-2 w-6 h-6 bg-red-900/80 text-red-200 rounded text-xs opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center hover:bg-red-600 z-10"
                   title="Delete Project"
                 >
@@ -141,6 +143,17 @@ function PortfolioWidget() {
           })}
         </div>
       )}
+
+      {/* 🔥 NEW: The Pin Confirmation Modal */}
+      <PinConfirmModal 
+        isOpen={deleteTarget !== null}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={() => {
+          deleteProject(deleteTarget);
+          setDeleteTarget(null);
+        }}
+        actionText="Delete Portfolio Project"
+      />
     </div>
   );
 }

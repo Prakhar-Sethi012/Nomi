@@ -74,3 +74,18 @@ def reset_forgotten_pin(data: schemas.PinResetRequest, db: Session = Depends(get
     user.app_pin = auth.get_password_hash(data.new_pin)
     db.commit()
     return {"message": "PIN successfully reset. You can now log in."}
+
+@router.post("/verify-pin")
+def verify_user_pin(data: schemas.PinVerifyRequest, db: Session = Depends(get_db), current_user: models.Profile = Depends(auth.get_current_user)):
+    # Check plain text first (legacy fallback)
+    if current_user.app_pin == data.app_pin:
+        return {"status": "success", "verified": True}
+        
+    # Check secure hash
+    try:
+        if auth.verify_password(data.app_pin, current_user.app_pin):
+            return {"status": "success", "verified": True}
+    except Exception:
+        pass # Fall through to unauthorized
+        
+    raise HTTPException(status_code=401, detail="Incorrect PIN. Deletion aborted.")
