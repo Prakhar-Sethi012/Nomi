@@ -15,6 +15,7 @@ class ProfileUpdate(BaseModel):
     name: Optional[str] = Field(None, min_length=2, max_length=50)
     reg_no: Optional[str] = Field(None, min_length=8)
     app_pin: Optional[str] = Field(None, pattern=r"^[a-zA-Z0-9]{4}$")
+    previous_pin: Optional[str] = Field(None, pattern=r"^[a-zA-Z0-9]{4}$")
     cgpa: Optional[float] = Field(None, ge=0.0, le=10.0, description="CGPA must be between 0 and 10")
     current_streak: Optional[int] = Field(None, ge=0)
     last_active_date: Optional[datetime.date] = None

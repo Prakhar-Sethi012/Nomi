@@ -4,25 +4,20 @@ import { api } from '../services/api';
 function ProfileView({ profile, setProfile, onLogout }) {
   const [question, setQuestion] = useState(profile?.security_question || '');
   const [answer, setAnswer] = useState('');
+  const [currentPin, setCurrentPin] = useState('');
   const [newPin, setNewPin] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
   const handleUpdateSecurity = async (e) => {
     e.preventDefault();
     
-    // Security Checks
-    if (newPin && newPin.length !== 4) {
-      alert("PIN must be exactly 4 characters (letters/numbers).");
-      return;
-    }
-    if (answer && answer.includes(" ")) {
-      alert("Answer must be strictly ONE word. No spaces allowed.");
-      return;
-    }
+    // Formatting Checks
+    if (newPin && newPin.length !== 4) return alert("New PIN must be exactly 4 characters.");
+    if (answer && answer.includes(" ")) return alert("Answer must be strictly ONE word. No spaces.");
     
-    // 🔥 NEW: Frontend Guard
-    if (newPin && !answer) {
-      alert("You MUST provide your Security Answer to authorize a PIN change.");
+    // 🔥 NEW: Frontend Guard (Requires either current PIN or security answer if changing PIN)
+    if (newPin && !currentPin && !answer) {
+      alert("You MUST provide either your Current PIN or your Security Answer to authorize a PIN change.");
       return;
     }
     
@@ -36,14 +31,18 @@ function ProfileView({ profile, setProfile, onLogout }) {
       if (newPin) {
         payload.app_pin = newPin;
       }
+      if (currentPin) {
+        payload.previous_pin = currentPin;
+      }
       
       const updated = await api.updateProfile(payload);
       setProfile(updated);
       setAnswer('');
+      setCurrentPin('');
       setNewPin('');
       alert("Security settings updated successfully!");
     } catch (err) {
-      alert(err.message || "Failed to update security settings. Did you get the answer right?");
+      alert(err.message || "Failed to update security settings. Authorization failed.");
     } finally {
       setIsLoading(false);
     }
@@ -95,58 +94,54 @@ function ProfileView({ profile, setProfile, onLogout }) {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         
-        {/* Security Update Card */}
         <div className="bg-slate-800/80 backdrop-blur-xl p-8 rounded-3xl border border-slate-700 shadow-xl">
           <h2 className="text-xl font-black text-white mb-6 flex items-center gap-2">🛡️ Security Settings</h2>
           
-          <form onSubmit={handleUpdateSecurity} className="flex flex-col gap-4">
-            <div>
-              <label className="text-[10px] uppercase font-bold text-slate-500 tracking-widest block mb-1">New App PIN (Optional)</label>
-              <input 
-                type="text" 
-                maxLength="4" 
-                placeholder="****"
-                value={newPin} 
-                onChange={(e) => setNewPin(e.target.value.replace(/[^a-zA-Z0-9]/g, ''))}
-                className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-white font-mono tracking-[0.5em] focus:border-indigo-500 outline-none transition-all uppercase"
-              />
-              <p className="text-[10px] text-slate-500 mt-1">4 Characters. Letters and numbers only.</p>
+          <form onSubmit={handleUpdateSecurity} className="flex flex-col gap-5">
+            
+            {/* PIN CHANGE BLOCK */}
+            <div className="bg-slate-900/40 p-5 rounded-2xl border border-slate-700/50">
+              <h3 className="text-[10px] uppercase font-bold text-slate-500 tracking-widest block mb-3">Change App PIN</h3>
+              <div className="flex gap-3">
+                <input 
+                  type="text" maxLength="4" placeholder="Current PIN"
+                  value={currentPin} onChange={(e) => { setCurrentPin(e.target.value.replace(/[^a-zA-Z0-9]/g, '')); setAnswer(''); }}
+                  className={`w-full bg-slate-900 border rounded-xl px-3 py-3 text-white font-mono tracking-[0.2em] focus:outline-none transition-all uppercase text-sm ${newPin && !currentPin && !answer ? 'border-red-500 shadow-[0_0_10px_rgba(239,68,68,0.2)]' : 'border-slate-700 focus:border-indigo-500'}`}
+                />
+                <input 
+                  type="text" maxLength="4" placeholder="New PIN"
+                  value={newPin} onChange={(e) => setNewPin(e.target.value.replace(/[^a-zA-Z0-9]/g, ''))}
+                  className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-3 text-white font-mono tracking-[0.2em] focus:border-indigo-500 outline-none transition-all uppercase text-sm"
+                />
+              </div>
+              {newPin && !currentPin && !answer && (
+                <p className="text-red-400 text-[9px] font-bold mt-2 uppercase tracking-wider">Provide Current PIN or Security Answer below to authorize.</p>
+              )}
             </div>
             
-            <div className="mt-4 pt-4 border-t border-slate-700/50">
-              <label className="text-[10px] uppercase font-bold text-slate-500 tracking-widest block mb-1">Custom Recovery Question</label>
-              <p className="text-xs text-slate-400 mb-3">Write a question only you know the answer to.</p>
+            {/* SECURITY QUESTION BLOCK */}
+            <div className="bg-slate-900/40 p-5 rounded-2xl border border-slate-700/50">
+              <h3 className="text-[10px] uppercase font-bold text-slate-500 tracking-widest block mb-1">Account Recovery setup</h3>
+              <p className="text-xs text-slate-400 mb-3">Fallback if you forget your PIN.</p>
               
               <input 
-                type="text" 
-                placeholder="e.g. What is my dog's name?"
-                value={question} 
-                onChange={(e) => setQuestion(e.target.value)}
+                type="text" placeholder="e.g. What is my dog's name?"
+                value={question} onChange={(e) => setQuestion(e.target.value)}
                 className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-white focus:border-indigo-500 outline-none transition-all text-sm mb-3"
               />
-              
-              <div className="relative">
-                <input 
-                  type="text" 
-                  required={newPin.length > 0} // 🔥 Forces answer if they typed a new PIN
-                  placeholder="Strictly ONE word answer..."
-                  value={answer} 
-                  onChange={(e) => setAnswer(e.target.value.replace(/\s/g, ''))}
-                  className={`w-full bg-slate-900 border rounded-xl px-4 py-3 text-white focus:outline-none transition-all text-sm ${newPin.length > 0 && !answer ? 'border-red-500 shadow-[0_0_10px_rgba(239,68,68,0.2)]' : 'border-slate-700 focus:border-indigo-500'}`}
-                />
-                {newPin.length > 0 && !answer && (
-                  <span className="absolute top-[-10px] right-2 bg-red-900 text-red-300 text-[9px] font-bold px-2 py-0.5 rounded uppercase tracking-wider">Required for PIN change</span>
-                )}
-              </div>
+              <input 
+                type="text" placeholder="Strictly ONE word answer..."
+                value={answer} onChange={(e) => { setAnswer(e.target.value.replace(/\s/g, '')); setCurrentPin(''); }}
+                className={`w-full bg-slate-900 border rounded-xl px-4 py-3 text-white focus:outline-none transition-all text-sm ${newPin && !currentPin && !answer ? 'border-red-500 shadow-[0_0_10px_rgba(239,68,68,0.2)]' : 'border-slate-700 focus:border-indigo-500'}`}
+              />
             </div>
 
-            <button disabled={isLoading} type="submit" className="w-full mt-4 bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 rounded-xl transition-all shadow-lg disabled:opacity-50">
+            <button disabled={isLoading} type="submit" className="w-full mt-2 bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 rounded-xl transition-all shadow-lg disabled:opacity-50">
               {isLoading ? 'Encrypting...' : 'Save Security Settings'}
             </button>
           </form>
         </div>
 
-        {/* Danger Zone Card */}
         <div className="bg-red-950/20 backdrop-blur-xl p-8 rounded-3xl border border-red-900/30 shadow-xl flex flex-col">
           <h2 className="text-xl font-black text-red-400 mb-2 flex items-center gap-2">⚠️ Danger Zone</h2>
           <p className="text-sm text-slate-400 mb-6">Irreversible actions for your account.</p>
