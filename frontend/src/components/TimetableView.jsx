@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../services/api';
-// 🔥 NEW: Importing the brain from our central utility file
 import { DAYS, TIMES, MASTER_GRID, slotExistsInCell } from '../utils/timetableUtils';
+import PinConfirmModal from './PinConfirmModal'; // 🔥 IMPORT MODAL
 
 function TimetableView() {
   const [subjects, setSubjects] = useState([]);
@@ -14,6 +14,9 @@ function TimetableView() {
   const [formData, setFormData] = useState({
     name: '', subject_type: 'THEORY', theory_slot: '', lab_slot: '', room_number: ''
   });
+
+  // 🔥 NEW STATE FOR MODAL
+  const [deleteSubjectId, setDeleteSubjectId] = useState(null);
 
   useEffect(() => {
     const timer = setInterval(() => setNow(new Date()), 60000);
@@ -75,7 +78,7 @@ function TimetableView() {
     }
   };
 
-  const deleteSubject = async (id) => {
+  const executeDeleteSubject = async (id) => {
     try {
       await api.deleteSubject(id);
       fetchSubjects();
@@ -227,7 +230,7 @@ function TimetableView() {
                             <span className="text-[9px] text-white/70 mt-1">{cellStr} • {cellData.data.room_number || 'TBA'}</span>
                           </div>
                           <div className="absolute top-0 right-0 hidden group-hover:flex">
-                            <button onClick={() => deleteSubject(cellData.data.id)} className="bg-danger text-white text-[10px] px-1.5 py-0.5 rounded-bl-md shadow hover:bg-red-500">✕</button>
+                            <button onClick={() => setDeleteSubjectId(cellData.data.id)} className="bg-danger text-white text-[10px] px-1.5 py-0.5 rounded-bl-md shadow hover:bg-red-500">✕</button>
                           </div>
                         </td>
                       );
@@ -298,6 +301,17 @@ function TimetableView() {
           {subjects.length === 0 && <div className="text-center text-textSecondary mt-10">No subjects scheduled yet.</div>}
         </div>
       )}
+
+      {/* 🔥 MODAL */}
+      <PinConfirmModal 
+        isOpen={deleteSubjectId !== null}
+        onClose={() => setDeleteSubjectId(null)}
+        onConfirm={() => {
+          executeDeleteSubject(deleteSubjectId);
+          setDeleteSubjectId(null);
+        }}
+        actionText="Delete Class & Attendance Log"
+      />
 
     </div>
   );

@@ -20,6 +20,12 @@ function ProfileView({ profile, setProfile, onLogout }) {
       return;
     }
     
+    // 🔥 NEW: Frontend Guard
+    if (newPin && !answer) {
+      alert("You MUST provide your Security Answer to authorize a PIN change.");
+      return;
+    }
+    
     setIsLoading(true);
     try {
       const payload = {};
@@ -37,7 +43,7 @@ function ProfileView({ profile, setProfile, onLogout }) {
       setNewPin('');
       alert("Security settings updated successfully!");
     } catch (err) {
-      alert(err.message || "Failed to update security settings.");
+      alert(err.message || "Failed to update security settings. Did you get the answer right?");
     } finally {
       setIsLoading(false);
     }
@@ -119,16 +125,22 @@ function ProfileView({ profile, setProfile, onLogout }) {
                 className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-white focus:border-indigo-500 outline-none transition-all text-sm mb-3"
               />
               
-              <input 
-                type="text" 
-                placeholder="Strictly ONE word answer..."
-                value={answer} 
-                onChange={(e) => setAnswer(e.target.value.replace(/\s/g, ''))} // Blocks spaces physically
-                className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-white focus:border-indigo-500 outline-none transition-all text-sm"
-              />
+              <div className="relative">
+                <input 
+                  type="text" 
+                  required={newPin.length > 0} // 🔥 Forces answer if they typed a new PIN
+                  placeholder="Strictly ONE word answer..."
+                  value={answer} 
+                  onChange={(e) => setAnswer(e.target.value.replace(/\s/g, ''))}
+                  className={`w-full bg-slate-900 border rounded-xl px-4 py-3 text-white focus:outline-none transition-all text-sm ${newPin.length > 0 && !answer ? 'border-red-500 shadow-[0_0_10px_rgba(239,68,68,0.2)]' : 'border-slate-700 focus:border-indigo-500'}`}
+                />
+                {newPin.length > 0 && !answer && (
+                  <span className="absolute top-[-10px] right-2 bg-red-900 text-red-300 text-[9px] font-bold px-2 py-0.5 rounded uppercase tracking-wider">Required for PIN change</span>
+                )}
+              </div>
             </div>
 
-            <button disabled={isLoading} type="submit" className="w-full mt-4 bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 rounded-xl transition-all shadow-lg">
+            <button disabled={isLoading} type="submit" className="w-full mt-4 bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 rounded-xl transition-all shadow-lg disabled:opacity-50">
               {isLoading ? 'Encrypting...' : 'Save Security Settings'}
             </button>
           </form>

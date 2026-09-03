@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { api } from '../services/api';
+import PinConfirmModal from './PinConfirmModal'; // 🔥 IMPORT MODAL
 
 function ScratchpadView() {
   // ==========================================
@@ -9,6 +10,9 @@ function ScratchpadView() {
   const [isLoading, setIsLoading] = useState(true);
   const [activeNote, setActiveNote] = useState(null);
   const [saveStatus, setSaveStatus] = useState('');
+  
+  // 🔥 NEW STATE FOR MODAL
+  const [deleteNoteId, setDeleteNoteId] = useState(null);
 
   const fetchNotes = async () => {
     try {
@@ -42,9 +46,7 @@ function ScratchpadView() {
     } catch (err) { console.error("Failed to create note"); }
   };
 
-  const handleDelete = async (id, e) => {
-    e.stopPropagation();
-    if (!window.confirm("Delete this note?")) return;
+  const executeDeleteNote = async (id) => {
     try {
       await api.deleteNote(id);
       setNotes(notes.filter(n => n.id !== id));
@@ -58,10 +60,13 @@ function ScratchpadView() {
   const canvasRef = useRef(null);
   const [isDrawing, setIsDrawing] = useState(false);
   const [showDoodleConfirm, setShowDoodleConfirm] = useState(false);
+  
+  // 🔥 NEW STATE FOR DOODLE MODAL
+  const [wipeDoodleAuth, setWipeDoodleAuth] = useState(false);
 
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (!canvas) return; // Guard clause in case it hasn't rendered
+    if (!canvas) return; 
     const context = canvas.getContext('2d');
     context.lineCap = 'round';
     context.strokeStyle = '#60a5fa'; 
@@ -102,9 +107,7 @@ function ScratchpadView() {
     localStorage.setItem('cc_doodle', canvasRef.current.toDataURL());
   };
 
-  const clearCanvas = () => {
-    if (!window.confirm("Are you sure you want to permanently wipe this doodle?")) return;
-    
+  const executeClearCanvas = () => {
     const canvas = canvasRef.current;
     const context = canvas.getContext('2d');
     context.fillStyle = '#1e293b';
@@ -140,7 +143,12 @@ function ScratchpadView() {
                     <div key={note.id} onClick={() => setActiveNote(note)} className="bg-slate-900/50 p-4 rounded-xl border border-slate-700 hover:border-emerald-500 cursor-pointer transition-all flex flex-col h-40 group">
                       <div className="flex justify-between items-start mb-2">
                         <h3 className="font-bold text-white text-sm truncate pr-2">{note.title || 'Untitled'}</h3>
-                        <button onClick={(e) => handleDelete(note.id, e)} className="text-slate-600 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity">✕</button>
+                        <button 
+                          onClick={(e) => { e.stopPropagation(); setDeleteNoteId(note.id); }} 
+                          className="text-slate-600 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                          ✕
+                        </button>
                       </div>
                       <p className="text-slate-400 text-xs whitespace-pre-wrap flex-1 overflow-hidden">{note.content}</p>
                     </div>
@@ -182,7 +190,7 @@ function ScratchpadView() {
               <div className="flex gap-2 items-center animate-fade-in">
                 <span className="text-[10px] text-red-400 font-bold mr-1">Are you sure?</span>
                 <button onClick={() => setShowDoodleConfirm(false)} className="text-[10px] bg-slate-700 hover:bg-slate-600 text-white px-2 py-1 rounded transition-colors">Cancel</button>
-                <button onClick={clearCanvas} className="text-[10px] bg-red-600 hover:bg-red-500 text-white font-bold px-2 py-1 rounded transition-colors shadow-[0_0_8px_rgba(220,38,38,0.4)]">Wipe</button>
+                <button onClick={() => setWipeDoodleAuth(true)} className="text-[10px] bg-red-600 hover:bg-red-500 text-white font-bold px-2 py-1 rounded transition-colors shadow-[0_0_8px_rgba(220,38,38,0.4)]">Wipe</button>
               </div>
             ) : (
               <button onClick={() => setShowDoodleConfirm(true)} className="text-[10px] text-red-400 hover:text-red-300">Erase Board</button>
@@ -201,8 +209,28 @@ function ScratchpadView() {
             />
           </div>
         </div>
-
       </div>
+
+      {/* 🔥 MODALS */}
+      <PinConfirmModal 
+        isOpen={deleteNoteId !== null}
+        onClose={() => setDeleteNoteId(null)}
+        onConfirm={() => {
+          executeDeleteNote(deleteNoteId);
+          setDeleteNoteId(null);
+        }}
+        actionText="Delete Note Permanently"
+      />
+
+      <PinConfirmModal 
+        isOpen={wipeDoodleAuth}
+        onClose={() => { setWipeDoodleAuth(false); setShowDoodleConfirm(false); }}
+        onConfirm={() => {
+          executeClearCanvas();
+          setWipeDoodleAuth(false);
+        }}
+        actionText="Wipe Doodle Board"
+      />
     </div>
   );
 }

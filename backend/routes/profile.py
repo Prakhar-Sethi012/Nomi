@@ -30,6 +30,23 @@ def update_profile(
 ):
     update_data = profile_data.model_dump(exclude_unset=True)
     
+    # 🔥 SECURITY GATE: If they are trying to change their PIN...
+    if "app_pin" in update_data:
+        # 1. They MUST provide a security answer in the request
+        if "security_answer" not in update_data:
+            raise HTTPException(status_code=403, detail="Security Answer is required to change PIN.")
+            
+        # 2. The database MUST already have a security answer set up
+        if not current_user.security_answer:
+            raise HTTPException(status_code=403, detail="Please set up a security question/answer first before changing your PIN.")
+            
+        # 3. The answers MUST match (case-insensitive)
+        provided_answer = update_data["security_answer"].strip().lower()
+        real_answer = current_user.security_answer.strip().lower()
+        
+        if provided_answer != real_answer:
+            raise HTTPException(status_code=401, detail="Incorrect Security Answer. PIN change aborted.")
+
     for key, value in update_data.items():
         if key == "app_pin":
             # 🔒 Hash the new PIN using our raw bcrypt engine
@@ -41,6 +58,7 @@ def update_profile(
     db.refresh(current_user)
     
     return current_user
+
 
 @router.delete("/self-destruct")
 def self_destruct_account(db: Session = Depends(get_db), current_user: models.Profile = Depends(get_current_user)):

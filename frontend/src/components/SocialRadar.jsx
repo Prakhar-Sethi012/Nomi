@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../services/api';
 import ReadOnlyTimetable from './ReadOnlyTimetable';
+import PinConfirmModal from './PinConfirmModal'; // 🔥 IMPORT MODAL
 
 const formatSmartTime = (minutes) => {
   if (minutes < 0) return { value: 'Now', unit: '' };
@@ -37,13 +38,13 @@ function SocialRadar() {
   const [editingNicknameId, setEditingNicknameId] = useState(null);
   const [newNickname, setNewNickname] = useState('');
 
-  const [pendingCircleAction, setPendingCircleAction] = useState(null); 
+  // 🔥 MODAL STATE
+  const [pendingCircleAction, setPendingCircleAction] = useState(null); // 'leave' or 'delete'
   const [cloningId, setCloningId] = useState(null); 
 
-  // 🔥 NEW: MEETUP ROOM STATES
   const [incomingMeetups, setIncomingMeetups] = useState([]);
   const [outgoingMeetups, setOutgoingMeetups] = useState([]);
-  const [meetupModalUser, setMeetupModalUser] = useState(null); // Which friend are we asking out?
+  const [meetupModalUser, setMeetupModalUser] = useState(null); 
   const [meetupData, setMeetupData] = useState({ location: '', meet_time: '' });
 
   const fetchHistory = async () => {
@@ -131,7 +132,6 @@ function SocialRadar() {
     } catch (err) { setError('Failed to update nickname.'); }
   };
 
-  // 🔥 NEW: Send Meetup Request
   const handleSendMeetup = async (e) => {
     e.preventDefault();
     try {
@@ -142,16 +142,15 @@ function SocialRadar() {
       });
       setMeetupModalUser(null);
       setMeetupData({ location: '', meet_time: '' });
-      loadLobby(); // Refresh to see it in outgoing
+      loadLobby(); 
       alert("Meetup Request Sent!");
     } catch (err) { setError("Failed to send meetup request."); }
   };
 
-  // 🔥 NEW: Accept/Decline Meetup
   const handleUpdateMeetup = async (id, status) => {
     try {
       await api.updateMeetupStatus(id, status);
-      loadLobby(); // Refresh lists
+      loadLobby(); 
     } catch (err) { setError("Failed to update status."); }
   };
 
@@ -249,7 +248,6 @@ function SocialRadar() {
               )}
             </div>
 
-            {/* 🔥 NEW: MEETUP REQUEST ROOM */}
             <div className="mt-8 relative">
               <div className="absolute -inset-1 bg-gradient-to-r from-indigo-500 to-fuchsia-600 rounded-xl blur opacity-20"></div>
               <div className="relative bg-slate-900 border border-slate-700 p-6 rounded-xl shadow-2xl">
@@ -320,20 +318,13 @@ function SocialRadar() {
                   </button>
                 )}
 
-                {pendingCircleAction ? (
-                  <div className="flex items-center gap-2 animate-fade-in">
-                    <span className="text-[10px] text-red-400 font-bold uppercase tracking-widest mr-2">Are you sure?</span>
-                    <button onClick={() => setPendingCircleAction(null)} className="text-xs bg-slate-700 hover:bg-slate-600 text-white px-3 py-1.5 rounded transition-all font-bold">No</button>
-                    <button onClick={executeLeaveOrDelete} className="text-xs bg-red-600 hover:bg-red-500 text-white shadow-[0_0_10px_rgba(220,38,38,0.5)] px-3 py-1.5 rounded transition-all font-bold">Yes</button>
-                  </div>
-                ) : (
-                  <button 
-                    onClick={() => setPendingCircleAction(activeCircle.creator_id === myProfileId ? 'delete' : 'leave')} 
-                    className="text-xs bg-red-900/20 hover:bg-red-600 text-red-400 hover:text-white border border-red-500/30 px-3 py-1.5 rounded transition-all font-bold tracking-wider uppercase"
-                  >
-                    {activeCircle.creator_id === myProfileId ? '🗑️ Destroy Circle' : '🚪 Leave Circle'}
-                  </button>
-                )}
+                {/* 🔥 OPEN MODAL BUTTON */}
+                <button 
+                  onClick={() => setPendingCircleAction(activeCircle.creator_id === myProfileId ? 'delete' : 'leave')} 
+                  className="text-xs bg-red-900/20 hover:bg-red-600 text-red-400 hover:text-white border border-red-500/30 px-3 py-1.5 rounded transition-all font-bold tracking-wider uppercase"
+                >
+                  {activeCircle.creator_id === myProfileId ? '🗑️ Destroy Circle' : '🚪 Leave Circle'}
+                </button>
               </div>
             </div>
             
@@ -367,10 +358,8 @@ function SocialRadar() {
                       </div>
                     )}
 
-                    {/* 🔥 NEW: Interactive Hover Buttons (Clone & Meet) */}
                     {!friend.is_ghost && (
                       <div className="absolute bottom-4 right-4 flex gap-2">
-                        {/* Clone Logic */}
                         {cloningId === friend.user_id ? (
                           <div className="flex items-center gap-2 bg-slate-900 border border-emerald-500/50 p-1.5 rounded z-10 animate-fade-in shadow-xl">
                             <span className="text-[9px] text-emerald-400 font-bold uppercase tracking-widest ml-1">Clone?</span>
@@ -379,7 +368,7 @@ function SocialRadar() {
                           </div>
                         ) : friend.cloneSuccess ? (
                            <div className="text-[10px] text-emerald-400 font-bold bg-emerald-900/40 px-2 py-1.5 rounded border border-emerald-500/30 animate-fade-in flex items-center">
-                             ✓ Cloned
+                              ✓ Cloned
                            </div>
                         ) : (
                           <button onClick={(e) => { e.stopPropagation(); setCloningId(friend.user_id); }} className="opacity-0 group-hover:opacity-100 text-xs bg-slate-800 hover:bg-emerald-600/30 text-slate-400 hover:text-emerald-400 border border-slate-700 hover:border-emerald-500 px-2 py-1.5 rounded transition-all">
@@ -387,7 +376,6 @@ function SocialRadar() {
                           </button>
                         )}
 
-                        {/* Meetup Button */}
                         <button onClick={(e) => { e.stopPropagation(); setMeetupModalUser(friend); }} className="opacity-0 group-hover:opacity-100 text-xs bg-slate-800 hover:bg-indigo-600/30 text-slate-400 hover:text-indigo-400 border border-slate-700 hover:border-indigo-500 px-2 py-1.5 rounded transition-all">
                           🤝 Meet
                         </button>
@@ -461,7 +449,7 @@ function SocialRadar() {
         </div>
       )}
 
-      {/* 🔥 NEW: SEND MEETUP REQUEST MODAL */}
+      {/* SEND MEETUP REQUEST MODAL */}
       {meetupModalUser && (
         <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in">
           <div className="bg-slate-900 border border-slate-700 rounded-xl p-6 shadow-2xl max-w-sm w-full">
@@ -510,6 +498,15 @@ function SocialRadar() {
           </div>
         </div>
       )}
+
+      {/* 🔥 NEW PIN MODAL FOR CIRCLES */}
+      <PinConfirmModal 
+        isOpen={pendingCircleAction !== null}
+        onClose={() => setPendingCircleAction(null)}
+        onConfirm={executeLeaveOrDelete}
+        actionText={pendingCircleAction === 'delete' ? 'Destroy Circle' : 'Leave Circle'}
+      />
+
     </div>
   );
 }
