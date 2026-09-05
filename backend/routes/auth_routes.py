@@ -41,7 +41,7 @@ def login_user(credentials: LoginRequest, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="User not found")
     
     # First, check if the database still holds the old plain text PIN
-    if user.app_pin == credentials.app_pin:
+    if auth.constant_time_str_eq(user.app_pin, credentials.app_pin):
         # Upgrade it to a secure hash immediately!
         user.app_pin = auth.get_password_hash(credentials.app_pin)
         db.commit()
@@ -78,7 +78,7 @@ def reset_forgotten_pin(data: schemas.PinResetRequest, db: Session = Depends(get
 @router.post("/verify-pin")
 def verify_user_pin(data: schemas.PinVerifyRequest, db: Session = Depends(get_db), current_user: models.Profile = Depends(auth.get_current_user)):
     # Check plain text first (legacy fallback)
-    if current_user.app_pin == data.app_pin:
+    if auth.constant_time_str_eq(current_user.app_pin, data.app_pin):
         return {"status": "success", "verified": True}
         
     # Check secure hash

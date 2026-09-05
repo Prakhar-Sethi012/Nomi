@@ -41,7 +41,7 @@ def update_profile(
 
         # Check Current PIN first
         if has_prev_pin:
-            if current_user.app_pin != update_data["previous_pin"]:
+            if not auth.constant_time_str_eq(current_user.app_pin, update_data["previous_pin"]):
                 try:
                     if not auth.verify_password(update_data["previous_pin"], current_user.app_pin):
                         raise HTTPException(status_code=401, detail="Incorrect Current PIN.")

@@ -1,5 +1,6 @@
 import jwt
 import bcrypt
+import hmac
 import datetime
 from fastapi import HTTPException, Security, Depends
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
@@ -28,6 +29,11 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
     except ValueError:
         # If the hash is corrupted or still plain text, bcrypt throws a ValueError
         return False
+
+# Constant-time comparison for the legacy plain-text PIN fallback, so a mismatch
+# can't be timed character-by-character.
+def constant_time_str_eq(a: str, b: str) -> bool:
+    return hmac.compare_digest(a.encode('utf-8'), b.encode('utf-8'))
 
 # --- 2. TOKEN GENERATION ---
 def create_access_token(user_id: int):

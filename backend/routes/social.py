@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from typing import List
+from typing import List, Literal
 import string, random,datetime
 
 import models, schemas
@@ -291,10 +291,12 @@ def get_outgoing_meetups(db: Session = Depends(get_db), current_user: models.Pro
     return result
 
 @router.put("/meetups/{meetup_id}/status")
-def update_meetup_status(meetup_id: int, status: str, db: Session = Depends(get_db), current_user: models.Profile = Depends(get_current_user)):
+def update_meetup_status(meetup_id: int, status: Literal["accepted", "declined"], db: Session = Depends(get_db), current_user: models.Profile = Depends(get_current_user)):
     meetup = db.query(models.Meetup).filter_by(id=meetup_id, receiver_id=current_user.id).first()
     if not meetup: raise HTTPException(status_code=404, detail="Meetup not found.")
-    
-    meetup.status = status # 'accepted' or 'declined'
+    if meetup.status != "pending":
+        raise HTTPException(status_code=400, detail=f"Meetup is already {meetup.status}.")
+
+    meetup.status = status
     db.commit()
     return {"message": f"Meetup {status}"}

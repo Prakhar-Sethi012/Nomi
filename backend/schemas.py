@@ -17,8 +17,6 @@ class ProfileUpdate(BaseModel):
     app_pin: Optional[str] = Field(None, pattern=r"^[a-zA-Z0-9]{4}$")
     previous_pin: Optional[str] = Field(None, pattern=r"^[a-zA-Z0-9]{4}$")
     cgpa: Optional[float] = Field(None, ge=0.0, le=10.0, description="CGPA must be between 0 and 10")
-    current_streak: Optional[int] = Field(None, ge=0)
-    last_active_date: Optional[datetime.date] = None
     custom_task_tags: Optional[List[str]] = None
     is_ghost: Optional[bool] = None 
     monthly_limit: Optional[float] = None
@@ -174,7 +172,7 @@ class ExpenseResponse(BaseModel):
 # ==========================================
 class CircleCreate(BaseModel):
     name: str = Field(..., min_length=2, max_length=100)
-    custom_token: Optional[str] = Field(None, min_length=6, max_length=10)
+    custom_token: Optional[str] = Field(None, min_length=6, max_length=10, pattern=r"^[a-zA-Z0-9]+$")
 
 class CircleResponse(BaseModel):
     id: int
