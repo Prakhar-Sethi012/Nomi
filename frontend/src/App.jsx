@@ -140,12 +140,12 @@ function App() {
 
       <div className="w-full max-w-6xl flex justify-center">
         {activeTab === 'dashboard' && <Dashboard profile={profile} setProfile={setProfile} setActiveTab={setActiveTab} />}
-        {activeTab === 'scratchpad' && <ScratchpadView />}
-        {activeTab === 'links' && <LinksView />}
+        {activeTab === 'scratchpad' && <ScratchpadView userId={profile.id} />}
+        {activeTab === 'links' && <LinksView userId={profile.id} />}
         {activeTab === 'timetable' && <TimetableView />}
         {activeTab === 'strategy' && <AttendanceStrategyView />}
         {activeTab === 'expenses' && <ExpensesView profile={profile} setProfile={setProfile} />}
-        {activeTab === 'radar' && <SocialRadar />}
+        {activeTab === 'radar' && <SocialRadar profile={profile} setProfile={setProfile} />}
         {activeTab === 'closeFriends' && <CloseFriendsView />}
         {activeTab === 'profile' && <ProfileView profile={profile} setProfile={setProfile} onLogout={handleLogout} />}
       </div>

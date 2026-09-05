@@ -51,8 +51,7 @@ export const api = {
   getSubjects: () => fetchAPI('/subjects/'),
   addSubject: (data) => fetchAPI('/subjects/', { method: 'POST', body: JSON.stringify(data) }),
   updateSubject: (id, data) => fetchAPI(`/subjects/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
-  updateAttendance: (id, attended) => fetchAPI(`/subjects/${id}/attendance?attended=${attended}`, { method: 'PUT' }),
-  markAttendance: (id, attended) => fetchAPI(`/subjects/${id}/attendance?attended=${attended}`, { method: 'PUT' }), // 🔥 ADDED THIS ALIAS
+  markAttendance: (id, attended) => fetchAPI(`/subjects/${id}/attendance?attended=${attended}`, { method: 'PUT' }),
   deleteSubject: (id) => fetchAPI(`/subjects/${id}`, { method: 'DELETE' }),
 
   // Expenses
@@ -68,7 +67,6 @@ export const api = {
   deletePortfolioItem: (id) => fetchAPI(`/portfolio/${id}`, { method: 'DELETE' }),
 
   // Social & Privacy
-  toggleGhostMode: (isGhost) => fetchAPI('/social/ghost-mode', { method: 'PUT', body: JSON.stringify({ is_ghost: isGhost }) }),
   createCircle: (data) => fetchAPI('/social/circles', { method: 'POST', body: JSON.stringify(data) }),
   joinCircle: (data) => fetchAPI('/social/circles/join', { method: 'POST', body: JSON.stringify(data) }),
   getMyCircles: () => fetchAPI('/social/circles/my-circles'),

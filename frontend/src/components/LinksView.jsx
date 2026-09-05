@@ -1,9 +1,13 @@
 import React, { useState, useEffect } from 'react';
 
-function LinksView() {
+function LinksView({ userId }) {
+  // Namespaced per-user so switching accounts on a shared browser doesn't
+  // show the previous user's directory.
+  const linksKey = `cc_links_${userId}`;
+
   // 1. Load links from local storage, or provide a default starter pack
   const [links, setLinks] = useState(() => {
-    const saved = localStorage.getItem('cc_links');
+    const saved = localStorage.getItem(linksKey);
     if (saved) return JSON.parse(saved);
     return [
       { id: '1', name: 'GitHub', url: 'https://github.com', icon: '🐙', desc: 'Code repositories & version control' },
@@ -13,14 +17,14 @@ function LinksView() {
 
   const [showForm, setShowForm] = useState(false);
   const [formData, setFormData] = useState({ name: '', url: '', icon: '🔗', desc: '' });
-  
+
   // State to show the temporary "Copied!" checkmark
   const [copiedId, setCopiedId] = useState(null);
 
   // 2. Auto-save to local storage whenever the links array changes
   useEffect(() => {
-    localStorage.setItem('cc_links', JSON.stringify(links));
-  }, [links]);
+    localStorage.setItem(linksKey, JSON.stringify(links));
+  }, [links, linksKey]);
 
   const handleSubmit = (e) => {
     e.preventDefault();

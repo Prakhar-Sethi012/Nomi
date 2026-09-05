@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { api } from '../services/api';
 import ReadOnlyTimetable from './ReadOnlyTimetable';
 import PinConfirmModal from './PinConfirmModal'; // 🔥 IMPORT MODAL
@@ -14,18 +14,21 @@ const formatSmartTime = (minutes) => {
   return { value: days, unit: `day${days !== 1 ? 's' : ''}` };
 };
 
-function SocialRadar() {
+function SocialRadar({ profile, setProfile }) {
   const [viewLevel, setViewLevel] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
-  const [myProfileId, setMyProfileId] = useState(null);
-  const [historyLog, setHistoryLog] = useState(null); 
+  const [historyLog, setHistoryLog] = useState(null);
   const [circles, setCircles] = useState([]);
   const [activeCircle, setActiveCircle] = useState(null);
   const [roster, setRoster] = useState([]);
   const [activeFriend, setActiveFriend] = useState(null);
   const [friendTimetable, setFriendTimetable] = useState([]);
-  const [isGhost, setIsGhost] = useState(false);
+
+  // Ghost Mode now lives solely on the shared `profile` (App.jsx) — no more
+  // separate local copy that could drift out of sync with the Dashboard toggle.
+  const myProfileId = profile?.id ?? null;
+  const isGhost = profile?.is_ghost ?? false;
 
   const [newCircleName, setNewCircleName] = useState('');
   const [customToken, setCustomToken] = useState('');
@@ -44,8 +47,15 @@ function SocialRadar() {
 
   const [incomingMeetups, setIncomingMeetups] = useState([]);
   const [outgoingMeetups, setOutgoingMeetups] = useState([]);
-  const [meetupModalUser, setMeetupModalUser] = useState(null); 
+  const [meetupModalUser, setMeetupModalUser] = useState(null);
   const [meetupData, setMeetupData] = useState({ location: '', meet_time: '' });
+
+  // Tracks pending "clone success" revert timers so they can be cancelled on unmount.
+  const cloneTimersRef = useRef([]);
+  useEffect(() => {
+    const timers = cloneTimersRef.current;
+    return () => timers.forEach(clearTimeout);
+  }, []);
 
   const fetchHistory = async () => {
     try {
@@ -57,23 +67,34 @@ function SocialRadar() {
   const loadLobby = async () => {
     setIsLoading(true); setError('');
     try {
-      const [circlesData, profile, incoming, outgoing] = await Promise.all([ 
-        api.getMyCircles(), 
+      const [circlesData, freshProfile, incoming, outgoing] = await Promise.all([
+        api.getMyCircles(),
         api.getProfile(),
         api.getIncomingMeetups(),
         api.getOutgoingMeetups()
       ]);
       setCircles(circlesData);
-      setIsGhost(profile.is_ghost);
-      setMyProfileId(profile.id);
+      setProfile(freshProfile);
       setIncomingMeetups(incoming);
       setOutgoingMeetups(outgoing);
       setViewLevel(1);
-    } catch (err) { setError('Failed to load lobby data.'); } 
+    } catch (err) { setError('Failed to load lobby data.'); }
     finally { setIsLoading(false); }
   };
 
   useEffect(() => { loadLobby(); }, []);
+
+  const handleGhostModeToggle = async () => {
+    const newGhostState = !isGhost;
+    setProfile(prev => ({ ...prev, is_ghost: newGhostState }));
+    try {
+      const updatedProfile = await api.updateProfile({ is_ghost: newGhostState });
+      setProfile(updatedProfile);
+    } catch (err) {
+      setProfile(prev => ({ ...prev, is_ghost: !newGhostState }));
+      setError('Failed to toggle Ghost Mode.');
+    }
+  };
 
   const handleCreateCircle = async (e) => {
     e.preventDefault();
@@ -117,9 +138,11 @@ function SocialRadar() {
     try {
       await api.cloneFriend(friendId);
       setCloningId(null);
-      const oldRoster = [...roster];
-      setRoster(roster.map(f => f.user_id === friendId ? { ...f, cloneSuccess: true } : f));
-      setTimeout(() => setRoster(oldRoster), 2000);
+      setRoster(prev => prev.map(f => f.user_id === friendId ? { ...f, cloneSuccess: true } : f));
+      const timerId = setTimeout(() => {
+        setRoster(prev => prev.map(f => f.user_id === friendId ? { ...f, cloneSuccess: false } : f));
+      }, 2000);
+      cloneTimersRef.current.push(timerId);
     } catch (err) { setError(err.message || "Failed to clone friend."); setCloningId(null); }
   };
 
@@ -183,7 +206,7 @@ function SocialRadar() {
           <h1 className="text-2xl font-bold text-white mb-1 flex items-center gap-2">📡 Social Radar</h1>
           <p className="text-slate-400 text-sm">Coordinate schedules with your circles.</p>
         </div>
-        <button onClick={() => { const s = !isGhost; api.toggleGhostMode(s).then(() => setIsGhost(s)); }} className={`px-4 py-2 rounded-lg font-bold text-sm transition-all flex items-center gap-2 border ${isGhost ? 'bg-slate-900 border-slate-600 text-slate-400 shadow-inner' : 'bg-indigo-600/20 border-indigo-500/50 text-indigo-300 hover:bg-indigo-600/30'}`}>
+        <button onClick={handleGhostModeToggle} className={`px-4 py-2 rounded-lg font-bold text-sm transition-all flex items-center gap-2 border ${isGhost ? 'bg-slate-900 border-slate-600 text-slate-400 shadow-inner' : 'bg-indigo-600/20 border-indigo-500/50 text-indigo-300 hover:bg-indigo-600/30'}`}>
           {isGhost ? '👻 Ghost Mode: ON (Hidden)' : '🌍 Ghost Mode: OFF (Visible)'}
         </button>
       </header>

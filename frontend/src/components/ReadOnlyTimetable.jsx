@@ -1,41 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { DAYS, TIMES, MASTER_GRID, slotExistsInCell } from '../utils/timetableUtils';
+import { DAYS, TIMES, MASTER_GRID, getSubjectColor, getSubjectForCell as getSubjectForCellShared, isClassActiveNow } from '../utils/timetableUtils';
 
 function ReadOnlyTimetable({ subjects }) {
-  const [viewMode, setViewMode] = useState('grid'); 
+  const [viewMode, setViewMode] = useState('grid');
   const [now, setNow] = useState(new Date());
 
   useEffect(() => {
     const timer = setInterval(() => setNow(new Date()), 60000);
-    return () => clearInterval(timer); 
+    return () => clearInterval(timer);
   }, []);
 
-  const getSubjectColor = (id) => {
-    const colors = ['bg-indigo-600', 'bg-emerald-600', 'bg-rose-600', 'bg-amber-600', 'bg-cyan-600', 'bg-fuchsia-600'];
-    return colors[id % colors.length];
-  };
-
-  const getSubjectForCell = (cellData) => {
-    if (cellData === "LUNCH") return { type: "LUNCH" };
-    const owner = subjects.find(sub => slotExistsInCell(sub.theory_slot, cellData) || slotExistsInCell(sub.lab_slot, cellData));
-    if (owner) return { type: "SUBJECT", data: owner };
-    return { type: "EMPTY", data: cellData };
-  };
-
-  const isClassActive = (dayName, timeString) => {
-    const jsDays = ["SUN", "MON", "TUES", "WEDNES", "THURS", "FRI", "SAT"];
-    const currentDayName = jsDays[now.getDay()];
-    if (dayName !== currentDayName) return false;
-
-    try {
-      const [startStr, endStr] = timeString.split(" - ");
-      if (!startStr || !endStr) return false;
-      const currentTotalMinutes = now.getHours() * 60 + now.getMinutes();
-      const [startH, startM] = startStr.split(":").map(Number);
-      const [endH, endM] = endStr.split(":").map(Number);
-      return currentTotalMinutes >= (startH * 60 + startM) && currentTotalMinutes <= (endH * 60 + endM);
-    } catch (e) { return false; }
-  };
+  const getSubjectForCell = (cellData) => getSubjectForCellShared(cellData, subjects);
+  const isClassActive = (dayName, timeString) => isClassActiveNow(dayName, timeString, now);
 
   return (
     <div className="w-full flex flex-col h-[70vh] animate-fade-in">

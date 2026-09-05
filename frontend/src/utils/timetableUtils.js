@@ -20,6 +20,45 @@ export const slotExistsInCell = (userSlots, cellData) => {
   return slotsArray.some(s => cellSlots.includes(s));
 };
 
+const SUBJECT_COLORS = ['bg-indigo-600', 'bg-emerald-600', 'bg-rose-600', 'bg-amber-600', 'bg-cyan-600', 'bg-fuchsia-600'];
+
+// Shared across TimetableView and ReadOnlyTimetable so the grid-cell math lives in one place.
+export const getSubjectColor = (id) => SUBJECT_COLORS[id % SUBJECT_COLORS.length];
+
+export const getSubjectForCell = (cellData, subjects) => {
+  if (cellData === "LUNCH") return { type: "LUNCH" };
+
+  const owner = subjects.find(sub =>
+    slotExistsInCell(sub.theory_slot, cellData) || slotExistsInCell(sub.lab_slot, cellData)
+  );
+
+  if (owner) return { type: "SUBJECT", data: owner };
+  return { type: "EMPTY", data: cellData };
+};
+
+const JS_DAY_NAMES = ["SUN", "MON", "TUES", "WEDNES", "THURS", "FRI", "SAT"];
+
+// Is the class in this grid cell (dayName + "HH:MM - HH:MM" timeString) happening right now?
+export const isClassActiveNow = (dayName, timeString, now = new Date()) => {
+  const currentDayName = JS_DAY_NAMES[now.getDay()];
+  if (dayName !== currentDayName) return false;
+
+  try {
+    const [startStr, endStr] = timeString.split(" - ");
+    if (!startStr || !endStr) return false;
+
+    const currentTotalMinutes = now.getHours() * 60 + now.getMinutes();
+    const [startH, startM] = startStr.split(":").map(Number);
+    const startTotalMinutes = startH * 60 + startM;
+    const [endH, endM] = endStr.split(":").map(Number);
+    const endTotalMinutes = endH * 60 + endM;
+
+    return currentTotalMinutes >= startTotalMinutes && currentTotalMinutes <= endTotalMinutes;
+  } catch (e) {
+    return false;
+  }
+};
+
 // Returns an array of classes for a specific date (defaults to today)
 export const getTodayClasses = (subjects, dateObj = new Date()) => {
   const jsDay = dateObj.getDay(); // 0 = Sun, 1 = Mon ... 6 = Sat

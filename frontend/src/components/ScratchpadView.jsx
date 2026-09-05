@@ -2,7 +2,10 @@ import React, { useState, useRef, useEffect } from 'react';
 import { api } from '../services/api';
 import PinConfirmModal from './PinConfirmModal'; // 🔥 IMPORT MODAL
 
-function ScratchpadView() {
+function ScratchpadView({ userId }) {
+  // Namespaced per-user so switching accounts on a shared browser doesn't
+  // show the previous user's doodle.
+  const doodleKey = `cc_doodle_${userId}`;
   // ==========================================
   // 📝 MI NOTES (DATABASE SYNC)
   // ==========================================
@@ -10,7 +13,10 @@ function ScratchpadView() {
   const [isLoading, setIsLoading] = useState(true);
   const [activeNote, setActiveNote] = useState(null);
   const [saveStatus, setSaveStatus] = useState('');
-  
+  // Tracks whether activeNote changed because of an actual edit, vs. just
+  // being opened/created/switched — so opening a note doesn't trigger a save.
+  const isDirtyRef = useRef(false);
+
   // 🔥 NEW STATE FOR MODAL
   const [deleteNoteId, setDeleteNoteId] = useState(null);
 
@@ -18,19 +24,20 @@ function ScratchpadView() {
     try {
       const data = await api.getNotes();
       setNotes(data.sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at)));
-    } catch (err) { console.error("Failed to load notes", err); } 
+    } catch (err) { console.error("Failed to load notes", err); }
     finally { setIsLoading(false); }
   };
 
   useEffect(() => { fetchNotes(); }, []);
 
-  // Debounced Auto-Save
+  // Debounced Auto-Save — only runs when the user actually edited something
   useEffect(() => {
-    if (!activeNote || !activeNote.id) return;
+    if (!activeNote || !activeNote.id || !isDirtyRef.current) return;
     setSaveStatus('Saving...');
     const timerId = setTimeout(async () => {
       try {
         await api.updateNote(activeNote.id, { title: activeNote.title, content: activeNote.content });
+        isDirtyRef.current = false;
         setSaveStatus('✓ Saved');
         setNotes(prev => prev.map(n => n.id === activeNote.id ? activeNote : n));
       } catch (err) { setSaveStatus('Error saving'); }
@@ -38,11 +45,22 @@ function ScratchpadView() {
     return () => clearTimeout(timerId);
   }, [activeNote]);
 
+  const openNote = (note) => {
+    isDirtyRef.current = false;
+    setSaveStatus('');
+    setActiveNote(note);
+  };
+
+  const editActiveNote = (fields) => {
+    isDirtyRef.current = true;
+    setActiveNote(prev => ({ ...prev, ...fields }));
+  };
+
   const handleCreateNew = async () => {
     try {
       const newNote = await api.addNote({ title: 'New Note', content: '' });
       setNotes([newNote, ...notes]);
-      setActiveNote(newNote);
+      openNote(newNote);
     } catch (err) { console.error("Failed to create note"); }
   };
 
@@ -72,16 +90,16 @@ function ScratchpadView() {
     context.strokeStyle = '#60a5fa'; 
     context.lineWidth = 3;
 
-    const savedDoodle = localStorage.getItem('cc_doodle');
+    const savedDoodle = localStorage.getItem(doodleKey);
     if (savedDoodle) {
       const img = new Image();
       img.src = savedDoodle;
       img.onload = () => context.drawImage(img, 0, 0);
     } else {
-      context.fillStyle = '#1e293b'; 
+      context.fillStyle = '#1e293b';
       context.fillRect(0, 0, canvas.width, canvas.height);
     }
-  }, []);
+  }, [doodleKey]);
 
   const startDrawing = ({ nativeEvent }) => {
     const { offsetX, offsetY } = nativeEvent;
@@ -104,7 +122,7 @@ function ScratchpadView() {
     const context = canvasRef.current.getContext('2d');
     context.closePath();
     setIsDrawing(false);
-    localStorage.setItem('cc_doodle', canvasRef.current.toDataURL());
+    localStorage.setItem(doodleKey, canvasRef.current.toDataURL());
   };
 
   const executeClearCanvas = () => {
@@ -112,7 +130,7 @@ function ScratchpadView() {
     const context = canvas.getContext('2d');
     context.fillStyle = '#1e293b';
     context.fillRect(0, 0, canvas.width, canvas.height);
-    localStorage.removeItem('cc_doodle');
+    localStorage.removeItem(doodleKey);
     setShowDoodleConfirm(false);
   };
 
@@ -140,7 +158,7 @@ function ScratchpadView() {
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {notes.map(note => (
-                    <div key={note.id} onClick={() => setActiveNote(note)} className="bg-slate-900/50 p-4 rounded-xl border border-slate-700 hover:border-emerald-500 cursor-pointer transition-all flex flex-col h-40 group">
+                    <div key={note.id} onClick={() => openNote(note)} className="bg-slate-900/50 p-4 rounded-xl border border-slate-700 hover:border-emerald-500 cursor-pointer transition-all flex flex-col h-40 group">
                       <div className="flex justify-between items-start mb-2">
                         <h3 className="font-bold text-white text-sm truncate pr-2">{note.title || 'Untitled'}</h3>
                         <button 
@@ -163,7 +181,7 @@ function ScratchpadView() {
                   type="text" 
                   placeholder="Note Title..." 
                   value={activeNote.title || ''}
-                  onChange={e => setActiveNote({...activeNote, title: e.target.value})}
+                  onChange={e => editActiveNote({ title: e.target.value })}
                   className="bg-transparent text-white font-bold text-lg outline-none w-1/2 placeholder-slate-600"
                 />
                 <div className="flex items-center gap-4">
@@ -173,7 +191,7 @@ function ScratchpadView() {
               </div>
               <textarea
                 value={activeNote.content}
-                onChange={e => setActiveNote({...activeNote, content: e.target.value})}
+                onChange={e => editActiveNote({ content: e.target.value })}
                 placeholder="Start typing..."
                 className="flex-1 w-full p-6 bg-slate-800 text-slate-300 text-sm focus:outline-none resize-none custom-scrollbar font-mono leading-relaxed"
                 autoFocus

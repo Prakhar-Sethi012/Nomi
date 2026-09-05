@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { api } from '../services/api';
 
-function TasksWidget() {
+function TasksWidget({ setProfile }) {
   const [tasks, setTasks] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
@@ -11,6 +11,21 @@ function TasksWidget() {
   const [editingTaskId, setEditingTaskId] = useState(null);
 
   const [formData, setFormData] = useState({ title: '', due_date: '', tags: '', frequency: 'Once' });
+
+  // Mirrors completingTasks so the unmount-cleanup effect below can always see
+  // the latest timers without re-running on every tick.
+  const completingTasksRef = useRef(completingTasks);
+  useEffect(() => { completingTasksRef.current = completingTasks; }, [completingTasks]);
+
+  // Abandoned completion timers must not keep running (and firing deletes) after unmount.
+  useEffect(() => {
+    return () => {
+      Object.values(completingTasksRef.current).forEach(({ timer, interval }) => {
+        clearTimeout(timer);
+        clearInterval(interval);
+      });
+    };
+  }, []);
 
   const fetchTasks = async () => {
     try {
@@ -91,46 +106,24 @@ function TasksWidget() {
     }, 1000);
 
     const timerId = setTimeout(async () => {
-      clearInterval(intervalId); 
+      clearInterval(intervalId);
       try {
+        // The backend now decides on its own whether this completion counts as a
+        // "perfect day" and bumps current_streak/last_active_date accordingly —
+        // no client-computed streak logic here anymore.
         await api.deleteTask(id);
-        
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
 
-        const pendingDailyTasks = tasks.filter(t => {
-          const taskDate = new Date(t.due_date);
-          taskDate.setHours(0, 0, 0, 0);
-          return taskDate <= today && t.frequency === 'Once'; // Streak only counts for 'Once' tasks
-        });
-
-        const isPerfectDay = pendingDailyTasks.length === 1 && pendingDailyTasks[0].id === id;
-
-        if (isPerfectDay) {
-          try {
-            const profile = await api.getProfile();
-            const todayStr = new Date().toISOString().split('T')[0];
-
-            if (profile.last_active_date !== todayStr) {
-              await api.updateProfile({ 
-                current_streak: profile.current_streak + 1,
-                last_active_date: todayStr 
-              });
-              window.dispatchEvent(new Event('streak-updated'));
-            }
-          } catch (err) {
-            console.error("Failed to update database streak");
-          }
+        fetchTasks();
+        if (setProfile) {
+          api.getProfile().then(setProfile).catch(() => {});
         }
-        
-        fetchTasks(); 
         setCompletingTasks(prev => {
           const newState = { ...prev };
           delete newState[id];
           return newState;
         });
 
-      } catch (err) { 
+      } catch (err) {
         setCompletingTasks(prev => {
           const newState = { ...prev };
           delete newState[id];
