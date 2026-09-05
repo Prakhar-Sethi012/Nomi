@@ -1,7 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from typing import List
-import datetime
 
 import models, schemas
 from database import get_db
@@ -18,8 +17,7 @@ def create_note(data: schemas.NoteCreate, db: Session = Depends(get_db), current
     new_note = models.Note(
         user_id=current_user.id,
         title=data.title,
-        content=data.content,
-        updated_at=datetime.datetime.utcnow()
+        content=data.content
     )
     db.add(new_note)
     db.commit()
@@ -36,8 +34,7 @@ def update_note(note_id: int, data: schemas.NoteUpdate, db: Session = Depends(ge
         note.title = data.title
     if data.content is not None:
         note.content = data.content
-        
-    note.updated_at = datetime.datetime.utcnow()
+
     db.commit()
     db.refresh(note)
     return note

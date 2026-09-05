@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator
 from typing import List, Optional, Dict
 import datetime 
 
@@ -27,7 +27,8 @@ class ProfileUpdate(BaseModel):
     security_answer: Optional[str] = None
 
     # 🔥 STRICT ONE-WORD VALIDATOR
-    @validator('security_answer')
+    @field_validator('security_answer')
+    @classmethod
     def answer_must_be_one_word(cls, v):
         if v is not None and " " in v.strip():
             raise ValueError('Security answer must be exactly one word with no spaces.')
@@ -112,7 +113,8 @@ class TaskResponse(BaseModel):
     is_todo: bool
     frequency: str # 🔥 NEW
 
-    @validator('frequency', pre=True, always=True)
+    @field_validator('frequency', mode='before')
+    @classmethod
     def set_default_frequency(cls, v):
         return v or "Once"
     
@@ -170,19 +172,6 @@ class ExpenseResponse(BaseModel):
 # ==========================================
 # 6. SOCIAL SCHEMAS (Friends, Circles, Privacy)
 # ==========================================
-class FriendRequestCreate(BaseModel):
-    friend_reg_no: str = Field(..., description="The registration number of the user you want to add")
-
-class FriendResponse(BaseModel):
-    id: int
-    name: str
-    reg_no: str
-    is_ghost: bool
-    status: str # 'pending' or 'accepted'
-
-    class Config:
-        from_attributes = True
-
 class CircleCreate(BaseModel):
     name: str = Field(..., min_length=2, max_length=100)
     custom_token: Optional[str] = Field(None, min_length=6, max_length=10)
@@ -255,7 +244,3 @@ class MeetupResponse(BaseModel):
     
     class Config:
         from_attributes = True
-        
-class NPCCreate(BaseModel):
-    name: str
-    reg_no: str # Used as a dummy ID

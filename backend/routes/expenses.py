@@ -1,7 +1,7 @@
-from fastapi import APIRouter, Depends, HTTPException 
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from typing import List
-import models, schemas, io, datetime
+import models, schemas, io, datetime, re
 from database import get_db
 from auth import get_current_user 
 from fastapi.responses import PlainTextResponse
@@ -75,9 +75,11 @@ def update_expense(
 @router.get("/export")
 def export_expenses(month: int = None, year: int = None, db: Session = Depends(get_db), current_user: models.Profile = Depends(get_current_user)):
     query = db.query(models.Expense).filter_by(user_id=current_user.id)
-    
+
+    safe_name = re.sub(r'[^A-Za-z0-9_-]', '_', current_user.name.replace(' ', '_')) or "user"
+
     title = f"EXPENSE REPORT FOR {current_user.name.upper()}"
-    filename = f"expenses_{current_user.name.replace(' ', '_')}"
+    filename = f"expenses_{safe_name}"
 
     if year is not None and month is not None:
         query = query.filter(extract('year', models.Expense.date) == year, extract('month', models.Expense.date) == month)

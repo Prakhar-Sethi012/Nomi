@@ -73,14 +73,6 @@ class PortfolioItem(Base):
 # ==========================================
 # MULTIPLAYER SOCIAL MODELS
 # ==========================================
-class Friendship(Base):
-    __tablename__ = "friendships"
-    
-    user_id_1 = Column(Integer, ForeignKey("profile.id", ondelete="CASCADE"), primary_key=True)
-    user_id_2 = Column(Integer, ForeignKey("profile.id", ondelete="CASCADE"), primary_key=True)
-    status = Column(String, default="pending") 
-    created_at = Column(DateTime, default=datetime.datetime.utcnow)
-
 class Circle(Base):
     __tablename__ = "circles"
 

@@ -3,9 +3,8 @@ from fastapi.middleware.cors import CORSMiddleware  # NEW IMPORT
 from sqlalchemy.orm import Session
 from sqlalchemy import text
 from database import engine, get_db
-from routers import weather
 import models
-from routes import profile, portfolio, tasks, subjects, expenses, social,auth_routes,notes
+from routes import profile, portfolio, tasks, subjects, expenses, social, auth_routes, notes, weather
 
 
 models.Base.metadata.create_all(bind=engine)

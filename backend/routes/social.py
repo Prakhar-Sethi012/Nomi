@@ -102,22 +102,36 @@ def get_circle_roster(circle_id: int, db: Session = Depends(get_db), current_use
         
     active_slots = get_current_active_slots()
     members = db.query(models.CircleMember).filter_by(circle_id=circle_id).all()
+    member_ids = [m.user_id for m in members if m.user_id != current_user.id]
+
+    profiles_by_id = {p.id: p for p in db.query(models.Profile).filter(models.Profile.id.in_(member_ids)).all()}
+
+    settings_by_friend_id = {
+        s.friend_id: s for s in db.query(models.FriendSetting).filter(
+            models.FriendSetting.user_id == current_user.id,
+            models.FriendSetting.friend_id.in_(member_ids)
+        ).all()
+    }
+
+    non_ghost_ids = [uid for uid, p in profiles_by_id.items() if not p.is_ghost]
+    subjects_by_user_id = {}
+    for sub in db.query(models.Subject).filter(models.Subject.user_id.in_(non_ghost_ids)).all():
+        subjects_by_user_id.setdefault(sub.user_id, []).append(sub)
+
     roster = []
-    
-    for m in members:
-        if m.user_id == current_user.id: continue
-        profile = db.query(models.Profile).filter_by(id=m.user_id).first()
+    for user_id in member_ids:
+        profile = profiles_by_id.get(user_id)
         if not profile: continue
-            
-        setting = db.query(models.FriendSetting).filter_by(user_id=current_user.id, friend_id=profile.id).first()
+
+        setting = settings_by_friend_id.get(profile.id)
         display_name = setting.nickname if setting else profile.name
-            
+
         if profile.is_ghost:
             status, next_class = {"is_free": None, "message": "Classified"}, None
         else:
-            subjects = db.query(models.Subject).filter_by(user_id=m.user_id).all()
+            subjects = subjects_by_user_id.get(user_id, [])
             status, next_class = check_user_status(subjects, active_slots), get_next_class(subjects)
-            
+
         roster.append({
             "user_id": profile.id, "name": display_name, "real_name": profile.name,
             "is_ghost": profile.is_ghost, "live_status": status, "next_class": next_class
@@ -170,10 +184,15 @@ def get_close_friends(db: Session = Depends(get_db), current_user: models.Profil
     npcs = db.query(models.Profile).filter_by(managed_by=current_user.id).all()
     active_slots = get_current_active_slots()
     roster = []
-    
+
+    npc_ids = [npc.id for npc in npcs]
+    subjects_by_npc_id = {}
+    for sub in db.query(models.Subject).filter(models.Subject.user_id.in_(npc_ids)).all():
+        subjects_by_npc_id.setdefault(sub.user_id, []).append(sub)
+
     for npc in npcs:
-        subjects = db.query(models.Subject).filter_by(user_id=npc.id).all()
-        
+        subjects = subjects_by_npc_id.get(npc.id, [])
+
         # 🔥 Extract the REAL friend's ID so meetups route correctly!
         try:
             real_user_id = int(npc.reg_no.split('_')[2])
@@ -225,13 +244,19 @@ def get_incoming_meetups(db: Session = Depends(get_db), current_user: models.Pro
 
     # Fetch pending or accepted requests sent TO you
     meetups = db.query(models.Meetup).filter(
-        models.Meetup.receiver_id == current_user.id, 
+        models.Meetup.receiver_id == current_user.id,
         models.Meetup.status.in_(["pending", "accepted"])
     ).order_by(models.Meetup.meet_time.asc()).all()
-    
+
+    senders_by_id = {
+        p.id: p for p in db.query(models.Profile).filter(
+            models.Profile.id.in_([m.sender_id for m in meetups])
+        ).all()
+    }
+
     result = []
     for m in meetups:
-        sender = db.query(models.Profile).filter_by(id=m.sender_id).first()
+        sender = senders_by_id.get(m.sender_id)
         result.append({
             "id": m.id, "location": m.location, "meet_time": m.meet_time, "status": m.status,
             "friend_name": sender.name if sender else "Unknown"
@@ -249,10 +274,16 @@ def get_outgoing_meetups(db: Session = Depends(get_db), current_user: models.Pro
     meetups = db.query(models.Meetup).filter(
         models.Meetup.sender_id == current_user.id
     ).order_by(models.Meetup.meet_time.asc()).all()
-    
+
+    receivers_by_id = {
+        p.id: p for p in db.query(models.Profile).filter(
+            models.Profile.id.in_([m.receiver_id for m in meetups])
+        ).all()
+    }
+
     result = []
     for m in meetups:
-        receiver = db.query(models.Profile).filter_by(id=m.receiver_id).first()
+        receiver = receivers_by_id.get(m.receiver_id)
         result.append({
             "id": m.id, "location": m.location, "meet_time": m.meet_time, "status": m.status,
             "friend_name": receiver.name if receiver else "Unknown"

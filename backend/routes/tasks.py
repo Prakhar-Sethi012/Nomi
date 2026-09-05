@@ -8,13 +8,9 @@ from auth import get_current_user # 🛡️ THE BOUNCER
 from dateutil.relativedelta import relativedelta
 router = APIRouter(prefix="/tasks", tags=["Tasks & Schedule"])
 
-# The strict hardcoded core tag list
-HARDCODED_TAGS = {"quiz", "cat-1", "cat-2", "fat", "lab fat", "assignment", "club", "others"}
-
 # 1. CREATE A TASK
 @router.post("/", response_model=schemas.TaskResponse)
 def create_task(task: schemas.TaskCreate, db: Session = Depends(get_db), current_user: models.Profile = Depends(get_current_user)):
-    # Validation removed! Accept any tag!
     new_task = models.Task(**task.model_dump(), user_id=current_user.id)
     db.add(new_task)
     db.commit()
@@ -26,8 +22,7 @@ def update_task(task_id: int, task_data: schemas.TaskUpdate, db: Session = Depen
     task = db.query(models.Task).filter(models.Task.id == task_id, models.Task.user_id == current_user.id).first()
     if not task:
         raise HTTPException(status_code=404, detail="Task not found")
-        
-    # Validation removed! Accept any tag!
+
     update_dict = task_data.model_dump(exclude_unset=True)
     for key, value in update_dict.items():
         setattr(task, key, value)
