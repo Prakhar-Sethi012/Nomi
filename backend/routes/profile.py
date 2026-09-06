@@ -29,11 +29,17 @@ def update_profile(
     current_user: models.Profile = Depends(get_current_user) # 🛡️
 ):
     update_data = profile_data.model_dump(exclude_unset=True)
-    
+
+    # Normalized once up front — used both to verify the EXISTING answer (as a
+    # PIN-change credential) and to hash a NEW one for storage below.
+    normalized_new_answer = None
+    if "security_answer" in update_data and update_data["security_answer"]:
+        normalized_new_answer = update_data["security_answer"].strip().lower()
+
     # 🔥 SECURITY GATE: If they are trying to change their PIN...
     if "app_pin" in update_data:
         has_prev_pin = "previous_pin" in update_data and update_data["previous_pin"]
-        has_sec_answer = "security_answer" in update_data and update_data["security_answer"]
+        has_sec_answer = normalized_new_answer is not None
 
         # Block if neither is provided
         if not has_prev_pin and not has_sec_answer:
@@ -51,9 +57,13 @@ def update_profile(
         elif has_sec_answer:
             if not current_user.security_answer:
                 raise HTTPException(status_code=403, detail="No security question set up. Use Current PIN.")
-            if update_data["security_answer"].strip().lower() != current_user.security_answer.strip().lower():
+            # Legacy plaintext rows are verified once via constant-time compare
+            # and upgraded to a hash on the spot; everything else goes through bcrypt.
+            if auth.constant_time_str_eq(current_user.security_answer, normalized_new_answer):
+                current_user.security_answer = auth.get_password_hash(normalized_new_answer)
+            elif not auth.verify_password(normalized_new_answer, current_user.security_answer):
                 raise HTTPException(status_code=401, detail="Incorrect Security Answer.")
-                
+
     # 🔥 Remove transient field so SQLAlchemy doesn't crash trying to save it
     if "previous_pin" in update_data:
         del update_data["previous_pin"]
@@ -61,12 +71,14 @@ def update_profile(
     for key, value in update_data.items():
         if key == "app_pin":
             setattr(current_user, key, auth.get_password_hash(value))
+        elif key == "security_answer":
+            setattr(current_user, key, auth.get_password_hash(normalized_new_answer))
         else:
             setattr(current_user, key, value)
-        
+
     db.commit()
     db.refresh(current_user)
-    
+
     return current_user
 
 @router.delete("/self-destruct")

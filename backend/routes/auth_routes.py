@@ -1,10 +1,14 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
 import models, schemas, auth
 from database import get_db
+from utils.rate_limit import enforce_rate_limit
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
+
+def _client_ip(request: Request) -> str:
+    return request.client.host if request.client else "unknown"
 
 class LoginRequest(BaseModel):
     reg_no: str
@@ -35,11 +39,20 @@ def register_user(user: schemas.ProfileCreate, db: Session = Depends(get_db)):
     return {"token": access_token, "profile": new_profile}
 
 @router.post("/login", response_model=AuthResponse)
-def login_user(credentials: LoginRequest, db: Session = Depends(get_db)):
+def login_user(credentials: LoginRequest, request: Request, db: Session = Depends(get_db)):
+    # Two independent limits: one per account (stops a distributed brute-force
+    # against a single reg_no) and one per IP (stops credential-stuffing across
+    # many accounts from one source).
+    enforce_rate_limit(f"login:reg:{credentials.reg_no}", max_attempts=10, window_seconds=900)
+    enforce_rate_limit(f"login:ip:{_client_ip(request)}", max_attempts=30, window_seconds=900)
+
     user = db.query(models.Profile).filter(models.Profile.reg_no == credentials.reg_no).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
-    
+
+    if user.is_npc:
+        raise HTTPException(status_code=403, detail="This account cannot be used to log in directly.")
+
     # First, check if the database still holds the old plain text PIN
     if auth.constant_time_str_eq(user.app_pin, credentials.app_pin):
         # Upgrade it to a secure hash immediately!
@@ -58,18 +71,26 @@ def login_user(credentials: LoginRequest, db: Session = Depends(get_db)):
 
 # 🔥 NEW: The Forgot PIN Recovery Endpoint
 @router.post("/reset-pin")
-def reset_forgotten_pin(data: schemas.PinResetRequest, db: Session = Depends(get_db)):
+def reset_forgotten_pin(data: schemas.PinResetRequest, request: Request, db: Session = Depends(get_db)):
+    enforce_rate_limit(f"reset-pin:reg:{data.reg_no}", max_attempts=5, window_seconds=900)
+    enforce_rate_limit(f"reset-pin:ip:{_client_ip(request)}", max_attempts=15, window_seconds=900)
+
     user = db.query(models.Profile).filter(models.Profile.reg_no == data.reg_no).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
-    
+
     if not user.security_question or not user.security_answer:
         raise HTTPException(status_code=400, detail="No security question set up for this account.")
-        
-    # Simple case-insensitive check
-    if user.security_answer.strip().lower() != data.security_answer.strip().lower():
+
+    # Case-insensitive, whitespace-trimmed comparison against the stored hash.
+    # Legacy plaintext rows (pre-hashing) are verified once via constant-time
+    # comparison and upgraded to a hash on the spot.
+    normalized_answer = data.security_answer.strip().lower()
+    if auth.constant_time_str_eq(user.security_answer, normalized_answer):
+        user.security_answer = auth.get_password_hash(normalized_answer)
+    elif not auth.verify_password(normalized_answer, user.security_answer):
         raise HTTPException(status_code=401, detail="Incorrect security answer")
-        
+
     # Update PIN
     user.app_pin = auth.get_password_hash(data.new_pin)
     db.commit()
@@ -77,6 +98,8 @@ def reset_forgotten_pin(data: schemas.PinResetRequest, db: Session = Depends(get
 
 @router.post("/verify-pin")
 def verify_user_pin(data: schemas.PinVerifyRequest, db: Session = Depends(get_db), current_user: models.Profile = Depends(auth.get_current_user)):
+    enforce_rate_limit(f"verify-pin:user:{current_user.id}", max_attempts=10, window_seconds=900)
+
     # Check plain text first (legacy fallback)
     if auth.constant_time_str_eq(current_user.app_pin, data.app_pin):
         return {"status": "success", "verified": True}

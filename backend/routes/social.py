@@ -3,12 +3,44 @@ from sqlalchemy.orm import Session
 from typing import List, Literal
 import string, random,datetime
 
-import models, schemas
+import models, schemas, auth
 from database import get_db
 from auth import get_current_user
 from utils.slot_engine import get_current_active_slots, check_user_status, get_next_class
 
 router = APIRouter(prefix="/social", tags=["Multiplayer & Circles"])
+
+
+def _is_connected(db: Session, current_user: models.Profile, target_user_id: int) -> bool:
+    """
+    Authorization gate for the member-level social routes (timetable view,
+    clone, meetups). True if the two users share a Circle, or if there's a
+    Close-Friends relationship between them in either direction (the target
+    is an NPC clone the current user manages, or the current user manages an
+    NPC clone of the target).
+    """
+    shares_circle = db.query(models.CircleMember).filter(
+        models.CircleMember.user_id == target_user_id,
+        models.CircleMember.circle_id.in_(
+            db.query(models.CircleMember.circle_id).filter(models.CircleMember.user_id == current_user.id)
+        )
+    ).first() is not None
+    if shares_circle:
+        return True
+
+    target = db.query(models.Profile).filter_by(id=target_user_id).first()
+    if target and target.managed_by == current_user.id:
+        return True
+
+    for npc in db.query(models.Profile).filter_by(managed_by=current_user.id).all():
+        try:
+            if int(npc.reg_no.split('_')[2]) == target_user_id:
+                return True
+        except (IndexError, ValueError):
+            continue
+
+    return False
+
 
 @router.put("/ghost-mode")
 def toggle_ghost_mode(data: schemas.GhostModeUpdate, db: Session = Depends(get_db), current_user: models.Profile = Depends(get_current_user)):
@@ -141,7 +173,10 @@ def get_circle_roster(circle_id: int, db: Session = Depends(get_db), current_use
 @router.get("/member/{target_user_id}/timetable")
 def get_friend_timetable(target_user_id: int, db: Session = Depends(get_db), current_user: models.Profile = Depends(get_current_user)):
     target_profile = db.query(models.Profile).filter_by(id=target_user_id).first()
+    if not target_profile: raise HTTPException(status_code=404, detail="User not found.")
     if target_profile.is_ghost: raise HTTPException(status_code=403, detail="User in Ghost Mode.")
+    if not _is_connected(db, current_user, target_user_id):
+        raise HTTPException(status_code=403, detail="You don't share a circle with this user.")
     return db.query(models.Subject).filter_by(user_id=target_user_id).all()
 
 @router.put("/member/{friend_id}/nickname")
@@ -162,11 +197,15 @@ def set_nickname(friend_id: int, data: schemas.FriendSettingUpdate, db: Session 
 def clone_friend(target_user_id: int, db: Session = Depends(get_db), current_user: models.Profile = Depends(get_current_user)):
     target = db.query(models.Profile).filter_by(id=target_user_id).first()
     if not target or target.is_ghost: raise HTTPException(status_code=403)
-    
-    # Create the NPC Shell
+    if not _is_connected(db, current_user, target_user_id):
+        raise HTTPException(status_code=403, detail="You don't share a circle with this user.")
+
+
+    # Create the NPC Shell — hashed PIN like any real account, and login is
+    # blocked outright for is_npc profiles (see auth_routes.login_user).
     npc = models.Profile(
         name=target.name, reg_no=f"NPC_{current_user.id}_{target.id}_{random.randint(100,999)}",
-        app_pin="0000", is_npc=True, managed_by=current_user.id
+        app_pin=auth.get_password_hash("0000"), is_npc=True, managed_by=current_user.id
     )
     db.add(npc)
     db.commit()
@@ -228,7 +267,9 @@ def send_meetup_request(data: schemas.MeetupCreate, db: Session = Depends(get_db
     receiver = db.query(models.Profile).filter_by(id=data.receiver_id).first()
     if not receiver or receiver.is_ghost:
         raise HTTPException(status_code=400, detail="Cannot send request to this user. They might be a Ghost.")
-    
+    if not _is_connected(db, current_user, data.receiver_id):
+        raise HTTPException(status_code=403, detail="You don't share a circle with this user.")
+
     meetup = models.Meetup(sender_id=current_user.id, receiver_id=data.receiver_id, location=data.location, meet_time=data.meet_time)
     db.add(meetup)
     db.commit()

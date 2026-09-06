@@ -1,14 +1,23 @@
+import os
 import jwt
 import bcrypt
 import hmac
 import datetime
+from dotenv import load_dotenv
 from fastapi import HTTPException, Security, Depends
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
 from database import get_db
 import models
 
-SECRET_KEY = "command-center-super-secret-key"
+load_dotenv()
+
+SECRET_KEY = os.getenv("JWT_SECRET_KEY")
+if not SECRET_KEY:
+    raise RuntimeError(
+        "JWT_SECRET_KEY environment variable is not set. Add it to backend/.env "
+        "(e.g. `python -c \"import secrets; print(secrets.token_hex(32))\"`)."
+    )
 ALGORITHM = "HS256"
 security = HTTPBearer()
 
