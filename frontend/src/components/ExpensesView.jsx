@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../services/api';
+import PinConfirmModal from './PinConfirmModal';
 
 const numberToWords = (num) => {
   const a = ['', 'One ', 'Two ', 'Three ', 'Four ', 'Five ', 'Six ', 'Seven ', 'Eight ', 'Nine ', 'Ten ', 'Eleven ', 'Twelve ', 'Thirteen ', 'Fourteen ', 'Fifteen ', 'Sixteen ', 'Seventeen ', 'Eighteen ', 'Nineteen '];
@@ -30,6 +31,7 @@ function ExpensesView({ profile, setProfile }) {
   const [viewDate, setViewDate] = useState(new Date());
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [deleteTargetId, setDeleteTargetId] = useState(null);
 
   const getLocalDate = () => {
     const tzOffset = (new Date()).getTimezoneOffset() * 60000;
@@ -88,8 +90,7 @@ function ExpensesView({ profile, setProfile }) {
     } catch (err) { console.error('Error saving expense', err); }
   };
 
-  const deleteExpense = async (id) => {
-    if (!window.confirm("Delete this transaction permanently?")) return;
+  const executeDeleteExpense = async (id) => {
     try {
       await api.deleteExpense(id);
       fetchFinanceData();
@@ -331,7 +332,7 @@ function ExpensesView({ profile, setProfile }) {
                             </div>
                             <div className="flex items-center gap-4">
                               <span className="text-red-400 font-black text-xl lg:text-2xl">-₹{exp.amount.toLocaleString('en-IN')}</span>
-                              <button onClick={() => deleteExpense(exp.id)} className="text-slate-600 hover:bg-red-500/20 hover:text-red-400 w-8 h-8 rounded-xl flex items-center justify-center transition-all opacity-0 group-hover:opacity-100" title="Delete Record">✕</button>
+                              <button onClick={() => setDeleteTargetId(exp.id)} className="text-slate-600 hover:bg-red-500/20 hover:text-red-400 w-8 h-8 rounded-xl flex items-center justify-center transition-all opacity-0 group-hover:opacity-100" title="Delete Record">✕</button>
                             </div>
                           </li>
                         ))}
@@ -382,6 +383,16 @@ function ExpensesView({ profile, setProfile }) {
           </div>
         </div>
       )}
+
+      <PinConfirmModal
+        isOpen={deleteTargetId !== null}
+        onClose={() => setDeleteTargetId(null)}
+        onConfirm={() => {
+          executeDeleteExpense(deleteTargetId);
+          setDeleteTargetId(null);
+        }}
+        actionText="Delete Transaction"
+      />
     </>
   );
 }

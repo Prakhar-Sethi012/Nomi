@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../services/api';
 import ReadOnlyTimetable from './ReadOnlyTimetable';
+import PinConfirmModal from './PinConfirmModal';
 
 const formatSmartTime = (minutes) => {
   if (minutes < 0) return { value: 'Now', unit: '' };
@@ -19,7 +20,8 @@ function CloseFriendsView() {
   
   const [activeFriend, setActiveFriend] = useState(null);
   const [friendTimetable, setFriendTimetable] = useState([]);
-  const [deletingId, setDeletingId] = useState(null); 
+  const [deletingId, setDeletingId] = useState(null);
+  const [pinTargetId, setPinTargetId] = useState(null);
 
   // 🔥 MEETUP STATES
   const [meetupModalUser, setMeetupModalUser] = useState(null);
@@ -129,7 +131,7 @@ function CloseFriendsView() {
                       {deletingId === friend.user_id ? (
                          <div className="absolute top-4 right-4 flex items-center gap-2 bg-slate-900 border border-red-500/50 p-1.5 rounded z-10 animate-fade-in shadow-xl">
                            <span className="text-[9px] text-red-400 font-bold uppercase tracking-widest ml-1">Remove?</span>
-                           <button onClick={(e) => { e.stopPropagation(); executeDelete(friend.user_id); }} className="text-[10px] bg-red-600 hover:bg-red-500 text-white px-2 py-1 rounded font-bold">Yes</button>
+                           <button onClick={(e) => { e.stopPropagation(); setDeletingId(null); setPinTargetId(friend.user_id); }} className="text-[10px] bg-red-600 hover:bg-red-500 text-white px-2 py-1 rounded font-bold">Yes</button>
                            <button onClick={(e) => { e.stopPropagation(); setDeletingId(null); }} className="text-[10px] bg-slate-700 hover:bg-slate-600 text-white px-2 py-1 rounded">No</button>
                          </div>
                       ) : (
@@ -206,6 +208,15 @@ function CloseFriendsView() {
         </div>
       )}
 
+      <PinConfirmModal
+        isOpen={pinTargetId !== null}
+        onClose={() => setPinTargetId(null)}
+        onConfirm={() => {
+          executeDelete(pinTargetId);
+          setPinTargetId(null);
+        }}
+        actionText="Un-clone Friend"
+      />
     </div>
   );
 }

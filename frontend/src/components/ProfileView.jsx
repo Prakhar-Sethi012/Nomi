@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { api } from '../services/api';
+import PinConfirmModal from './PinConfirmModal';
 
 function ProfileView({ profile, setProfile, onLogout }) {
   const [question, setQuestion] = useState(profile?.security_question || '');
@@ -7,6 +8,7 @@ function ProfileView({ profile, setProfile, onLogout }) {
   const [currentPin, setCurrentPin] = useState('');
   const [newPin, setNewPin] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [showSelfDestructPin, setShowSelfDestructPin] = useState(false);
 
   const handleUpdateSecurity = async (e) => {
     e.preventDefault();
@@ -48,20 +50,26 @@ function ProfileView({ profile, setProfile, onLogout }) {
     }
   };
 
-  const handleSelfDestruct = async () => {
+  // Reg-no typed-confirmation is a first layer of friction for the single most
+  // destructive action in the app; the PIN modal below is the actual Master Lock gate.
+  const handleSelfDestruct = () => {
     const confirm1 = window.confirm("WARNING: This will permanently delete your account, schedules, close friends, and all financial data.");
     if (!confirm1) return;
-    
+
     const confirm2 = window.prompt(`Type your Registration Number (${profile.reg_no}) to confirm deletion:`);
     if (confirm2 !== profile.reg_no) {
       alert("Registration number did not match. Aborting self-destruct.");
       return;
     }
 
+    setShowSelfDestructPin(true);
+  };
+
+  const executeSelfDestruct = async () => {
     try {
       await api.selfDestruct();
       alert("Account deleted. Goodbye.");
-      onLogout(); 
+      onLogout();
     } catch (err) {
       alert("Failed to delete account. Please try again.");
     }
@@ -154,8 +162,18 @@ function ProfileView({ profile, setProfile, onLogout }) {
             </button>
           </div>
         </div>
-        
+
       </div>
+
+      <PinConfirmModal
+        isOpen={showSelfDestructPin}
+        onClose={() => setShowSelfDestructPin(false)}
+        onConfirm={() => {
+          setShowSelfDestructPin(false);
+          executeSelfDestruct();
+        }}
+        actionText="Permanently Delete Account"
+      />
     </div>
   );
 }

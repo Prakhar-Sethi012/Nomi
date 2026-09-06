@@ -21,7 +21,7 @@ function AuthScreen({ onLoginSuccess }) {
     try {
       if (authMode === 'recovery') {
         // Run Recovery Logic
-        if (recoveryData.new_pin.length !== 4) throw new Error("PIN must be exactly 4 digits.");
+        if (recoveryData.new_pin.length !== 4) throw new Error("PIN must be exactly 4 characters.");
         const res = await api.resetPin(recoveryData);
         setSuccessMsg(res.message);
         setAuthMode('login'); // Send them back to login screen
@@ -101,11 +101,11 @@ function AuthScreen({ onLoginSuccess }) {
                 />
               </div>
               <div>
-                <label className="text-[10px] uppercase font-bold tracking-widest text-textSecondary mb-1 block">Create New 4-Digit PIN</label>
-                <input 
-                  type="password" required maxLength="4" pattern="\d{4}" placeholder="••••"
-                  value={recoveryData.new_pin} 
-                  onChange={e => setRecoveryData({...recoveryData, new_pin: e.target.value.replace(/\D/g, '')})} 
+                <label className="text-[10px] uppercase font-bold tracking-widest text-textSecondary mb-1 block">Create New 4-Character PIN</label>
+                <input
+                  type="password" required maxLength="4" pattern="[a-zA-Z0-9]{4}" placeholder="••••"
+                  value={recoveryData.new_pin}
+                  onChange={e => setRecoveryData({...recoveryData, new_pin: e.target.value.replace(/[^a-zA-Z0-9]/g, '')})}
                   className="w-full p-3 bg-background border border-border rounded-lg text-textPrimary outline-none focus:border-orange-500 transition-colors tracking-[1em] font-mono text-xl text-center"
                 />
               </div>
@@ -144,17 +144,17 @@ function AuthScreen({ onLoginSuccess }) {
 
               <div>
                 <div className="flex justify-between items-end mb-1">
-                  <label className="text-[10px] uppercase font-bold tracking-widest text-textSecondary block">4-Digit Security PIN</label>
+                  <label className="text-[10px] uppercase font-bold tracking-widest text-textSecondary block">4-Character Security PIN</label>
                   {authMode === 'login' && (
                     <button type="button" onClick={() => { setAuthMode('recovery'); setError(''); }} className="text-[10px] text-accent font-bold hover:underline">
                       Forgot PIN?
                     </button>
                   )}
                 </div>
-                <input 
-                  type="password" required maxLength="4" pattern="\d{4}" placeholder="••••"
-                  value={formData.app_pin} 
-                  onChange={e => setFormData({...formData, app_pin: e.target.value.replace(/\D/g, '')})} 
+                <input
+                  type="password" required maxLength="4" pattern="[a-zA-Z0-9]{4}" placeholder="••••"
+                  value={formData.app_pin}
+                  onChange={e => setFormData({...formData, app_pin: e.target.value.replace(/[^a-zA-Z0-9]/g, '')})}
                   className="w-full p-3 bg-background border border-border rounded-lg text-textPrimary outline-none focus:border-accent transition-colors tracking-[1em] font-mono text-xl text-center"
                 />
               </div>
