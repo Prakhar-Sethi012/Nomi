@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../services/api';
 import PinConfirmModal from './PinConfirmModal';
+import Pressable from './ui/Pressable';
 
 function PortfolioWidget() {
   const [projects, setProjects] = useState([]);
@@ -68,12 +69,13 @@ function PortfolioWidget() {
           <p className="text-xs text-textSecondary mt-1">Track and display your engineering portfolio</p>
         </div>
         {!showForm && (
-          <button
+          <Pressable
             onClick={() => setShowForm(true)}
+            haptic="tap"
             className="text-sm bg-accent hover:bg-accentHover text-white px-4 py-2 rounded font-bold transition-colors"
           >
             + Add Project
-          </button>
+          </Pressable>
         )}
       </div>
 
@@ -89,8 +91,8 @@ function PortfolioWidget() {
           <textarea placeholder="Briefly describe what this project does and the problem it solves..." required value={formData.description} onChange={(e) => setFormData({...formData, description: e.target.value})} rows="2" className="w-full p-2 bg-surface rounded text-sm text-textPrimary border border-border focus:border-accent outline-none resize-none" />
 
           <div className="flex gap-2 mt-2">
-            <button type="button" onClick={() => setShowForm(false)} className="px-6 bg-surfaceHover hover:bg-border text-textPrimary text-sm py-2 rounded transition-colors">Cancel</button>
-            <button type="submit" className="px-6 bg-accent hover:bg-accentHover text-white text-sm py-2 rounded font-bold transition-colors">Save to Portfolio</button>
+            <Pressable type="button" onClick={() => setShowForm(false)} className="px-6 bg-surfaceHover hover:bg-border text-textPrimary text-sm py-2 rounded transition-colors">Cancel</Pressable>
+            <Pressable type="submit" haptic="tap" className="px-6 bg-accent hover:bg-accentHover text-white text-sm py-2 rounded font-bold transition-colors">Save to Portfolio</Pressable>
           </div>
         </form>
       ) : projects.length === 0 ? (
@@ -110,13 +112,13 @@ function PortfolioWidget() {
             return (
               <div key={proj.id} className="group relative bg-surfaceHover p-4 rounded-lg border border-border hover:border-accent transition-colors flex flex-col">
 
-                <button
+                <Pressable
                   onClick={() => setDeleteTarget(proj.id)} // 🔥 MODIFIED: Opens Modal
                   className="absolute top-2 right-2 w-6 h-6 bg-dangerBg text-danger rounded text-xs opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center hover:bg-danger hover:text-white z-10"
                   title="Delete Project"
                 >
                   ✕
-                </button>
+                </Pressable>
 
                 <div className="flex justify-between items-start mb-2 pr-8">
                   <h3 className="font-bold text-textPrimary leading-tight">{proj.title}</h3>

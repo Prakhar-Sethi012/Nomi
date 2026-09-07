@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { api } from '../services/api';
+import Pressable from './ui/Pressable';
 
 function AuthScreen({ onLoginSuccess }) {
   // Modes: 'login', 'register', 'recovery'
@@ -109,12 +110,12 @@ function AuthScreen({ onLoginSuccess }) {
                   className="w-full p-3 bg-background border border-border rounded-lg text-textPrimary outline-none focus:border-orange-500 transition-colors tracking-[1em] font-mono text-xl text-center"
                 />
               </div>
-              <button disabled={isLoading} type="submit" className="w-full bg-orange-600 hover:bg-orange-500 text-white font-black py-4 rounded-lg mt-2 transition-colors disabled:opacity-50 shadow-[0_0_15px_rgba(234,88,12,0.3)]">
+              <Pressable disabled={isLoading} type="submit" haptic="tap" className="w-full bg-orange-600 hover:bg-orange-500 text-white font-black py-4 rounded-lg mt-2 transition-colors disabled:opacity-50 shadow-[0_0_15px_rgba(234,88,12,0.3)]">
                 {isLoading ? "VERIFYING..." : "RESET PIN"}
-              </button>
-              <button type="button" onClick={() => { setAuthMode('login'); setError(''); setSuccessMsg(''); }} className="text-xs text-textSecondary hover:text-textPrimary mt-2 font-bold transition-colors">
+              </Pressable>
+              <Pressable type="button" onClick={() => { setAuthMode('login'); setError(''); setSuccessMsg(''); }} className="text-xs text-textSecondary hover:text-textPrimary mt-2 font-bold transition-colors">
                 ← Cancel & Return to Login
-              </button>
+              </Pressable>
             </>
           ) : (
           
@@ -146,9 +147,9 @@ function AuthScreen({ onLoginSuccess }) {
                 <div className="flex justify-between items-end mb-1">
                   <label className="text-[10px] uppercase font-bold tracking-widest text-textSecondary block">4-Character Security PIN</label>
                   {authMode === 'login' && (
-                    <button type="button" onClick={() => { setAuthMode('recovery'); setError(''); }} className="text-[10px] text-accent font-bold hover:underline">
+                    <Pressable type="button" onClick={() => { setAuthMode('recovery'); setError(''); }} className="text-[10px] text-accent font-bold hover:underline">
                       Forgot PIN?
-                    </button>
+                    </Pressable>
                   )}
                 </div>
                 <input
@@ -159,9 +160,9 @@ function AuthScreen({ onLoginSuccess }) {
                 />
               </div>
 
-              <button disabled={isLoading} type="submit" className="w-full bg-accent hover:bg-accentHover text-white font-black py-4 rounded-lg mt-2 transition-colors disabled:opacity-50">
+              <Pressable disabled={isLoading} type="submit" haptic="tap" className="w-full bg-accent hover:bg-accentHover text-white font-black py-4 rounded-lg mt-2 transition-colors disabled:opacity-50">
                 {isLoading ? "AUTHENTICATING..." : (authMode === 'login' ? "LOGIN / DECRYPT" : "INITIALIZE PROFILE")}
-              </button>
+              </Pressable>
             </>
           )}
         </form>
@@ -170,12 +171,12 @@ function AuthScreen({ onLoginSuccess }) {
           <div className="mt-8 text-center border-t border-border pt-6 relative z-10">
             <p className="text-sm text-textSecondary">
               {authMode === 'login' ? "Don't have an account?" : "Already initialized?"}
-              <button 
-                onClick={() => { setAuthMode(authMode === 'login' ? 'register' : 'login'); setError(''); setSuccessMsg(''); }} 
+              <Pressable
+                onClick={() => { setAuthMode(authMode === 'login' ? 'register' : 'login'); setError(''); setSuccessMsg(''); }}
                 className="ml-2 text-accent font-bold hover:underline"
               >
                 {authMode === 'login' ? "Register now" : "Login here"}
-              </button>
+              </Pressable>
             </p>
           </div>
         )}

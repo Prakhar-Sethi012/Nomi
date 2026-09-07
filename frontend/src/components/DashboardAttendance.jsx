@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../services/api';
+import Pressable from './ui/Pressable';
 
 function DashboardAttendance() {
   const [subjects, setSubjects] = useState([]);
@@ -84,18 +85,20 @@ function DashboardAttendance() {
                     </div>
                   ) : (
                     <>
-                      <button
+                      <Pressable
                         onClick={() => logAttendance(sub.id, false)}
+                        haptic="tap"
                         className="flex-1 bg-surface hover:bg-dangerBg border border-border hover:border-danger/50 text-textSecondary hover:text-danger text-xs font-bold py-1.5 rounded transition-all"
                       >
                         - Absent
-                      </button>
-                      <button
+                      </Pressable>
+                      <Pressable
                         onClick={() => logAttendance(sub.id, true)}
+                        haptic="tap"
                         className="flex-1 bg-surface hover:bg-success/20 border border-border hover:border-success/50 text-textSecondary hover:text-success text-xs font-bold py-1.5 rounded transition-all"
                       >
                         + Present
-                      </button>
+                      </Pressable>
                     </>
                   )}
                 </div>

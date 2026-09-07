@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { api } from '../services/api';
+import Pressable from './ui/Pressable';
 
 function PinConfirmModal({ isOpen, onClose, onConfirm, actionText = "Delete Item" }) {
   const [pin, setPin] = useState('');
@@ -57,10 +58,10 @@ function PinConfirmModal({ isOpen, onClose, onConfirm, actionText = "Delete Item
             placeholder="••••"
           />
           <div className="flex gap-2 mt-2">
-            <button type="button" onClick={() => { setPin(''); setError(''); onClose(); }} className="flex-1 py-3 bg-background hover:bg-surfaceHover text-textPrimary text-sm rounded-xl transition-colors">Cancel</button>
-            <button type="submit" disabled={isVerifying || pin.length !== 4} className="flex-1 py-3 bg-danger hover:opacity-90 disabled:bg-surfaceHover disabled:text-textSecondary text-white text-sm font-bold rounded-xl transition-colors shadow-[0_0_15px_rgba(220,38,38,0.2)]">
+            <Pressable type="button" onClick={() => { setPin(''); setError(''); onClose(); }} className="flex-1 py-3 bg-background hover:bg-surfaceHover text-textPrimary text-sm rounded-xl transition-colors">Cancel</Pressable>
+            <Pressable type="submit" disabled={isVerifying || pin.length !== 4} haptic="tap" className="flex-1 py-3 bg-danger hover:opacity-90 disabled:bg-surfaceHover disabled:text-textSecondary text-white text-sm font-bold rounded-xl transition-colors shadow-[0_0_15px_rgba(220,38,38,0.2)]">
               {isVerifying ? 'Verifying...' : 'Confirm'}
-            </button>
+            </Pressable>
           </div>
         </form>
       </div>

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { api } from '../services/api';
+import Pressable from './ui/Pressable';
 
 function TasksWidget({ setProfile }) {
   const [tasks, setTasks] = useState([]);
@@ -181,9 +182,10 @@ function TasksWidget({ setProfile }) {
             {/* Quick-Select Chips */}
             <div className="flex flex-wrap gap-1">
               {['important', 'cat', 'fat', 'quiz', 'club', 'others'].map(preset => (
-                <button
+                <Pressable
                   key={preset}
                   type="button"
+                  haptic="selection"
                   onClick={() => {
                     const currentTags = formData.tags ? formData.tags.split(',').map(t => t.trim()).filter(t => t !== '') : [];
                     if (!currentTags.includes(preset)) {
@@ -193,19 +195,19 @@ function TasksWidget({ setProfile }) {
                   className="text-[9px] uppercase tracking-wider font-bold bg-surface hover:bg-accent/30 text-textSecondary hover:text-accent border border-border hover:border-accent px-2 py-1 rounded transition-colors"
                 >
                   +{preset}
-                </button>
+                </Pressable>
               ))}
             </div>
           </div>
 
           <div className="flex gap-2 mt-auto pt-2">
-            <button type="button" onClick={() => { setShowForm(false); setEditingTaskId(null); setError(''); setFormData({ title: '', due_date: '', tags: '', frequency: 'Once' }); }} className="flex-1 bg-surfaceHover hover:bg-border text-textPrimary text-sm py-2 rounded transition-colors">Cancel</button>
-            <button type="submit" className="flex-1 bg-accent hover:bg-accentHover text-white text-sm py-2 rounded font-bold transition-colors">{editingTaskId ? 'Save Edits' : 'Add Task'}</button>
+            <Pressable type="button" onClick={() => { setShowForm(false); setEditingTaskId(null); setError(''); setFormData({ title: '', due_date: '', tags: '', frequency: 'Once' }); }} className="flex-1 bg-surfaceHover hover:bg-border text-textPrimary text-sm py-2 rounded transition-colors">Cancel</Pressable>
+            <Pressable type="submit" haptic="tap" className="flex-1 bg-accent hover:bg-accentHover text-white text-sm py-2 rounded font-bold transition-colors">{editingTaskId ? 'Save Edits' : 'Add Task'}</Pressable>
           </div>
         </form>
       ) : (
         <>
-          <button onClick={() => setShowForm(true)} className="w-full mb-3 bg-surfaceHover hover:bg-border border border-border text-textPrimary text-sm py-1.5 rounded transition-colors flex items-center justify-center gap-2">+ New Task</button>
+          <Pressable onClick={() => setShowForm(true)} haptic="tap" className="w-full mb-3 bg-surfaceHover hover:bg-border border border-border text-textPrimary text-sm py-1.5 rounded transition-colors flex items-center justify-center gap-2">+ New Task</Pressable>
           {tasks.length === 0 ? (
             <div className="flex-1 flex items-center justify-center text-textSecondary text-sm">No pending tasks. You're all caught up!</div>
           ) : (
@@ -224,20 +226,20 @@ function TasksWidget({ setProfile }) {
                   }`}>
 
                     {!completingTasks[task.id] && (
-                      <button
+                      <Pressable
                         onClick={() => openEditMode(task)}
                         className="absolute top-3 right-3 text-textSecondary hover:text-accent opacity-0 group-hover:opacity-100 transition-opacity"
                         title="Edit Task"
                       >
                         ✎
-                      </button>
+                      </Pressable>
                     )}
 
                     <div className="flex justify-between items-start mb-2 pr-6">
                       <div className="flex items-start gap-3">
-                        <button onClick={() => toggleComplete(task.id)} className={`mt-0.5 shrink-0 w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors ${completingTasks[task.id] ? 'bg-success border-success' : 'border-border hover:border-success'}`}>
+                        <Pressable onClick={() => toggleComplete(task.id)} haptic={completingTasks[task.id] ? undefined : 'tap'} className={`mt-0.5 shrink-0 w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors ${completingTasks[task.id] ? 'bg-success border-success' : 'border-border hover:border-success'}`}>
                           {completingTasks[task.id] && <span className="text-white text-xs">✓</span>}
-                        </button>
+                        </Pressable>
                         <div>
                           <p className={`font-medium text-sm leading-tight transition-all ${completingTasks[task.id] ? 'text-textSecondary line-through' : isOverdue ? 'text-danger' : 'text-textPrimary'}`}>
                             {isRecurring && <span className="text-accent mr-1" title={`Repeats ${task.frequency}`}>↻</span>}

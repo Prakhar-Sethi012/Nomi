@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../services/api';
 import PinConfirmModal from './PinConfirmModal';
+import Pressable from './ui/Pressable';
 
 const numberToWords = (num) => {
   const a = ['', 'One ', 'Two ', 'Three ', 'Four ', 'Five ', 'Six ', 'Seven ', 'Eight ', 'Nine ', 'Ten ', 'Eleven ', 'Twelve ', 'Thirteen ', 'Fourteen ', 'Fifteen ', 'Sixteen ', 'Seventeen ', 'Eighteen ', 'Nineteen '];
@@ -201,16 +202,16 @@ function ExpensesView({ profile, setProfile }) {
         <div className="absolute bottom-[-100px] right-[-100px] w-[500px] h-[500px] bg-blue-500/10 rounded-full blur-[150px]" />
       </div>
 
-      <button onClick={() => setIsModalOpen(true)} className="fixed bottom-8 right-8 z-40 w-16 h-16 rounded-full bg-emerald-500 hover:bg-emerald-400 text-background text-3xl font-black shadow-[0_0_40px_rgba(16,185,129,0.5)] hover:scale-110 hover:-translate-y-1 transition-all flex items-center justify-center">
+      <Pressable onClick={() => setIsModalOpen(true)} haptic="tap" className="fixed bottom-8 right-8 z-40 w-16 h-16 rounded-full bg-emerald-500 hover:bg-emerald-400 text-background text-3xl font-black shadow-[0_0_40px_rgba(16,185,129,0.5)] hover:scale-110 hover:-translate-y-1 transition-all flex items-center justify-center">
         +
-      </button>
+      </Pressable>
 
       <div className="w-full max-w-6xl pb-24 relative z-10 animate-fade-in mx-auto mt-8">
         <div className="relative overflow-hidden rounded-[32px] p-10 mb-8 bg-gradient-to-r from-emerald-600/20 via-background to-blue-600/20 border border-border shadow-2xl">
           <div className="absolute top-6 right-6 md:top-8 md:right-8 flex items-center gap-3 bg-background/50 backdrop-blur-md px-3 py-1.5 rounded-full border border-border z-10">
-            <button onClick={handlePrevMonth} className="w-8 h-8 rounded-full hover:bg-surfaceHover text-textSecondary font-bold transition-colors">←</button>
+            <Pressable onClick={handlePrevMonth} haptic="selection" className="w-8 h-8 rounded-full hover:bg-surfaceHover text-textSecondary font-bold transition-colors">←</Pressable>
             <span className="text-xs font-bold text-textPrimary uppercase tracking-widest min-w-[100px] text-center">{viewDate.toLocaleString('default', { month: 'short', year: 'numeric' })}</span>
-            <button onClick={handleNextMonth} disabled={isCurrentMonth} className={`w-8 h-8 rounded-full font-bold transition-colors ${isCurrentMonth ? 'opacity-20 cursor-not-allowed' : 'hover:bg-surfaceHover text-textSecondary'}`}>→</button>
+            <Pressable onClick={handleNextMonth} disabled={isCurrentMonth} haptic="selection" className={`w-8 h-8 rounded-full font-bold transition-colors ${isCurrentMonth ? 'opacity-20 cursor-not-allowed' : 'hover:bg-surfaceHover text-textSecondary'}`}>→</Pressable>
           </div>
 
           <p className="text-textSecondary uppercase tracking-[0.3em] text-xs font-bold relative z-10">Expense Dashboard</p>
@@ -220,9 +221,9 @@ function ExpensesView({ profile, setProfile }) {
           <div className="mt-8 max-w-md relative z-10">
             <div className="flex justify-between items-end mb-2">
               <span className="text-[10px] text-textSecondary uppercase font-bold tracking-widest">Monthly Limit</span>
-              <button onClick={handleUpdateLimit} className="text-xs text-emerald-400 font-bold hover:text-emerald-300 transition-colors bg-background/50 px-2 py-1 rounded">
+              <Pressable onClick={handleUpdateLimit} haptic="tap" className="text-xs text-emerald-400 font-bold hover:text-emerald-300 transition-colors bg-background/50 px-2 py-1 rounded">
                 {monthlyLimit > 0 ? `₹${monthlyLimit.toLocaleString('en-IN')}` : 'Set Limit +'}
-              </button>
+              </Pressable>
             </div>
             {monthlyLimit > 0 && (
               <div className="h-3 w-full bg-background rounded-full overflow-hidden shadow-inner border border-border">
@@ -266,7 +267,7 @@ function ExpensesView({ profile, setProfile }) {
                 const percent = monthTotal > 0 ? (amount / monthTotal) * 100 : 0;
                 const isSelected = selectedCategory === tag;
                 return (
-                  <div key={tag} onClick={() => setSelectedCategory(isSelected ? null : tag)} className={`cursor-pointer transition-all duration-300 ${selectedCategory && !isSelected ? 'opacity-30 grayscale' : 'opacity-100 hover:scale-[1.02]'}`}>
+                  <Pressable as="div" key={tag} onClick={() => setSelectedCategory(isSelected ? null : tag)} haptic="selection" className={`cursor-pointer transition-all duration-300 ${selectedCategory && !isSelected ? 'opacity-30 grayscale' : 'opacity-100 hover:scale-[1.02]'}`}>
                     <div className="flex justify-between items-end mb-2">
                       <div className="flex items-center gap-2">
                         <span className="text-sm font-bold text-textPrimary capitalize">{tag}</span>
@@ -277,7 +278,7 @@ function ExpensesView({ profile, setProfile }) {
                     <div className="h-2.5 rounded-full bg-surfaceHover overflow-hidden shadow-inner">
                       <div className="h-full rounded-full transition-all duration-1000 ease-out" style={{ width: `${percent}%`, backgroundColor: categoryColors[tag] }} />
                     </div>
-                  </div>
+                  </Pressable>
                 );
               })}
             </div>
@@ -288,17 +289,17 @@ function ExpensesView({ profile, setProfile }) {
               <div className="flex items-center gap-4">
                 <h3 className="text-xs font-bold text-textSecondary uppercase tracking-[0.2em]">{selectedCategory ? `${selectedCategory} Activity` : 'Recent Transactions'}</h3>
                 {selectedCategory && (
-                  <button onClick={() => setSelectedCategory(null)} className="text-[10px] bg-surfaceHover hover:bg-border text-textPrimary px-3 py-1.5 rounded-full transition-colors uppercase tracking-wider font-bold">Clear Filter ✕</button>
+                  <Pressable onClick={() => setSelectedCategory(null)} haptic="tap" className="text-[10px] bg-surfaceHover hover:bg-border text-textPrimary px-3 py-1.5 rounded-full transition-colors uppercase tracking-wider font-bold">Clear Filter ✕</Pressable>
                 )}
               </div>
 
               <div className="flex items-center gap-2">
-                <button onClick={() => handleExport('month')} className="text-[10px] bg-surfaceHover hover:bg-emerald-600 hover:text-white text-textSecondary border border-border hover:border-emerald-500 px-3 py-1.5 rounded transition-all font-bold tracking-widest uppercase">
+                <Pressable onClick={() => handleExport('month')} haptic="tap" className="text-[10px] bg-surfaceHover hover:bg-emerald-600 hover:text-white text-textSecondary border border-border hover:border-emerald-500 px-3 py-1.5 rounded transition-all font-bold tracking-widest uppercase">
                   ⬇ Month .txt
-                </button>
-                <button onClick={() => handleExport('year')} className="text-[10px] bg-surfaceHover hover:bg-emerald-600 hover:text-white text-textSecondary border border-border hover:border-emerald-500 px-3 py-1.5 rounded transition-all font-bold tracking-widest uppercase">
+                </Pressable>
+                <Pressable onClick={() => handleExport('year')} haptic="tap" className="text-[10px] bg-surfaceHover hover:bg-emerald-600 hover:text-white text-textSecondary border border-border hover:border-emerald-500 px-3 py-1.5 rounded transition-all font-bold tracking-widest uppercase">
                   ⬇ Year .txt
-                </button>
+                </Pressable>
               </div>
             </div>
 
@@ -332,7 +333,7 @@ function ExpensesView({ profile, setProfile }) {
                             </div>
                             <div className="flex items-center gap-4">
                               <span className="text-danger font-black text-xl lg:text-2xl">-₹{exp.amount.toLocaleString('en-IN')}</span>
-                              <button onClick={() => setDeleteTargetId(exp.id)} className="text-textSecondary hover:bg-dangerBg hover:text-danger w-8 h-8 rounded-xl flex items-center justify-center transition-all opacity-0 group-hover:opacity-100" title="Delete Record">✕</button>
+                              <Pressable onClick={() => setDeleteTargetId(exp.id)} className="text-textSecondary hover:bg-dangerBg hover:text-danger w-8 h-8 rounded-xl flex items-center justify-center transition-all opacity-0 group-hover:opacity-100" title="Delete Record">✕</Pressable>
                             </div>
                           </li>
                         ))}
@@ -349,7 +350,7 @@ function ExpensesView({ profile, setProfile }) {
       {isModalOpen && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4 animate-fade-in">
           <div className="bg-surface/95 backdrop-blur-3xl rounded-[32px] border border-border p-8 shadow-2xl w-full max-w-md relative">
-            <button onClick={() => setIsModalOpen(false)} className="absolute top-6 right-6 text-textSecondary hover:text-textPrimary w-8 h-8 flex items-center justify-center bg-background rounded-full hover:bg-surfaceHover transition-colors">✕</button>
+            <Pressable onClick={() => setIsModalOpen(false)} className="absolute top-6 right-6 text-textSecondary hover:text-textPrimary w-8 h-8 flex items-center justify-center bg-background rounded-full hover:bg-surfaceHover transition-colors">✕</Pressable>
             <h3 className="text-2xl font-black text-textPrimary mb-8 tracking-tight">New Transaction</h3>
             <form onSubmit={handleSubmit} className="flex flex-col gap-5">
               <div className="relative">
@@ -376,9 +377,9 @@ function ExpensesView({ profile, setProfile }) {
                   <input type="date" required value={formData.date} onChange={(e) => setFormData({...formData, date: e.target.value})} className="w-full bg-background border border-border rounded-2xl px-4 py-4 text-sm text-textPrimary focus:border-emerald-500 outline-none transition-all" />
                 </div>
               </div>
-              <button type="submit" className="w-full mt-6 bg-emerald-500 hover:bg-emerald-400 text-background font-black py-4 rounded-2xl transition-all shadow-[0_0_20px_rgba(16,185,129,0.2)] text-lg hover:-translate-y-1">
+              <Pressable type="submit" haptic="tap" className="w-full mt-6 bg-emerald-500 hover:bg-emerald-400 text-background font-black py-4 rounded-2xl transition-all shadow-[0_0_20px_rgba(16,185,129,0.2)] text-lg hover:-translate-y-1">
                 Log Transaction
-              </button>
+              </Pressable>
             </form>
           </div>
         </div>
