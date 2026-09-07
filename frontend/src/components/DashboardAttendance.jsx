@@ -33,24 +33,24 @@ function DashboardAttendance() {
     }
   };
 
-  if (isLoading) return <div className="bg-slate-800 p-5 rounded-xl border border-slate-700 text-slate-400 text-sm animate-pulse">Syncing classes...</div>;
+  if (isLoading) return <div className="bg-surface p-5 rounded-xl border border-border text-textSecondary text-sm animate-pulse">Syncing classes...</div>;
 
   return (
-    <div className="bg-slate-800 p-5 rounded-xl border border-slate-700 shadow-lg flex flex-col h-full max-h-[400px]">
-      
-      <div className="flex justify-between items-end mb-4 shrink-0 border-b border-slate-700 pb-3">
+    <div className="bg-surface p-5 rounded-xl border border-border shadow-lg flex flex-col h-full max-h-[400px]">
+
+      <div className="flex justify-between items-end mb-4 shrink-0 border-b border-border pb-3">
         <div>
-          <h2 className="text-lg font-bold text-white flex items-center gap-2">
+          <h2 className="text-lg font-bold text-textPrimary flex items-center gap-2">
             ✅ Quick Log
           </h2>
-          <p className="text-xs text-slate-400 mt-1">Record today's attendance.</p>
+          <p className="text-xs text-textSecondary mt-1">Record today's attendance.</p>
         </div>
-        <span className="text-[10px] text-indigo-400 uppercase tracking-widest font-bold">Synced w/ Timetable</span>
+        <span className="text-[10px] text-accent uppercase tracking-widest font-bold">Synced w/ Timetable</span>
       </div>
 
       <div className="flex-1 overflow-y-auto custom-scrollbar pr-2 flex flex-col gap-3">
         {subjects.length === 0 ? (
-          <p className="text-xs text-slate-500 text-center mt-10">Go to the Timetable tab to add your classes first.</p>
+          <p className="text-xs text-textSecondary text-center mt-10">Go to the Timetable tab to add your classes first.</p>
         ) : (
           subjects.map(sub => {
             // Safely default to 0 to prevent NaN crashes
@@ -63,36 +63,36 @@ function DashboardAttendance() {
             const isMaxed = conducted >= total;
             
             return (
-              <div key={sub.id} className="bg-slate-900/50 p-3 rounded-lg border border-slate-700 flex flex-col gap-2">
-                
+              <div key={sub.id} className="bg-background p-3 rounded-lg border border-border flex flex-col gap-2">
+
                 <div className="flex justify-between items-start">
                   <div>
-                    <h3 className="text-sm font-bold text-slate-200 leading-tight">{sub.name}</h3>
-                    <p className="text-[10px] font-mono text-slate-500 mt-0.5">
+                    <h3 className="text-sm font-bold text-textPrimary leading-tight">{sub.name}</h3>
+                    <p className="text-[10px] font-mono text-textSecondary mt-0.5">
                       {sub.room_number || 'Room TBA'} • {conducted}/{total} Classes
                     </p>
                   </div>
-                  <span className={`text-xs font-black ${currentPct >= 75 ? 'text-green-400' : conducted > 0 ? 'text-red-400' : 'text-slate-500'}`}>
+                  <span className={`text-xs font-black ${currentPct >= 75 ? 'text-success' : conducted > 0 ? 'text-danger' : 'text-textSecondary'}`}>
                     {conducted > 0 ? `${currentPct.toFixed(1)}%` : 'N/A'}
                   </span>
                 </div>
 
                 <div className="flex gap-2 mt-1">
                   {isMaxed ? (
-                    <div className="flex-1 bg-slate-800/50 border border-slate-700 text-slate-500 text-[10px] uppercase tracking-wider font-bold py-1.5 rounded text-center opacity-70 cursor-not-allowed">
+                    <div className="flex-1 bg-surfaceHover border border-border text-textSecondary text-[10px] uppercase tracking-wider font-bold py-1.5 rounded text-center opacity-70 cursor-not-allowed">
                       Max Classes Reached
                     </div>
                   ) : (
                     <>
-                      <button 
+                      <button
                         onClick={() => logAttendance(sub.id, false)}
-                        className="flex-1 bg-slate-800 hover:bg-red-900/40 border border-slate-600 hover:border-red-500/50 text-slate-300 hover:text-red-400 text-xs font-bold py-1.5 rounded transition-all"
+                        className="flex-1 bg-surface hover:bg-dangerBg border border-border hover:border-danger/50 text-textSecondary hover:text-danger text-xs font-bold py-1.5 rounded transition-all"
                       >
                         - Absent
                       </button>
-                      <button 
+                      <button
                         onClick={() => logAttendance(sub.id, true)}
-                        className="flex-1 bg-slate-800 hover:bg-green-900/40 border border-slate-600 hover:border-green-500/50 text-slate-300 hover:text-green-400 text-xs font-bold py-1.5 rounded transition-all"
+                        className="flex-1 bg-surface hover:bg-success/20 border border-border hover:border-success/50 text-textSecondary hover:text-success text-xs font-bold py-1.5 rounded transition-all"
                       >
                         + Present
                       </button>

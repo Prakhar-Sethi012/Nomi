@@ -57,20 +57,20 @@ function PortfolioWidget() {
   };
 
   if (isLoading) {
-    return <div className="mt-6 bg-slate-800 p-6 rounded-xl border border-slate-700 h-48 flex items-center justify-center text-blue-400 animate-pulse">Loading Developer Showcase...</div>;
+    return <div className="mt-6 bg-surface p-6 rounded-xl border border-border h-48 flex items-center justify-center text-accent animate-pulse">Loading Developer Showcase...</div>;
   }
 
   return (
-    <div className="mt-6 bg-slate-800 p-6 rounded-xl border border-slate-700 shadow-lg">
+    <div className="mt-6 bg-surface p-6 rounded-xl border border-border shadow-lg">
       <div className="flex justify-between items-center mb-6">
         <div>
-          <h2 className="text-xl font-bold text-white">Project Showcase</h2>
-          <p className="text-xs text-slate-400 mt-1">Track and display your engineering portfolio</p>
+          <h2 className="text-xl font-bold text-textPrimary">Project Showcase</h2>
+          <p className="text-xs text-textSecondary mt-1">Track and display your engineering portfolio</p>
         </div>
         {!showForm && (
-          <button 
-            onClick={() => setShowForm(true)} 
-            className="text-sm bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded font-bold transition-colors"
+          <button
+            onClick={() => setShowForm(true)}
+            className="text-sm bg-accent hover:bg-accentHover text-white px-4 py-2 rounded font-bold transition-colors"
           >
             + Add Project
           </button>
@@ -78,23 +78,23 @@ function PortfolioWidget() {
       </div>
 
       {showForm ? (
-        <form onSubmit={handleSubmit} className="bg-slate-900/50 p-4 rounded-lg border border-slate-700 flex flex-col gap-3">
+        <form onSubmit={handleSubmit} className="bg-background p-4 rounded-lg border border-border flex flex-col gap-3">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            <input type="text" placeholder="Project Title (e.g., Command Center PWA)" required value={formData.title} onChange={(e) => setFormData({...formData, title: e.target.value})} className="w-full p-2 bg-slate-700 rounded text-sm text-white border border-slate-600 focus:border-blue-500 outline-none" />
-            <input type="url" placeholder="GitHub Link (https://...)" value={formData.github_link} onChange={(e) => setFormData({...formData, github_link: e.target.value})} className="w-full p-2 bg-slate-700 rounded text-sm text-white border border-slate-600 focus:border-blue-500 outline-none" />
+            <input type="text" placeholder="Project Title (e.g., Command Center PWA)" required value={formData.title} onChange={(e) => setFormData({...formData, title: e.target.value})} className="w-full p-2 bg-surface rounded text-sm text-textPrimary border border-border focus:border-accent outline-none" />
+            <input type="url" placeholder="GitHub Link (https://...)" value={formData.github_link} onChange={(e) => setFormData({...formData, github_link: e.target.value})} className="w-full p-2 bg-surface rounded text-sm text-textPrimary border border-border focus:border-accent outline-none" />
           </div>
-          
-          <input type="text" placeholder="Tech Stack (comma separated: React, FastAPI, PostgreSQL)" required value={formData.tech_stack} onChange={(e) => setFormData({...formData, tech_stack: e.target.value})} className="w-full p-2 bg-slate-700 rounded text-sm text-white border border-slate-600 focus:border-blue-500 outline-none" />
-          
-          <textarea placeholder="Briefly describe what this project does and the problem it solves..." required value={formData.description} onChange={(e) => setFormData({...formData, description: e.target.value})} rows="2" className="w-full p-2 bg-slate-700 rounded text-sm text-white border border-slate-600 focus:border-blue-500 outline-none resize-none" />
-          
+
+          <input type="text" placeholder="Tech Stack (comma separated: React, FastAPI, PostgreSQL)" required value={formData.tech_stack} onChange={(e) => setFormData({...formData, tech_stack: e.target.value})} className="w-full p-2 bg-surface rounded text-sm text-textPrimary border border-border focus:border-accent outline-none" />
+
+          <textarea placeholder="Briefly describe what this project does and the problem it solves..." required value={formData.description} onChange={(e) => setFormData({...formData, description: e.target.value})} rows="2" className="w-full p-2 bg-surface rounded text-sm text-textPrimary border border-border focus:border-accent outline-none resize-none" />
+
           <div className="flex gap-2 mt-2">
-            <button type="button" onClick={() => setShowForm(false)} className="px-6 bg-slate-600 hover:bg-slate-500 text-white text-sm py-2 rounded transition-colors">Cancel</button>
-            <button type="submit" className="px-6 bg-blue-600 hover:bg-blue-500 text-white text-sm py-2 rounded font-bold transition-colors">Save to Portfolio</button>
+            <button type="button" onClick={() => setShowForm(false)} className="px-6 bg-surfaceHover hover:bg-border text-textPrimary text-sm py-2 rounded transition-colors">Cancel</button>
+            <button type="submit" className="px-6 bg-accent hover:bg-accentHover text-white text-sm py-2 rounded font-bold transition-colors">Save to Portfolio</button>
           </div>
         </form>
       ) : projects.length === 0 ? (
-        <div className="py-8 flex flex-col items-center justify-center text-slate-500 border-2 border-dashed border-slate-700 rounded-lg">
+        <div className="py-8 flex flex-col items-center justify-center text-textSecondary border-2 border-dashed border-border rounded-lg">
           <p>Your portfolio is currently empty.</p>
           <p className="text-xs mt-1">Add your first project to start building your developer identity.</p>
         </div>
@@ -108,31 +108,31 @@ function PortfolioWidget() {
             const githubLink = proj.links && proj.links.length > 0 ? proj.links[0] : '#';
 
             return (
-              <div key={proj.id} className="group relative bg-slate-700 p-4 rounded-lg border border-slate-600 hover:border-blue-500 transition-colors flex flex-col">
-                
-                <button 
+              <div key={proj.id} className="group relative bg-surfaceHover p-4 rounded-lg border border-border hover:border-accent transition-colors flex flex-col">
+
+                <button
                   onClick={() => setDeleteTarget(proj.id)} // 🔥 MODIFIED: Opens Modal
-                  className="absolute top-2 right-2 w-6 h-6 bg-red-900/80 text-red-200 rounded text-xs opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center hover:bg-red-600 z-10"
+                  className="absolute top-2 right-2 w-6 h-6 bg-dangerBg text-danger rounded text-xs opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center hover:bg-danger hover:text-white z-10"
                   title="Delete Project"
                 >
                   ✕
                 </button>
 
                 <div className="flex justify-between items-start mb-2 pr-8">
-                  <h3 className="font-bold text-slate-200 leading-tight">{proj.title}</h3>
+                  <h3 className="font-bold text-textPrimary leading-tight">{proj.title}</h3>
                   {githubLink !== '#' && (
-                    <a href={githubLink} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:text-blue-300 text-xs flex items-center gap-1 bg-slate-800 px-2 py-1 rounded shrink-0">
+                    <a href={githubLink} target="_blank" rel="noopener noreferrer" className="text-accent hover:text-accentHover text-xs flex items-center gap-1 bg-surface px-2 py-1 rounded shrink-0">
                       GitHub ↗
                     </a>
                   )}
                 </div>
-                
-                <p className="text-sm text-slate-400 mb-4 flex-1">{cleanDesc}</p>
-                
+
+                <p className="text-sm text-textSecondary mb-4 flex-1">{cleanDesc}</p>
+
                 {techList.length > 0 && (
-                  <div className="flex flex-wrap gap-1.5 mt-auto pt-4 border-t border-slate-600/50">
+                  <div className="flex flex-wrap gap-1.5 mt-auto pt-4 border-t border-border">
                     {techList.map(tech => (
-                      <span key={tech} className="text-[10px] font-mono bg-slate-900 text-slate-300 border border-slate-600 px-2 py-0.5 rounded">
+                      <span key={tech} className="text-[10px] font-mono bg-background text-textPrimary border border-border px-2 py-0.5 rounded">
                         {tech}
                       </span>
                     ))}

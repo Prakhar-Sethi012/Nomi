@@ -80,22 +80,22 @@ function AttendanceStrategyView() {
     setEditingTotalFor(null);
   };
 
-  if (isLoading) return <div className="text-white text-center mt-20 animate-pulse">Initializing Crystal Ball...</div>;
+  if (isLoading) return <div className="text-textPrimary text-center mt-20 animate-pulse">Initializing Crystal Ball...</div>;
 
   return (
     <div className="w-full max-w-6xl pb-10 mx-auto animate-fade-in flex flex-col h-[85vh]">
       
-      <header className="bg-indigo-900/40 p-6 rounded-xl border border-indigo-500/50 mb-6 shadow-[0_0_15px_rgba(79,70,229,0.15)]">
+      <header className="bg-indigo-600 p-6 rounded-xl border border-indigo-500 mb-6 shadow-[0_0_15px_rgba(79,70,229,0.15)]">
         <div className="flex justify-between items-start">
           <div>
-            <h1 className="text-2xl font-bold text-indigo-100 mb-1 flex items-center gap-2">
+            <h1 className="text-2xl font-bold text-white mb-1 flex items-center gap-2">
               🔮 The Strategy Room
             </h1>
-            <p className="text-indigo-300/80 text-sm">
+            <p className="text-indigo-100 text-sm">
               Simulation Mode Active. Data here will not affect your real database.
             </p>
           </div>
-          <span className="bg-indigo-500/20 text-indigo-300 text-[10px] uppercase tracking-widest font-bold px-3 py-1.5 rounded border border-indigo-500/30">
+          <span className="bg-white/20 text-white text-[10px] uppercase tracking-widest font-bold px-3 py-1.5 rounded border border-white/30">
             Sandbox Isolated
           </span>
         </div>
@@ -108,40 +108,40 @@ function AttendanceStrategyView() {
           const forecast = calculateForecast(sub.attended, sub.conducted, sub.total);
           
           return (
-            <div key={sub.id} className={`bg-slate-800 p-5 rounded-xl border transition-colors duration-300 shadow-lg flex flex-col ${isSimulated ? 'border-indigo-500' : 'border-slate-700'}`}>
-              
+            <div key={sub.id} className={`bg-surface p-5 rounded-xl border transition-colors duration-300 shadow-lg flex flex-col ${isSimulated ? 'border-accent' : 'border-border'}`}>
+
               <div className="flex justify-between items-start mb-4">
-                <h3 className="font-bold text-slate-200 text-sm w-3/4 leading-tight">{sub.name}</h3>
-                <span className={`text-lg font-black ${forecast.currentPct >= 75 ? 'text-green-400' : 'text-red-400'}`}>
+                <h3 className="font-bold text-textPrimary text-sm w-3/4 leading-tight">{sub.name}</h3>
+                <span className={`text-lg font-black ${forecast.currentPct >= 75 ? 'text-success' : 'text-danger'}`}>
                   {forecast.currentPct.toFixed(1)}%
                 </span>
               </div>
 
-              <div className="flex justify-between items-center bg-slate-900/50 p-3 rounded-lg border border-slate-700 mb-4">
+              <div className="flex justify-between items-center bg-background p-3 rounded-lg border border-border mb-4">
                 <div className="text-center">
-                  <p className="text-[10px] uppercase tracking-wider text-slate-500 font-bold">Attended</p>
-                  <p className={`text-xl font-mono mt-0.5 ${isSimulated ? 'text-indigo-400' : 'text-slate-300'}`}>{sub.attended}</p>
+                  <p className="text-[10px] uppercase tracking-wider text-textSecondary font-bold">Attended</p>
+                  <p className={`text-xl font-mono mt-0.5 ${isSimulated ? 'text-accent' : 'text-textPrimary'}`}>{sub.attended}</p>
                 </div>
-                <div className="text-slate-600 font-light text-2xl">/</div>
+                <div className="text-textSecondary font-light text-2xl">/</div>
                 <div className="text-center">
-                  <p className="text-[10px] uppercase tracking-wider text-slate-500 font-bold">Conducted</p>
-                  <p className={`text-xl font-mono mt-0.5 ${isSimulated ? 'text-indigo-400' : 'text-slate-300'}`}>{sub.conducted}</p>
+                  <p className="text-[10px] uppercase tracking-wider text-textSecondary font-bold">Conducted</p>
+                  <p className={`text-xl font-mono mt-0.5 ${isSimulated ? 'text-accent' : 'text-textPrimary'}`}>{sub.conducted}</p>
                 </div>
               </div>
 
               <div className="flex-1 flex flex-col justify-center mb-4 min-h-[60px]">
                 {forecast.currentPct >= 75 ? (
-                  <div className="bg-green-900/20 border border-green-500/30 p-3 rounded-lg text-center">
-                    <p className="text-[10px] text-green-400/80 uppercase font-bold tracking-widest mb-1">The Safe Bunk</p>
-                    <p className="text-sm text-green-300">You can safely skip <span className="font-black text-white text-base mx-1">{forecast.safeBunks}</span> classes.</p>
+                  <div className="bg-success/10 border border-success/30 p-3 rounded-lg text-center">
+                    <p className="text-[10px] text-success/80 uppercase font-bold tracking-widest mb-1">The Safe Bunk</p>
+                    <p className="text-sm text-success">You can safely skip <span className="font-black text-textPrimary text-base mx-1">{forecast.safeBunks}</span> classes.</p>
                   </div>
                 ) : (
-                  <div className={`border p-3 rounded-lg text-center ${forecast.isImpossible ? 'bg-red-950/40 border-red-500 text-red-400' : 'bg-orange-900/20 border-orange-500/30 text-orange-300'}`}>
+                  <div className={`border p-3 rounded-lg text-center ${forecast.isImpossible ? 'bg-dangerBg border-danger text-danger' : 'bg-orange-900/20 border-orange-500/30 text-orange-300'}`}>
                     <p className="text-[10px] uppercase font-bold tracking-widest mb-1 opacity-80">The Rescue Mission</p>
                     {forecast.isImpossible ? (
                       <p className="text-sm font-bold">Mathematically Impossible.</p>
                     ) : (
-                      <p className="text-sm">Must attend <span className="font-black text-white text-base mx-1">{forecast.rescueClasses}</span> consecutive classes.</p>
+                      <p className="text-sm">Must attend <span className="font-black text-textPrimary text-base mx-1">{forecast.rescueClasses}</span> consecutive classes.</p>
                     )}
                   </div>
                 )}
@@ -149,55 +149,55 @@ function AttendanceStrategyView() {
 
               <div className="mt-auto flex flex-col gap-2 mb-3">
                 <div className="flex gap-2">
-                  <button 
+                  <button
                     onClick={() => simulateBunk(sub.id)}
                     disabled={sub.conducted >= sub.total}
-                    className="flex-1 bg-slate-700 hover:bg-slate-600 disabled:opacity-50 text-slate-300 text-xs font-bold py-2 rounded transition-colors"
+                    className="flex-1 bg-surfaceHover hover:bg-border disabled:opacity-50 text-textPrimary text-xs font-bold py-2 rounded transition-colors"
                   >
                     + Simulate Bunk
                   </button>
-                  <button 
+                  <button
                     onClick={() => simulateAttend(sub.id)}
                     disabled={sub.conducted >= sub.total}
-                    className="flex-1 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-xs font-bold py-2 rounded transition-colors"
+                    className="flex-1 bg-accent hover:bg-accentHover disabled:opacity-50 text-white text-xs font-bold py-2 rounded transition-colors"
                   >
                     + Simulate Attend
                   </button>
                 </div>
-                
+
                 {isSimulated && (
-                  <button 
+                  <button
                     onClick={() => resetSimulation(sub.id)}
-                    className="w-full mt-1 bg-red-900/40 hover:bg-red-900/60 border border-red-500/30 text-red-300 text-[10px] uppercase tracking-wider font-bold py-1.5 rounded transition-colors"
+                    className="w-full mt-1 bg-dangerBg hover:bg-danger/60 border border-danger/30 text-danger text-[10px] uppercase tracking-wider font-bold py-1.5 rounded transition-colors"
                   >
                     ↺ Reset Subject
                   </button>
                 )}
               </div>
 
-              <div className="pt-3 border-t border-slate-700/50 flex justify-between items-center h-8">
+              <div className="pt-3 border-t border-border flex justify-between items-center h-8">
                 {editingTotalFor === sub.id ? (
                   <div className="flex gap-2 items-center w-full animate-fade-in">
-                    <span className="text-[10px] text-slate-400 uppercase font-bold">Total:</span>
-                    <input 
-                      type="number" 
-                      value={newTotalStr} 
+                    <span className="text-[10px] text-textSecondary uppercase font-bold">Total:</span>
+                    <input
+                      type="number"
+                      value={newTotalStr}
                       onChange={e => setNewTotalStr(e.target.value)}
-                      className="w-16 bg-slate-900 border border-indigo-500/70 rounded text-xs text-white px-2 py-1 outline-none"
+                      className="w-16 bg-background border border-accent/70 rounded text-xs text-textPrimary px-2 py-1 outline-none"
                       min={sub.conducted}
                       autoFocus
                     />
                     <div className="ml-auto flex gap-1">
-                      <button onClick={() => setEditingTotalFor(null)} className="text-[10px] bg-slate-700 hover:bg-slate-600 text-slate-300 px-2 py-1 rounded">Cancel</button>
-                      <button onClick={() => saveNewTotal(sub.id, sub.conducted)} className="text-[10px] bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-2 py-1 rounded shadow-[0_0_8px_rgba(79,70,229,0.4)]">Save</button>
+                      <button onClick={() => setEditingTotalFor(null)} className="text-[10px] bg-surfaceHover hover:bg-border text-textPrimary px-2 py-1 rounded">Cancel</button>
+                      <button onClick={() => saveNewTotal(sub.id, sub.conducted)} className="text-[10px] bg-accent hover:bg-accentHover text-white font-bold px-2 py-1 rounded shadow-[0_0_8px_rgba(79,70,229,0.4)]">Save</button>
                     </div>
                   </div>
                 ) : (
                   <>
-                    <span className="text-[10px] text-slate-400">
-                      <span className="text-white font-bold">{sub.total}</span> Total Classes (<span className="text-indigo-300">{forecast.remainingClasses}</span> left)
+                    <span className="text-[10px] text-textSecondary">
+                      <span className="text-textPrimary font-bold">{sub.total}</span> Total Classes (<span className="text-accent">{forecast.remainingClasses}</span> left)
                     </span>
-                    <button onClick={() => handleEditTotal(sub)} className="text-[10px] text-slate-500 hover:text-indigo-400 transition-colors flex items-center gap-1">
+                    <button onClick={() => handleEditTotal(sub)} className="text-[10px] text-textSecondary hover:text-accent transition-colors flex items-center gap-1">
                       ✎ Edit Total
                     </button>
                   </>

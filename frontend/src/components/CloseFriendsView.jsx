@@ -87,11 +87,11 @@ function CloseFriendsView() {
 
   return (
     <div className="w-full max-w-6xl pb-10 mx-auto animate-fade-in flex flex-col gap-6 h-[85vh]">
-      
-      <header className="bg-slate-800 p-6 rounded-xl border border-slate-700 shadow-lg flex justify-between items-center shrink-0">
+
+      <header className="bg-surface p-6 rounded-xl border border-border shadow-lg flex justify-between items-center shrink-0">
         <div>
-          <h1 className="text-2xl font-bold text-white mb-1 flex items-center gap-2">💾 Close Friends</h1>
-          <p className="text-slate-400 text-sm">Offline schedules cloned directly to your account.</p>
+          <h1 className="text-2xl font-bold text-textPrimary mb-1 flex items-center gap-2">💾 Close Friends</h1>
+          <p className="text-textSecondary text-sm">Offline schedules cloned directly to your account.</p>
         </div>
       </header>
 
@@ -99,65 +99,65 @@ function CloseFriendsView() {
         {!activeFriend ? (
           <div className="animate-fade-in">
             {friends.length === 0 ? (
-              <div className="bg-slate-800/50 border border-slate-700 border-dashed rounded-xl p-10 text-center flex flex-col items-center justify-center mt-10">
+              <div className="bg-surface/50 border border-border border-dashed rounded-xl p-10 text-center flex flex-col items-center justify-center mt-10">
                 <span className="text-4xl mb-4 opacity-50">📂</span>
-                <h3 className="text-xl font-bold text-slate-300 mb-2">Directory is Empty</h3>
-                <p className="text-slate-500 max-w-sm">Go to your Social Radar and click 'Clone' on a friend's card to save their schedule here offline.</p>
+                <h3 className="text-xl font-bold text-textPrimary mb-2">Directory is Empty</h3>
+                <p className="text-textSecondary max-w-sm">Go to your Social Radar and click 'Clone' on a friend's card to save their schedule here offline.</p>
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {friends.map(friend => {
                   const isFree = friend.live_status.is_free;
-                  const statusBg = isFree ? 'bg-emerald-900/20 border-emerald-500/30' : 'bg-red-900/20 border-red-500/30';
-                  
+                  const statusBg = isFree ? 'bg-success/10 border-success/30' : 'bg-dangerBg border-danger/30';
+
                   return (
                     <div key={friend.user_id} onClick={() => loadTimetable(friend)} className={`group p-5 rounded-xl border shadow-lg transition-all flex flex-col h-full relative ${statusBg} cursor-pointer hover:scale-[1.02]`}>
-                      
+
                       <div className="flex justify-between items-start mb-3">
-                        <h3 className="text-lg font-bold text-white">{friend.name}</h3>
-                        <div className={`w-3 h-3 rounded-full ${isFree ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)]' : 'bg-red-500'}`}></div>
+                        <h3 className="text-lg font-bold text-textPrimary">{friend.name}</h3>
+                        <div className={`w-3 h-3 rounded-full ${isFree ? 'bg-success shadow-[0_0_8px_rgba(16,185,129,0.8)]' : 'bg-danger'}`}></div>
                       </div>
 
                       {isFree ? (
-                        <p className="text-sm text-emerald-400 font-bold">Available right now</p>
+                        <p className="text-sm text-success font-bold">Available right now</p>
                       ) : (
                         <div>
-                          <p className="text-xs text-red-400 font-bold uppercase tracking-wider mb-1">Currently in {friend.live_status.type}</p>
-                          <p className="text-sm text-slate-300 font-medium truncate pr-32">{friend.live_status.class_name}</p>
-                          <p className="text-xs text-slate-400 mt-1">Slot: {friend.live_status.slot} • Room: {friend.live_status.room}</p>
+                          <p className="text-xs text-danger font-bold uppercase tracking-wider mb-1">Currently in {friend.live_status.type}</p>
+                          <p className="text-sm text-textPrimary font-medium truncate pr-32">{friend.live_status.class_name}</p>
+                          <p className="text-xs text-textSecondary mt-1">Slot: {friend.live_status.slot} • Room: {friend.live_status.room}</p>
                         </div>
                       )}
 
                       {deletingId === friend.user_id ? (
-                         <div className="absolute top-4 right-4 flex items-center gap-2 bg-slate-900 border border-red-500/50 p-1.5 rounded z-10 animate-fade-in shadow-xl">
-                           <span className="text-[9px] text-red-400 font-bold uppercase tracking-widest ml-1">Remove?</span>
-                           <button onClick={(e) => { e.stopPropagation(); setDeletingId(null); setPinTargetId(friend.user_id); }} className="text-[10px] bg-red-600 hover:bg-red-500 text-white px-2 py-1 rounded font-bold">Yes</button>
-                           <button onClick={(e) => { e.stopPropagation(); setDeletingId(null); }} className="text-[10px] bg-slate-700 hover:bg-slate-600 text-white px-2 py-1 rounded">No</button>
+                         <div className="absolute top-4 right-4 flex items-center gap-2 bg-surface border border-danger/50 p-1.5 rounded z-10 animate-fade-in shadow-xl">
+                           <span className="text-[9px] text-danger font-bold uppercase tracking-widest ml-1">Remove?</span>
+                           <button onClick={(e) => { e.stopPropagation(); setDeletingId(null); setPinTargetId(friend.user_id); }} className="text-[10px] bg-danger hover:opacity-90 text-white px-2 py-1 rounded font-bold">Yes</button>
+                           <button onClick={(e) => { e.stopPropagation(); setDeletingId(null); }} className="text-[10px] bg-surfaceHover hover:bg-border text-textPrimary px-2 py-1 rounded">No</button>
                          </div>
                       ) : (
-                        <button onClick={(e) => { e.stopPropagation(); setDeletingId(friend.user_id); }} className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 text-xs text-slate-500 hover:text-red-400 transition-opacity bg-slate-900/80 px-2 py-1 rounded-md">
+                        <button onClick={(e) => { e.stopPropagation(); setDeletingId(friend.user_id); }} className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 text-xs text-textSecondary hover:text-danger transition-opacity bg-surface/80 px-2 py-1 rounded-md">
                            ✕ Un-clone
                         </button>
                       )}
 
                       {/* 🔥 NEW: MEETUP BUTTON */}
                       <div className="absolute bottom-4 right-4 flex gap-2">
-                        <button onClick={(e) => { e.stopPropagation(); setMeetupModalUser(friend); }} className="opacity-0 group-hover:opacity-100 text-xs bg-slate-800 hover:bg-indigo-600/30 text-slate-400 hover:text-indigo-400 border border-slate-700 hover:border-indigo-500 px-2 py-1.5 rounded transition-all">
+                        <button onClick={(e) => { e.stopPropagation(); setMeetupModalUser(friend); }} className="opacity-0 group-hover:opacity-100 text-xs bg-surface hover:bg-accent/30 text-textSecondary hover:text-accent border border-border hover:border-accent px-2 py-1.5 rounded transition-all">
                           🤝 Meet
                         </button>
                       </div>
 
                       <div className="mt-auto">
                         {friend.next_class && (
-                          <div className="mt-4 pt-4 border-t border-slate-700/50">
+                          <div className="mt-4 pt-4 border-t border-border">
                             <div className="flex justify-between items-end mb-1">
-                              <p className="text-[10px] uppercase tracking-widest text-slate-500 font-bold">Next Class</p>
-                              <span className="text-[10px] font-black text-emerald-400 bg-emerald-900/20 px-2 py-0.5 rounded border border-emerald-500/20 uppercase tracking-wider">
+                              <p className="text-[10px] uppercase tracking-widest text-textSecondary font-bold">Next Class</p>
+                              <span className="text-[10px] font-black text-success bg-success/10 px-2 py-0.5 rounded border border-success/20 uppercase tracking-wider">
                                 In {formatSmartTime(friend.next_class.minutes_until).value} {formatSmartTime(friend.next_class.minutes_until).unit}
                               </span>
                             </div>
-                            <p className="text-sm text-slate-300 font-bold truncate pr-32">{friend.next_class.name}</p>
-                            <p className="text-xs text-slate-400 mt-1">Slot {friend.next_class.slot} • {friend.next_class.room}</p>
+                            <p className="text-sm text-textPrimary font-bold truncate pr-32">{friend.next_class.name}</p>
+                            <p className="text-xs text-textSecondary mt-1">Slot {friend.next_class.slot} • {friend.next_class.room}</p>
                           </div>
                         )}
                       </div>
@@ -169,13 +169,13 @@ function CloseFriendsView() {
           </div>
         ) : (
           <div className="animate-fade-in flex flex-col gap-6">
-            <button onClick={() => setActiveFriend(null)} className="self-start text-sm text-slate-400 hover:text-white flex items-center gap-2 transition-colors">← Back to Directory</button>
-            <div className="bg-slate-800 p-6 rounded-xl border border-slate-700 shadow-lg">
-              <h2 className="text-xl font-black text-white mb-2">{activeFriend.name}'s Cloned Schedule</h2>
-              <p className="text-slate-400 text-sm mb-6">Read-only offline copy.</p>
-              
+            <button onClick={() => setActiveFriend(null)} className="self-start text-sm text-textSecondary hover:text-textPrimary flex items-center gap-2 transition-colors">← Back to Directory</button>
+            <div className="bg-surface p-6 rounded-xl border border-border shadow-lg">
+              <h2 className="text-xl font-black text-textPrimary mb-2">{activeFriend.name}'s Cloned Schedule</h2>
+              <p className="text-textSecondary text-sm mb-6">Read-only offline copy.</p>
+
               {friendTimetable.length === 0 ? (
-                <p className="text-slate-500 text-center italic py-10">No subjects logged.</p>
+                <p className="text-textSecondary text-center italic py-10">No subjects logged.</p>
               ) : (
                 <ReadOnlyTimetable subjects={friendTimetable} />
               )}
@@ -186,22 +186,22 @@ function CloseFriendsView() {
 
       {/* 🔥 NEW: MEETUP MODAL */}
       {meetupModalUser && (
-        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in">
-          <div className="bg-slate-900 border border-slate-700 rounded-xl p-6 shadow-2xl max-w-sm w-full">
-            <h3 className="text-xl font-black text-white mb-2">🤝 Meet {meetupModalUser.name}</h3>
-            <p className="text-sm text-slate-400 mb-6">Send a quick ping to coordinate a meetup.</p>
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in">
+          <div className="bg-surface border border-border rounded-xl p-6 shadow-2xl max-w-sm w-full">
+            <h3 className="text-xl font-black text-textPrimary mb-2">🤝 Meet {meetupModalUser.name}</h3>
+            <p className="text-sm text-textSecondary mb-6">Send a quick ping to coordinate a meetup.</p>
             <form onSubmit={handleSendMeetup} className="flex flex-col gap-4">
               <div>
-                <label className="text-[10px] uppercase font-bold text-slate-500 block mb-1">Where?</label>
-                <input type="text" required placeholder="e.g., Foody, SJT Lobby..." value={meetupData.location} onChange={e => setMeetupData({...meetupData, location: e.target.value})} className="w-full bg-slate-950 border border-slate-600 rounded-lg px-4 py-2 text-white outline-none focus:border-indigo-500" />
+                <label className="text-[10px] uppercase font-bold text-textSecondary block mb-1">Where?</label>
+                <input type="text" required placeholder="e.g., Foody, SJT Lobby..." value={meetupData.location} onChange={e => setMeetupData({...meetupData, location: e.target.value})} className="w-full bg-background border border-border rounded-lg px-4 py-2 text-textPrimary outline-none focus:border-accent" />
               </div>
               <div>
-                <label className="text-[10px] uppercase font-bold text-slate-500 block mb-1">When?</label>
-                <input type="datetime-local" required value={meetupData.meet_time} onChange={e => setMeetupData({...meetupData, meet_time: e.target.value})} className="w-full bg-slate-950 border border-slate-600 rounded-lg px-4 py-2 text-white outline-none focus:border-indigo-500 font-mono text-sm" />
+                <label className="text-[10px] uppercase font-bold text-textSecondary block mb-1">When?</label>
+                <input type="datetime-local" required value={meetupData.meet_time} onChange={e => setMeetupData({...meetupData, meet_time: e.target.value})} className="w-full bg-background border border-border rounded-lg px-4 py-2 text-textPrimary outline-none focus:border-accent font-mono text-sm" />
               </div>
               <div className="flex gap-2 mt-2">
-                <button type="button" onClick={() => setMeetupModalUser(null)} className="flex-1 bg-slate-800 hover:bg-slate-700 text-white py-2 rounded-lg font-bold transition-colors">Cancel</button>
-                <button type="submit" className="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white py-2 rounded-lg font-bold transition-colors shadow-[0_0_15px_rgba(79,70,229,0.3)]">Send Ping</button>
+                <button type="button" onClick={() => setMeetupModalUser(null)} className="flex-1 bg-surfaceHover hover:bg-border text-textPrimary py-2 rounded-lg font-bold transition-colors">Cancel</button>
+                <button type="submit" className="flex-1 bg-accent hover:bg-accentHover text-white py-2 rounded-lg font-bold transition-colors shadow-[0_0_15px_rgba(79,70,229,0.3)]">Send Ping</button>
               </div>
             </form>
           </div>

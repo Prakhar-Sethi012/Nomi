@@ -139,28 +139,28 @@ function TasksWidget({ setProfile }) {
     }));
   };
 
-  if (isLoading) return <div className="bg-slate-800 p-6 rounded-xl border border-slate-700 h-80 flex items-center justify-center text-blue-400 animate-pulse">Syncing tasks...</div>;
+  if (isLoading) return <div className="bg-surface p-6 rounded-xl border border-border h-80 flex items-center justify-center text-accent animate-pulse">Syncing tasks...</div>;
 
   return (
-    <div className="bg-slate-800 p-5 rounded-xl border border-slate-700 shadow-lg flex flex-col h-[400px]">
-      <h2 className="text-xl font-bold text-white mb-4 flex justify-between items-center">
+    <div className="bg-surface p-5 rounded-xl border border-border shadow-lg flex flex-col h-[400px]">
+      <h2 className="text-xl font-bold text-textPrimary mb-4 flex justify-between items-center">
         Action Items
-        {!showForm && !editingTaskId && <span className="text-xs bg-blue-600 text-white px-2 py-1 rounded-full">{tasks.length}</span>}
+        {!showForm && !editingTaskId && <span className="text-xs bg-accent text-white px-2 py-1 rounded-full">{tasks.length}</span>}
       </h2>
-      
-      {error && <div className="bg-red-900/40 border border-red-500/50 text-red-200 text-xs p-2 rounded mb-2 overflow-x-auto max-h-16 font-mono">{error}</div>}
+
+      {error && <div className="bg-dangerBg border border-danger text-danger text-xs p-2 rounded mb-2 overflow-x-auto max-h-16 font-mono">{error}</div>}
 
       {showForm || editingTaskId ? (
         <form onSubmit={handleSubmit} className="flex-1 flex flex-col gap-3 overflow-y-auto custom-scrollbar pr-2">
-          <input type="text" placeholder="Task Title" required value={formData.title} onChange={(e) => setFormData({...formData, title: e.target.value})} className="w-full p-2 bg-slate-700 rounded text-sm text-white border border-slate-600 focus:border-blue-500 outline-none" />
-          
+          <input type="text" placeholder="Task Title" required value={formData.title} onChange={(e) => setFormData({...formData, title: e.target.value})} className="w-full p-2 bg-background rounded text-sm text-textPrimary border border-border focus:border-accent outline-none" />
+
           <div className="flex gap-2">
-            <input type="datetime-local" required value={formData.due_date} onChange={(e) => setFormData({...formData, due_date: e.target.value})} className="flex-1 p-2 bg-slate-700 rounded text-sm text-white border border-slate-600 focus:border-blue-500 outline-none" />
-            
-            <select 
-              value={formData.frequency} 
-              onChange={(e) => setFormData({...formData, frequency: e.target.value})} 
-              className="w-1/3 p-2 bg-slate-700 rounded text-sm text-white border border-slate-600 focus:border-blue-500 outline-none"
+            <input type="datetime-local" required value={formData.due_date} onChange={(e) => setFormData({...formData, due_date: e.target.value})} className="flex-1 p-2 bg-background rounded text-sm text-textPrimary border border-border focus:border-accent outline-none" />
+
+            <select
+              value={formData.frequency}
+              onChange={(e) => setFormData({...formData, frequency: e.target.value})}
+              className="w-1/3 p-2 bg-background rounded text-sm text-textPrimary border border-border focus:border-accent outline-none"
             >
               <option value="Once">Once</option>
               <option value="Daily">Daily</option>
@@ -170,18 +170,18 @@ function TasksWidget({ setProfile }) {
           </div>
 
           <div className="flex flex-col gap-2">
-            <input 
-              type="text" 
-              placeholder="Tags (e.g. urgent, project)" 
-              required 
-              value={formData.tags} 
-              onChange={(e) => setFormData({...formData, tags: e.target.value})} 
-              className="w-full p-2 bg-slate-700 rounded text-sm text-white border border-slate-600 focus:border-blue-500 outline-none" 
+            <input
+              type="text"
+              placeholder="Tags (e.g. urgent, project)"
+              required
+              value={formData.tags}
+              onChange={(e) => setFormData({...formData, tags: e.target.value})}
+              className="w-full p-2 bg-background rounded text-sm text-textPrimary border border-border focus:border-accent outline-none"
             />
             {/* Quick-Select Chips */}
             <div className="flex flex-wrap gap-1">
               {['important', 'cat', 'fat', 'quiz', 'club', 'others'].map(preset => (
-                <button 
+                <button
                   key={preset}
                   type="button"
                   onClick={() => {
@@ -190,7 +190,7 @@ function TasksWidget({ setProfile }) {
                       setFormData(prev => ({ ...prev, tags: currentTags.length > 0 ? `${currentTags.join(', ')}, ${preset}` : preset }));
                     }
                   }}
-                  className="text-[9px] uppercase tracking-wider font-bold bg-slate-800 hover:bg-blue-600/30 text-slate-400 hover:text-blue-300 border border-slate-600 hover:border-blue-500 px-2 py-1 rounded transition-colors"
+                  className="text-[9px] uppercase tracking-wider font-bold bg-surface hover:bg-accent/30 text-textSecondary hover:text-accent border border-border hover:border-accent px-2 py-1 rounded transition-colors"
                 >
                   +{preset}
                 </button>
@@ -199,15 +199,15 @@ function TasksWidget({ setProfile }) {
           </div>
 
           <div className="flex gap-2 mt-auto pt-2">
-            <button type="button" onClick={() => { setShowForm(false); setEditingTaskId(null); setError(''); setFormData({ title: '', due_date: '', tags: '', frequency: 'Once' }); }} className="flex-1 bg-slate-600 hover:bg-slate-500 text-white text-sm py-2 rounded transition-colors">Cancel</button>
-            <button type="submit" className="flex-1 bg-blue-600 hover:bg-blue-500 text-white text-sm py-2 rounded font-bold transition-colors">{editingTaskId ? 'Save Edits' : 'Add Task'}</button>
+            <button type="button" onClick={() => { setShowForm(false); setEditingTaskId(null); setError(''); setFormData({ title: '', due_date: '', tags: '', frequency: 'Once' }); }} className="flex-1 bg-surfaceHover hover:bg-border text-textPrimary text-sm py-2 rounded transition-colors">Cancel</button>
+            <button type="submit" className="flex-1 bg-accent hover:bg-accentHover text-white text-sm py-2 rounded font-bold transition-colors">{editingTaskId ? 'Save Edits' : 'Add Task'}</button>
           </div>
         </form>
       ) : (
         <>
-          <button onClick={() => setShowForm(true)} className="w-full mb-3 bg-slate-700 hover:bg-slate-600 border border-slate-600 text-white text-sm py-1.5 rounded transition-colors flex items-center justify-center gap-2">+ New Task</button>
+          <button onClick={() => setShowForm(true)} className="w-full mb-3 bg-surfaceHover hover:bg-border border border-border text-textPrimary text-sm py-1.5 rounded transition-colors flex items-center justify-center gap-2">+ New Task</button>
           {tasks.length === 0 ? (
-            <div className="flex-1 flex items-center justify-center text-slate-500 text-sm">No pending tasks. You're all caught up!</div>
+            <div className="flex-1 flex items-center justify-center text-textSecondary text-sm">No pending tasks. You're all caught up!</div>
           ) : (
             <ul className="space-y-3 overflow-y-auto pr-2 custom-scrollbar flex-1">
               {tasks.map((task) => {
@@ -215,18 +215,18 @@ function TasksWidget({ setProfile }) {
                 const isRecurring = task.frequency && task.frequency !== 'Once';
 
                 return (
-                  <li key={task.id} className={`group bg-slate-700 p-3 rounded-lg border transition-all duration-500 relative ${
-                    completingTasks[task.id] 
-                      ? 'opacity-40 border-green-500 scale-[0.98]' 
-                      : isOverdue 
-                        ? 'border-red-500/60 bg-red-900/10' 
-                        : 'border-slate-600 hover:border-blue-500'
+                  <li key={task.id} className={`group bg-surfaceHover p-3 rounded-lg border transition-all duration-500 relative ${
+                    completingTasks[task.id]
+                      ? 'opacity-40 border-success scale-[0.98]'
+                      : isOverdue
+                        ? 'border-danger/60 bg-dangerBg'
+                        : 'border-border hover:border-accent'
                   }`}>
-                    
+
                     {!completingTasks[task.id] && (
-                      <button 
-                        onClick={() => openEditMode(task)} 
-                        className="absolute top-3 right-3 text-slate-400 hover:text-blue-400 opacity-0 group-hover:opacity-100 transition-opacity"
+                      <button
+                        onClick={() => openEditMode(task)}
+                        className="absolute top-3 right-3 text-textSecondary hover:text-accent opacity-0 group-hover:opacity-100 transition-opacity"
                         title="Edit Task"
                       >
                         ✎
@@ -235,33 +235,33 @@ function TasksWidget({ setProfile }) {
 
                     <div className="flex justify-between items-start mb-2 pr-6">
                       <div className="flex items-start gap-3">
-                        <button onClick={() => toggleComplete(task.id)} className={`mt-0.5 shrink-0 w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors ${completingTasks[task.id] ? 'bg-green-500 border-green-500' : 'border-slate-400 hover:border-green-400'}`}>
+                        <button onClick={() => toggleComplete(task.id)} className={`mt-0.5 shrink-0 w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors ${completingTasks[task.id] ? 'bg-success border-success' : 'border-border hover:border-success'}`}>
                           {completingTasks[task.id] && <span className="text-white text-xs">✓</span>}
                         </button>
                         <div>
-                          <p className={`font-medium text-sm leading-tight transition-all ${completingTasks[task.id] ? 'text-slate-400 line-through' : isOverdue ? 'text-red-200' : 'text-slate-200'}`}>
-                            {isRecurring && <span className="text-blue-400 mr-1" title={`Repeats ${task.frequency}`}>↻</span>}
+                          <p className={`font-medium text-sm leading-tight transition-all ${completingTasks[task.id] ? 'text-textSecondary line-through' : isOverdue ? 'text-danger' : 'text-textPrimary'}`}>
+                            {isRecurring && <span className="text-accent mr-1" title={`Repeats ${task.frequency}`}>↻</span>}
                             {task.title}
-                            {isOverdue && !completingTasks[task.id] && <span className="ml-2 text-[9px] bg-red-900/80 text-red-300 px-1.5 py-0.5 rounded uppercase tracking-wider font-bold">Overdue</span>}
+                            {isOverdue && !completingTasks[task.id] && <span className="ml-2 text-[9px] bg-dangerBg text-danger px-1.5 py-0.5 rounded uppercase tracking-wider font-bold">Overdue</span>}
                           </p>
                           {completingTasks[task.id] && (
-                            <p className="text-[10px] text-green-400 font-bold mt-1">
+                            <p className="text-[10px] text-success font-bold mt-1">
                               {isRecurring ? 'Rescheduling...' : `Clearing in ${completingTasks[task.id].remaining}s...`} Undo?
                             </p>
                           )}
                         </div>
                       </div>
                     </div>
-                    
+
                     <div className="flex justify-between items-end ml-8">
                       <div className="flex flex-wrap gap-1.5">
                         {task.tags.map(tag => (
-                          <span key={tag} className={`text-[10px] uppercase tracking-wider font-bold bg-slate-800 border border-slate-600 px-2 py-0.5 rounded ${completingTasks[task.id] ? 'text-slate-500' : 'text-blue-400'}`}>
+                          <span key={tag} className={`text-[10px] uppercase tracking-wider font-bold bg-surface border border-border px-2 py-0.5 rounded ${completingTasks[task.id] ? 'text-textSecondary' : 'text-accent'}`}>
                             {tag}
                           </span>
                         ))}
                       </div>
-                      <p className={`text-xs whitespace-nowrap ml-2 ${isOverdue ? 'text-red-400 font-bold' : 'text-slate-400'}`}>
+                      <p className={`text-xs whitespace-nowrap ml-2 ${isOverdue ? 'text-danger font-bold' : 'text-textSecondary'}`}>
                         {new Date(task.due_date).toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
                       </p>
                     </div>
