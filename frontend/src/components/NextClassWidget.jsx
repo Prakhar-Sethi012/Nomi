@@ -35,7 +35,10 @@ function NextClassWidget() {
   }, []);
 
   useEffect(() => {
-    if (subjects.length === 0) return;
+    // No early-return on an empty subjects array here: getTodayClasses/
+    // getNextClassInfo already resolve that to FREE_DAY on their own, and
+    // skipping the call used to leave timeInfo stuck at its initial LOADING
+    // status forever for anyone with zero subjects.
     const calculateTime = () => {
       const todayClasses = getTodayClasses(subjects);
       const info = getNextClassInfo(todayClasses);

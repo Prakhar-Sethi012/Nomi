@@ -181,7 +181,7 @@ function ExpensesView({ profile, setProfile }) {
     cumulativePercent = end;
     return `${categoryColors[tag]} ${start}% ${end}%`;
   }).join(', ');
-  const chartStyle = monthTotal > 0 ? { background: `conic-gradient(${gradientStops})` } : { background: '#1e293b' };
+  const chartStyle = monthTotal > 0 ? { background: `conic-gradient(${gradientStops})` } : { background: 'var(--color-surface-hover)' };
 
   const displayedExpenses = selectedCategory ? monthlyExpenses.filter(exp => exp.tags[0] === selectedCategory) : monthlyExpenses;
   const groupedExpenses = displayedExpenses.reduce((acc, exp) => {

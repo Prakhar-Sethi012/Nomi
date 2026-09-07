@@ -26,7 +26,9 @@ function ThemeToggle() {
     setCurrentTheme(themes[nextIndex].id);
   };
 
-  const activeTheme = themes.find(t => t.id === currentTheme);
+  // Falls back to the first theme if localStorage ever holds a stale/unknown
+  // id (e.g. from an older app version) — otherwise this would crash the render.
+  const activeTheme = themes.find(t => t.id === currentTheme) || themes[0];
 
   return (
     <button 

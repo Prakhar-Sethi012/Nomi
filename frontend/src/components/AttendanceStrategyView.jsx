@@ -65,19 +65,21 @@ function AttendanceStrategyView() {
 
   const saveNewTotal = async (id, currentConducted) => {
     const parsedTotal = parseInt(newTotalStr, 10);
-    
-    if (!isNaN(parsedTotal) && parsedTotal >= currentConducted) {
-      try {
-        await api.updateSubject(id, { total_classes: parsedTotal });
 
-        setRealSubjects(prev => prev.map(s => s.id === id ? { ...s, total: parsedTotal } : s));
-        setSimulatedSubjects(prev => prev.map(s => s.id === id ? { ...s, total: parsedTotal } : s));
-      } catch (err) {
-        console.error("Failed to save total classes to database", err);
-      }
+    if (isNaN(parsedTotal) || parsedTotal < currentConducted) {
+      alert(`Total classes must be a number of at least ${currentConducted} (classes already conducted).`);
+      return;
     }
-    
-    setEditingTotalFor(null);
+
+    try {
+      await api.updateSubject(id, { total_classes: parsedTotal });
+
+      setRealSubjects(prev => prev.map(s => s.id === id ? { ...s, total: parsedTotal } : s));
+      setSimulatedSubjects(prev => prev.map(s => s.id === id ? { ...s, total: parsedTotal } : s));
+      setEditingTotalFor(null);
+    } catch (err) {
+      alert("Failed to save total classes. Please try again.");
+    }
   };
 
   if (isLoading) return <div className="text-textPrimary text-center mt-20 animate-pulse">Initializing Crystal Ball...</div>;
@@ -101,6 +103,12 @@ function AttendanceStrategyView() {
         </div>
       </header>
 
+      {simulatedSubjects.length === 0 ? (
+        <div className="flex-1 flex flex-col items-center justify-center text-center text-textSecondary">
+          <p className="font-bold">No subjects to simulate yet.</p>
+          <p className="text-sm mt-1">Add your classes in the Timetable tab first.</p>
+        </div>
+      ) : (
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 overflow-y-auto custom-scrollbar pr-2 pb-4">
         {simulatedSubjects.map(sub => {
           const original = realSubjects.find(s => s.id === sub.id);
@@ -208,6 +216,7 @@ function AttendanceStrategyView() {
           );
         })}
       </div>
+      )}
     </div>
   );
 }
