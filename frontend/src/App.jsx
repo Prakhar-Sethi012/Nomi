@@ -12,12 +12,15 @@ import ExpensesView from './components/ExpensesView';
 import AuthScreen from './components/AuthScreen';
 import SocialRadar from './components/SocialRadar';
 import CloseFriendsView from './components/CloseFriendsView';
+import BottomTabBar from './components/nav/BottomTabBar';
+import MoreSheet from './components/nav/MoreSheet';
 
 function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [profile, setProfile] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(!!localStorage.getItem('token'));
+  const [isMoreOpen, setIsMoreOpen] = useState(false);
 
   // =========================================
   // 1. AUTHENTICATE & FETCH PROFILE
@@ -74,6 +77,18 @@ function App() {
   };
 
   // =========================================
+  // 4. BOTTOM TAB BAR SELECTION (mobile)
+  // =========================================
+  const handleBottomTabSelect = (tabId) => {
+    if (tabId === 'more') {
+      setIsMoreOpen((prev) => !prev);
+      return;
+    }
+    setIsMoreOpen(false);
+    setActiveTab(tabId);
+  };
+
+  // =========================================
   // RENDER BLOCKS
   // =========================================
 
@@ -111,9 +126,9 @@ function App() {
 
   return (
     <div className="min-h-screen bg-background transition-colors duration-300 flex flex-col items-center pt-6 px-4 font-sans">
-      
-      <nav className="w-full max-w-6xl flex justify-between items-center mb-6 bg-surface p-1.5 rounded-lg border border-border shadow-lg z-10 sticky top-4 transition-colors duration-300">
-        
+
+      <nav className="hidden md:flex w-full max-w-6xl justify-between items-center mb-6 bg-surface p-1.5 rounded-lg border border-border shadow-lg z-10 sticky top-4 transition-colors duration-300">
+
         {/* Navigation Tabs */}
         <div className="flex flex-wrap gap-1 justify-center md:justify-start items-center flex-1">
           <button onClick={() => setActiveTab('dashboard')} className={`px-4 py-2 rounded-md text-sm font-bold transition-all duration-200 ${activeTab === 'dashboard' ? 'bg-accent text-white shadow' : 'text-textSecondary hover:text-textPrimary hover:bg-surfaceHover'}`}>Dashboard</button>
@@ -138,7 +153,7 @@ function App() {
 
       </nav>
 
-      <div className="w-full max-w-6xl flex justify-center">
+      <div className="w-full max-w-6xl flex justify-center pb-24 md:pb-0">
         {activeTab === 'dashboard' && <Dashboard profile={profile} setProfile={setProfile} setActiveTab={setActiveTab} />}
         {activeTab === 'scratchpad' && <ScratchpadView userId={profile.id} />}
         {activeTab === 'links' && <LinksView userId={profile.id} />}
@@ -149,6 +164,15 @@ function App() {
         {activeTab === 'closeFriends' && <CloseFriendsView />}
         {activeTab === 'profile' && <ProfileView profile={profile} setProfile={setProfile} onLogout={handleLogout} />}
       </div>
+
+      <BottomTabBar activeTab={activeTab} isMoreOpen={isMoreOpen} onSelect={handleBottomTabSelect} />
+      <MoreSheet
+        isOpen={isMoreOpen}
+        activeTab={activeTab}
+        onSelect={setActiveTab}
+        onClose={() => setIsMoreOpen(false)}
+        onLogout={handleLogout}
+      />
     </div>
   );
 }
