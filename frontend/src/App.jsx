@@ -14,6 +14,7 @@ import SocialRadar from './components/SocialRadar';
 import CloseFriendsView from './components/CloseFriendsView';
 import BottomTabBar from './components/nav/BottomTabBar';
 import MoreSheet from './components/nav/MoreSheet';
+import PageTransition from './components/ui/PageTransition';
 
 function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -154,15 +155,17 @@ function App() {
       </nav>
 
       <div className="w-full max-w-6xl flex justify-center pb-24 md:pb-0">
-        {activeTab === 'dashboard' && <Dashboard profile={profile} setProfile={setProfile} setActiveTab={setActiveTab} />}
-        {activeTab === 'scratchpad' && <ScratchpadView userId={profile.id} />}
-        {activeTab === 'links' && <LinksView userId={profile.id} />}
-        {activeTab === 'timetable' && <TimetableView />}
-        {activeTab === 'strategy' && <AttendanceStrategyView />}
-        {activeTab === 'expenses' && <ExpensesView profile={profile} setProfile={setProfile} />}
-        {activeTab === 'radar' && <SocialRadar profile={profile} setProfile={setProfile} />}
-        {activeTab === 'closeFriends' && <CloseFriendsView />}
-        {activeTab === 'profile' && <ProfileView profile={profile} setProfile={setProfile} onLogout={handleLogout} />}
+        <PageTransition tabKey={activeTab}>
+          {activeTab === 'dashboard' && <Dashboard profile={profile} setProfile={setProfile} setActiveTab={setActiveTab} />}
+          {activeTab === 'scratchpad' && <ScratchpadView userId={profile.id} />}
+          {activeTab === 'links' && <LinksView userId={profile.id} />}
+          {activeTab === 'timetable' && <TimetableView />}
+          {activeTab === 'strategy' && <AttendanceStrategyView />}
+          {activeTab === 'expenses' && <ExpensesView profile={profile} setProfile={setProfile} />}
+          {activeTab === 'radar' && <SocialRadar profile={profile} setProfile={setProfile} />}
+          {activeTab === 'closeFriends' && <CloseFriendsView />}
+          {activeTab === 'profile' && <ProfileView profile={profile} setProfile={setProfile} onLogout={handleLogout} />}
+        </PageTransition>
       </div>
 
       <BottomTabBar activeTab={activeTab} isMoreOpen={isMoreOpen} onSelect={handleBottomTabSelect} />
