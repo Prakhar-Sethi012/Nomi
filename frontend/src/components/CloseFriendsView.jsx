@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { api } from '../services/api';
 import ReadOnlyTimetable from './ReadOnlyTimetable';
 import PinConfirmModal from './PinConfirmModal';
+import BottomSheet from './ui/BottomSheet';
 
 const formatSmartTime = (minutes) => {
   if (minutes < 0) return { value: 'Now', unit: '' };
@@ -184,29 +185,28 @@ function CloseFriendsView() {
         )}
       </div>
 
-      {/* 🔥 NEW: MEETUP MODAL */}
-      {meetupModalUser && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in">
-          <div className="bg-surface border border-border rounded-xl p-6 shadow-2xl max-w-sm w-full">
-            <h3 className="text-xl font-black text-textPrimary mb-2">🤝 Meet {meetupModalUser.name}</h3>
-            <p className="text-sm text-textSecondary mb-6">Send a quick ping to coordinate a meetup.</p>
-            <form onSubmit={handleSendMeetup} className="flex flex-col gap-4">
-              <div>
-                <label className="text-[10px] uppercase font-bold text-textSecondary block mb-1">Where?</label>
-                <input type="text" required placeholder="e.g., Foody, SJT Lobby..." value={meetupData.location} onChange={e => setMeetupData({...meetupData, location: e.target.value})} className="w-full bg-background border border-border rounded-lg px-4 py-2 text-textPrimary outline-none focus:border-accent" />
-              </div>
-              <div>
-                <label className="text-[10px] uppercase font-bold text-textSecondary block mb-1">When?</label>
-                <input type="datetime-local" required value={meetupData.meet_time} onChange={e => setMeetupData({...meetupData, meet_time: e.target.value})} className="w-full bg-background border border-border rounded-lg px-4 py-2 text-textPrimary outline-none focus:border-accent font-mono text-sm" />
-              </div>
-              <div className="flex gap-2 mt-2">
-                <button type="button" onClick={() => setMeetupModalUser(null)} className="flex-1 bg-surfaceHover hover:bg-border text-textPrimary py-2 rounded-lg font-bold transition-colors">Cancel</button>
-                <button type="submit" className="flex-1 bg-accent hover:bg-accentHover text-white py-2 rounded-lg font-bold transition-colors shadow-[0_0_15px_rgba(79,70,229,0.3)]">Send Ping</button>
-              </div>
-            </form>
+      {/* 🔥 NEW: MEETUP SHEET */}
+      <BottomSheet
+        isOpen={!!meetupModalUser}
+        onClose={() => setMeetupModalUser(null)}
+        title={meetupModalUser ? `🤝 Meet ${meetupModalUser.name}` : ''}
+      >
+        <p className="text-sm text-textSecondary mb-6">Send a quick ping to coordinate a meetup.</p>
+        <form onSubmit={handleSendMeetup} className="flex flex-col gap-4">
+          <div>
+            <label className="text-[10px] uppercase font-bold text-textSecondary block mb-1">Where?</label>
+            <input type="text" required placeholder="e.g., Foody, SJT Lobby..." value={meetupData.location} onChange={e => setMeetupData({...meetupData, location: e.target.value})} className="w-full bg-background border border-border rounded-lg px-4 py-2 text-textPrimary outline-none focus:border-accent" />
           </div>
-        </div>
-      )}
+          <div>
+            <label className="text-[10px] uppercase font-bold text-textSecondary block mb-1">When?</label>
+            <input type="datetime-local" required value={meetupData.meet_time} onChange={e => setMeetupData({...meetupData, meet_time: e.target.value})} className="w-full bg-background border border-border rounded-lg px-4 py-2 text-textPrimary outline-none focus:border-accent font-mono text-sm" />
+          </div>
+          <div className="flex gap-2 mt-2">
+            <button type="button" onClick={() => setMeetupModalUser(null)} className="flex-1 bg-surfaceHover hover:bg-border text-textPrimary py-2 rounded-lg font-bold transition-colors">Cancel</button>
+            <button type="submit" className="flex-1 bg-accent hover:bg-accentHover text-white py-2 rounded-lg font-bold transition-colors shadow-[0_0_15px_rgba(79,70,229,0.3)]">Send Ping</button>
+          </div>
+        </form>
+      </BottomSheet>
 
       <PinConfirmModal
         isOpen={pinTargetId !== null}

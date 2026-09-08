@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { api } from '../services/api';
 import { DAYS, TIMES, MASTER_GRID, slotExistsInCell, getSubjectColor, getSubjectForCell as getSubjectForCellShared, isClassActiveNow } from '../utils/timetableUtils';
 import PinConfirmModal from './PinConfirmModal'; // 🔥 IMPORT MODAL
+import BottomSheet from './ui/BottomSheet';
 
 function TimetableView() {
   const [subjects, setSubjects] = useState([]);
@@ -115,54 +116,49 @@ function TimetableView() {
         </div>
       </header>
 
-      {showModal && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-surface p-6 rounded-xl border border-border w-full max-w-md shadow-2xl animate-fade-in transition-colors duration-300">
-            <h2 className="text-xl font-bold text-textPrimary mb-4">Register Course</h2>
-            {errorMsg && <div className="bg-dangerBg border border-danger text-danger text-xs p-3 rounded mb-4 font-mono">{errorMsg}</div>}
-            
-            <form onSubmit={handleSaveSubject} className="flex flex-col gap-4">
-              <div>
-                <label className="text-[10px] text-textSecondary uppercase font-bold">Course Name</label>
-                <input type="text" required value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="w-full p-2 bg-background rounded text-sm text-textPrimary outline-none border border-border focus:border-accent mt-1 transition-colors" />
-              </div>
-              
-              <div>
-                <label className="text-[10px] text-textSecondary uppercase font-bold">Room / Venue</label>
-                <input type="text" placeholder="e.g. SJT 314" value={formData.room_number} onChange={e => setFormData({...formData, room_number: e.target.value})} className="w-full p-2 bg-background rounded text-sm text-textPrimary outline-none border border-border focus:border-accent mt-1 uppercase transition-colors" />
-              </div>
-              <div>
-                <label className="text-[10px] text-textSecondary uppercase font-bold">Course Type</label>
-                <select value={formData.subject_type} onChange={e => setFormData({...formData, subject_type: e.target.value})} className="w-full p-2 bg-background rounded text-sm text-textPrimary outline-none border border-border focus:border-accent mt-1 transition-colors">
-                  <option value="THEORY">Theory Only</option>
-                  <option value="LAB">Lab Only</option>
-                  <option value="EMBEDDED">Embedded (Theory + Lab)</option>
-                </select>
-              </div>
+      <BottomSheet isOpen={showModal} onClose={() => setShowModal(false)} title="Register Course">
+        {errorMsg && <div className="bg-dangerBg border border-danger text-danger text-xs p-3 rounded mb-4 font-mono">{errorMsg}</div>}
 
-              <div className="flex gap-4">
-                {(formData.subject_type === 'THEORY' || formData.subject_type === 'EMBEDDED') && (
-                  <div className="flex-1">
-                    <label className="text-[10px] text-textSecondary uppercase font-bold">Theory Slot(s)</label>
-                    <input type="text" placeholder="e.g. A1 or A1+TA1" required value={formData.theory_slot} onChange={e => setFormData({...formData, theory_slot: e.target.value})} className="w-full p-2 bg-background rounded text-sm text-textPrimary outline-none border border-border mt-1 uppercase transition-colors" />
-                  </div>
-                )}
-                {(formData.subject_type === 'LAB' || formData.subject_type === 'EMBEDDED') && (
-                  <div className="flex-1">
-                    <label className="text-[10px] text-textSecondary uppercase font-bold">Lab Slot(s)</label>
-                    <input type="text" placeholder="e.g. L31+L32" required value={formData.lab_slot} onChange={e => setFormData({...formData, lab_slot: e.target.value})} className="w-full p-2 bg-background rounded text-sm text-textPrimary outline-none border border-border mt-1 uppercase transition-colors" />
-                  </div>
-                )}
-              </div>
-
-              <div className="flex gap-2 mt-4">
-                <button type="button" onClick={() => setShowModal(false)} className="flex-1 bg-surfaceHover hover:bg-border text-textPrimary font-bold py-2 rounded transition-colors">Cancel</button>
-                <button type="submit" className="flex-1 bg-accent hover:bg-accentHover text-white font-bold py-2 rounded transition-colors">Save Mapping</button>
-              </div>
-            </form>
+        <form onSubmit={handleSaveSubject} className="flex flex-col gap-4">
+          <div>
+            <label className="text-[10px] text-textSecondary uppercase font-bold">Course Name</label>
+            <input type="text" required value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="w-full p-2 bg-background rounded text-sm text-textPrimary outline-none border border-border focus:border-accent mt-1 transition-colors" />
           </div>
-        </div>
-      )}
+
+          <div>
+            <label className="text-[10px] text-textSecondary uppercase font-bold">Room / Venue</label>
+            <input type="text" placeholder="e.g. SJT 314" value={formData.room_number} onChange={e => setFormData({...formData, room_number: e.target.value})} className="w-full p-2 bg-background rounded text-sm text-textPrimary outline-none border border-border focus:border-accent mt-1 uppercase transition-colors" />
+          </div>
+          <div>
+            <label className="text-[10px] text-textSecondary uppercase font-bold">Course Type</label>
+            <select value={formData.subject_type} onChange={e => setFormData({...formData, subject_type: e.target.value})} className="w-full p-2 bg-background rounded text-sm text-textPrimary outline-none border border-border focus:border-accent mt-1 transition-colors">
+              <option value="THEORY">Theory Only</option>
+              <option value="LAB">Lab Only</option>
+              <option value="EMBEDDED">Embedded (Theory + Lab)</option>
+            </select>
+          </div>
+
+          <div className="flex gap-4">
+            {(formData.subject_type === 'THEORY' || formData.subject_type === 'EMBEDDED') && (
+              <div className="flex-1">
+                <label className="text-[10px] text-textSecondary uppercase font-bold">Theory Slot(s)</label>
+                <input type="text" placeholder="e.g. A1 or A1+TA1" required value={formData.theory_slot} onChange={e => setFormData({...formData, theory_slot: e.target.value})} className="w-full p-2 bg-background rounded text-sm text-textPrimary outline-none border border-border mt-1 uppercase transition-colors" />
+              </div>
+            )}
+            {(formData.subject_type === 'LAB' || formData.subject_type === 'EMBEDDED') && (
+              <div className="flex-1">
+                <label className="text-[10px] text-textSecondary uppercase font-bold">Lab Slot(s)</label>
+                <input type="text" placeholder="e.g. L31+L32" required value={formData.lab_slot} onChange={e => setFormData({...formData, lab_slot: e.target.value})} className="w-full p-2 bg-background rounded text-sm text-textPrimary outline-none border border-border mt-1 uppercase transition-colors" />
+              </div>
+            )}
+          </div>
+
+          <div className="flex gap-2 mt-4">
+            <button type="button" onClick={() => setShowModal(false)} className="flex-1 bg-surfaceHover hover:bg-border text-textPrimary font-bold py-2 rounded transition-colors">Cancel</button>
+            <button type="submit" className="flex-1 bg-accent hover:bg-accentHover text-white font-bold py-2 rounded transition-colors">Save Mapping</button>
+          </div>
+        </form>
+      </BottomSheet>
 
       {viewMode === 'grid' && (
         <div className="flex-1 bg-background rounded-xl border border-border overflow-auto custom-scrollbar shadow-inner transition-colors duration-300">

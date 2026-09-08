@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { api } from '../services/api';
 import PinConfirmModal from './PinConfirmModal';
 import Pressable from './ui/Pressable';
+import BottomSheet from './ui/BottomSheet';
 
 const numberToWords = (num) => {
   const a = ['', 'One ', 'Two ', 'Three ', 'Four ', 'Five ', 'Six ', 'Seven ', 'Eight ', 'Nine ', 'Ten ', 'Eleven ', 'Twelve ', 'Thirteen ', 'Fourteen ', 'Fifteen ', 'Sixteen ', 'Seventeen ', 'Eighteen ', 'Nineteen '];
@@ -347,43 +348,37 @@ function ExpensesView({ profile, setProfile }) {
         </div>
       </div>
 
-      {isModalOpen && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4 animate-fade-in">
-          <div className="bg-surface/95 backdrop-blur-3xl rounded-[32px] border border-border p-8 shadow-2xl w-full max-w-md relative">
-            <Pressable onClick={() => setIsModalOpen(false)} className="absolute top-6 right-6 text-textSecondary hover:text-textPrimary w-8 h-8 flex items-center justify-center bg-background rounded-full hover:bg-surfaceHover transition-colors">✕</Pressable>
-            <h3 className="text-2xl font-black text-textPrimary mb-8 tracking-tight">New Transaction</h3>
-            <form onSubmit={handleSubmit} className="flex flex-col gap-5">
-              <div className="relative">
-                <span className="absolute left-5 top-1/2 -translate-y-1/2 text-textSecondary font-black text-2xl">₹</span>
-                <input type="number" placeholder="0" required value={formData.amount} onChange={(e) => setFormData({...formData, amount: e.target.value})} className="w-full pl-12 pr-4 py-4 bg-background border border-border rounded-2xl text-2xl text-textPrimary font-black focus:border-emerald-500 outline-none transition-all shadow-inner" autoFocus/>
-              </div>
-              <div>
-                <label className="text-[10px] uppercase font-bold text-textSecondary tracking-widest ml-2 mb-2 block">Description</label>
-                <input type="text" placeholder="e.g. Swiggy Order" required value={formData.reason} onChange={(e) => setFormData({...formData, reason: e.target.value})} className="w-full bg-background border border-border rounded-2xl px-4 py-4 text-sm text-textPrimary focus:border-emerald-500 outline-none transition-all" />
-              </div>
-              <div className="flex gap-4">
-                <div className="flex-1">
-                  <label className="text-[10px] uppercase font-bold text-textSecondary tracking-widest ml-2 mb-2 block">Category</label>
-                  <select value={formData.tags} onChange={(e) => setFormData({...formData, tags: e.target.value})} className="w-full bg-background border border-border rounded-2xl px-4 py-4 text-sm text-textPrimary focus:border-emerald-500 outline-none transition-all appearance-none">
-                    <option value="food">Food</option>
-                    <option value="travel">Travel</option>
-                    <option value="utilities">Utilities</option>
-                    <option value="entertainment">Entertainment</option>
-                    <option value="other">Other</option>
-                  </select>
-                </div>
-                <div className="flex-1">
-                  <label className="text-[10px] uppercase font-bold text-textSecondary tracking-widest ml-2 mb-2 block">Date</label>
-                  <input type="date" required value={formData.date} onChange={(e) => setFormData({...formData, date: e.target.value})} className="w-full bg-background border border-border rounded-2xl px-4 py-4 text-sm text-textPrimary focus:border-emerald-500 outline-none transition-all" />
-                </div>
-              </div>
-              <Pressable type="submit" haptic="tap" className="w-full mt-6 bg-emerald-500 hover:bg-emerald-400 text-background font-black py-4 rounded-2xl transition-all shadow-[0_0_20px_rgba(16,185,129,0.2)] text-lg hover:-translate-y-1">
-                Log Transaction
-              </Pressable>
-            </form>
+      <BottomSheet isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="New Transaction">
+        <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+          <div className="relative">
+            <span className="absolute left-5 top-1/2 -translate-y-1/2 text-textSecondary font-black text-2xl">₹</span>
+            <input type="number" placeholder="0" required value={formData.amount} onChange={(e) => setFormData({...formData, amount: e.target.value})} className="w-full pl-12 pr-4 py-4 bg-background border border-border rounded-2xl text-2xl text-textPrimary font-black focus:border-emerald-500 outline-none transition-all shadow-inner" />
           </div>
-        </div>
-      )}
+          <div>
+            <label className="text-[10px] uppercase font-bold text-textSecondary tracking-widest ml-2 mb-2 block">Description</label>
+            <input type="text" placeholder="e.g. Swiggy Order" required value={formData.reason} onChange={(e) => setFormData({...formData, reason: e.target.value})} className="w-full bg-background border border-border rounded-2xl px-4 py-4 text-sm text-textPrimary focus:border-emerald-500 outline-none transition-all" />
+          </div>
+          <div className="flex gap-4">
+            <div className="flex-1">
+              <label className="text-[10px] uppercase font-bold text-textSecondary tracking-widest ml-2 mb-2 block">Category</label>
+              <select value={formData.tags} onChange={(e) => setFormData({...formData, tags: e.target.value})} className="w-full bg-background border border-border rounded-2xl px-4 py-4 text-sm text-textPrimary focus:border-emerald-500 outline-none transition-all appearance-none">
+                <option value="food">Food</option>
+                <option value="travel">Travel</option>
+                <option value="utilities">Utilities</option>
+                <option value="entertainment">Entertainment</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
+            <div className="flex-1">
+              <label className="text-[10px] uppercase font-bold text-textSecondary tracking-widest ml-2 mb-2 block">Date</label>
+              <input type="date" required value={formData.date} onChange={(e) => setFormData({...formData, date: e.target.value})} className="w-full bg-background border border-border rounded-2xl px-4 py-4 text-sm text-textPrimary focus:border-emerald-500 outline-none transition-all" />
+            </div>
+          </div>
+          <Pressable type="submit" haptic="tap" className="w-full mt-6 bg-emerald-500 hover:bg-emerald-400 text-background font-black py-4 rounded-2xl transition-all shadow-[0_0_20px_rgba(16,185,129,0.2)] text-lg hover:-translate-y-1">
+            Log Transaction
+          </Pressable>
+        </form>
+      </BottomSheet>
 
       <PinConfirmModal
         isOpen={deleteTargetId !== null}
