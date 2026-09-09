@@ -7,6 +7,9 @@ import BottomSheet from './ui/BottomSheet';
 import HoldToConfirm from './ui/HoldToConfirm';
 import NotificationStack from './ui/NotificationStack';
 import SegmentedControl from './ui/SegmentedControl';
+import Skeleton from './ui/Skeleton';
+import PullToRefresh from './ui/PullToRefresh';
+import CopyButton from './ui/CopyButton';
 import { useAppMotion } from '../hooks/useAppMotion';
 import { haptics } from '../utils/haptics';
 
@@ -284,7 +287,29 @@ function SocialRadar({ profile, setProfile }) {
     }
   };
 
-  if (isLoading) return <div className="text-accent text-center mt-20 animate-pulse font-mono">Syncing Database...</div>;
+  if (isLoading) {
+    return (
+      <div className="w-full max-w-6xl pb-10 mx-auto flex flex-col gap-6 h-[85vh]">
+        <div className="bg-surface p-6 rounded-xl border border-border shadow-lg flex justify-between items-center">
+          <div className="flex flex-col gap-2">
+            <Skeleton className="h-6 w-40" />
+            <Skeleton className="h-3 w-56" />
+          </div>
+          <Skeleton className="h-9 w-40 rounded-lg" />
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <Skeleton className="h-40 rounded-xl" />
+          <Skeleton className="h-40 rounded-xl" />
+        </div>
+        <Skeleton className="h-8 w-32" />
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+          {[0, 1, 2].map((i) => (
+            <Skeleton key={i} className="h-24 rounded-xl" />
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="w-full max-w-6xl pb-10 mx-auto animate-fade-in flex flex-col gap-6 h-[85vh]">
@@ -301,7 +326,8 @@ function SocialRadar({ profile, setProfile }) {
 
       {error && <div className="bg-dangerBg border border-danger text-danger p-3 rounded-lg text-sm text-center font-bold shrink-0">{error}</div>}
 
-      <div className="flex-1 overflow-y-auto custom-scrollbar pr-2">
+      <PullToRefresh onRefresh={loadLobby} className="flex-1 min-h-0 flex flex-col">
+      <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar pr-2">
       <AnimatePresence initial={false} custom={direction} mode="popLayout">
         <motion.div
           key={viewLevel}
@@ -375,6 +401,11 @@ function SocialRadar({ profile, setProfile }) {
                       <div className="inline-flex items-center gap-2 bg-background px-2 py-1 rounded border border-border">
                         <span className="text-[10px] uppercase text-textSecondary font-bold">Passcode:</span>
                         <span className="text-accent font-mono text-xs font-black tracking-widest">{circle.join_token}</span>
+                        <CopyButton
+                          value={circle.join_token}
+                          title="Copy Passcode"
+                          className="text-textSecondary hover:text-accent flex items-center justify-center"
+                        />
                       </div>
                     </div>
                   ))}
@@ -586,6 +617,7 @@ function SocialRadar({ profile, setProfile }) {
         </motion.div>
       </AnimatePresence>
       </div>
+      </PullToRefresh>
 
       {/* JOIN SEARCH CIRCLE SHEET */}
       <BottomSheet

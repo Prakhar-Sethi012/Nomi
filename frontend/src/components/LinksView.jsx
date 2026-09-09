@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import CopyButton from './ui/CopyButton';
 
 function LinksView({ userId }) {
   // Namespaced per-user so switching accounts on a shared browser doesn't
@@ -18,9 +19,6 @@ function LinksView({ userId }) {
   const [showForm, setShowForm] = useState(false);
   const [formData, setFormData] = useState({ name: '', url: '', icon: '🔗', desc: '' });
 
-  // State to show the temporary "Copied!" checkmark
-  const [copiedId, setCopiedId] = useState(null);
-
   // 2. Auto-save to local storage whenever the links array changes
   useEffect(() => {
     localStorage.setItem(linksKey, JSON.stringify(links));
@@ -38,18 +36,6 @@ function LinksView({ userId }) {
     e.preventDefault(); // Stop the link from opening
     e.stopPropagation(); // Stop the click from bubbling up
     setLinks(links.filter(link => link.id !== id));
-  };
-
-  const handleCopy = (e, id, url) => {
-    e.preventDefault();  // Stop the link from opening
-    e.stopPropagation(); // Stop the click from bubbling up
-    
-    // Write to the user's clipboard
-    navigator.clipboard.writeText(url);
-    
-    // Show "Copied!" UI for 2 seconds
-    setCopiedId(id);
-    setTimeout(() => setCopiedId(null), 2000);
   };
 
   return (
@@ -114,17 +100,11 @@ function LinksView({ userId }) {
               <div className="absolute top-3 right-3 flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                 
                 {/* Copy Button */}
-                <button 
-                  onClick={(e) => handleCopy(e, link.id, link.url)}
-                  className="bg-slate-700 hover:bg-slate-600 text-slate-300 p-1.5 rounded-md border border-slate-600 transition-colors"
+                <CopyButton
+                  value={link.url}
                   title="Copy Link"
-                >
-                  {copiedId === link.id ? (
-                    <span className="text-green-400 text-xs font-bold px-1">✓</span>
-                  ) : (
-                    <span className="text-xs">📋</span>
-                  )}
-                </button>
+                  className="bg-slate-700 hover:bg-slate-600 text-slate-300 p-1.5 rounded-md border border-slate-600 transition-colors flex items-center justify-center"
+                />
 
                 {/* Delete Button */}
                 <button 

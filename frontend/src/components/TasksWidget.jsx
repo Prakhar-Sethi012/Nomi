@@ -4,6 +4,7 @@ import { api } from '../services/api';
 import Pressable from './ui/Pressable';
 import NotificationStack from './ui/NotificationStack';
 import SwipeRow from './ui/SwipeRow';
+import Skeleton from './ui/Skeleton';
 
 // The 3-second undo window's own countdown, read straight off the
 // `remaining` state the completion timer already keeps — no separate clock.
@@ -248,7 +249,25 @@ function TasksWidget({ setProfile }) {
     return aOverdue === bOverdue ? 0 : aOverdue ? -1 : 1;
   });
 
-  if (isLoading) return <div className="bg-surface p-6 rounded-xl border border-border h-80 flex items-center justify-center text-accent animate-pulse">Syncing tasks...</div>;
+  if (isLoading) {
+    return (
+      <div className="bg-surface p-5 rounded-xl border border-border shadow-lg flex flex-col h-[400px] gap-3">
+        <div className="flex justify-between items-center mb-1">
+          <Skeleton className="h-6 w-32" />
+          <Skeleton className="h-5 w-8 rounded-full" />
+        </div>
+        {[0, 1, 2].map((i) => (
+          <div key={i} className="bg-surfaceHover p-3 rounded-lg border border-border flex flex-col gap-2">
+            <div className="flex items-center gap-3">
+              <Skeleton className="h-5 w-5 rounded-full shrink-0" />
+              <Skeleton className="h-4 w-2/3" />
+            </div>
+            <Skeleton className="h-3 w-1/3 ml-8" />
+          </div>
+        ))}
+      </div>
+    );
+  }
 
   return (
     <div className="bg-surface p-5 rounded-xl border border-border shadow-lg flex flex-col h-[400px]">

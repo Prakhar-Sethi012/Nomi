@@ -3,6 +3,7 @@ import { api } from '../services/api';
 import ReadOnlyTimetable from './ReadOnlyTimetable';
 import PinConfirmModal from './PinConfirmModal';
 import BottomSheet from './ui/BottomSheet';
+import Skeleton from './ui/Skeleton';
 
 const formatSmartTime = (minutes) => {
   if (minutes < 0) return { value: 'Now', unit: '' };
@@ -84,7 +85,29 @@ function CloseFriendsView() {
     }
   };
 
-  if (isLoading) return <div className="text-emerald-400 text-center mt-20 animate-pulse font-mono">Loading Directory...</div>;
+  if (isLoading) {
+    return (
+      <div className="w-full max-w-6xl pb-10 mx-auto flex flex-col gap-6 h-[85vh]">
+        <header className="bg-surface p-6 rounded-xl border border-border shadow-lg flex justify-between items-center shrink-0">
+          <div className="flex flex-col gap-2">
+            <Skeleton className="h-6 w-40" />
+            <Skeleton className="h-3 w-64" />
+          </div>
+        </header>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {[0, 1, 2].map((i) => (
+            <div key={i} className="bg-surface p-5 rounded-xl border border-border flex flex-col gap-3 h-32">
+              <div className="flex justify-between items-start">
+                <Skeleton className="h-5 w-24" />
+                <Skeleton className="h-3 w-3 rounded-full" />
+              </div>
+              <Skeleton className="h-3 w-32" />
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="w-full max-w-6xl pb-10 mx-auto animate-fade-in flex flex-col gap-6 h-[85vh]">

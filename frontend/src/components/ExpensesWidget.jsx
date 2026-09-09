@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../services/api';
 import NumberRoll from './ui/NumberRoll';
+import Skeleton from './ui/Skeleton';
 
 function ExpensesWidget({ profile, setActiveTab }) {
   const [expenses, setExpenses] = useState([]);
@@ -39,7 +40,27 @@ function ExpensesWidget({ profile, setActiveTab }) {
   
   const barColor = progressPercentage > 90 ? 'bg-red-500' : progressPercentage > 75 ? 'bg-orange-500' : 'bg-emerald-500';
   
-  if (isLoading) return <div className="bg-surface p-6 rounded-xl border border-border h-[300px] flex items-center justify-center text-emerald-400 animate-pulse">Scanning Ledger...</div>;
+  if (isLoading) {
+    return (
+      <div className="bg-surface p-5 rounded-xl border border-border shadow-lg flex flex-col justify-between h-[400px]">
+        <div>
+          <Skeleton className="h-6 w-40 mb-6" />
+          <div className="flex flex-col items-center gap-2 mb-8">
+            <Skeleton className="h-3 w-24" />
+            <Skeleton className="h-10 w-32" />
+          </div>
+          <div className="bg-background p-4 rounded-lg border border-border">
+            <div className="flex justify-between mb-2">
+              <Skeleton className="h-3 w-16" />
+              <Skeleton className="h-3 w-16" />
+            </div>
+            <Skeleton className="h-2 w-full rounded-full" />
+          </div>
+        </div>
+        <Skeleton className="h-12 w-full rounded-lg" />
+      </div>
+    );
+  }
 
   return (
     <div className="bg-surface p-5 rounded-xl border border-border shadow-lg flex flex-col justify-between h-[400px] relative overflow-hidden">

@@ -6,12 +6,15 @@ import { useAppMotion } from '../hooks/useAppMotion';
 import PinConfirmModal from './PinConfirmModal'; // 🔥 IMPORT MODAL
 import BottomSheet from './ui/BottomSheet';
 import SegmentedControl from './ui/SegmentedControl';
+import Skeleton from './ui/Skeleton';
+import JumpingDots from './ui/JumpingDots';
 
 // The row nearest the middle of the scrollable agenda lifts slightly and
 // takes an accent border — a scroll-centred "you are here" cue. Detection
 // is IntersectionObserver-based (useInView), not tied to any animation
 // engine, so it keeps working even where reduced-motion collapses the rest.
 function AgendaRow({ item, isActive, scrollRoot }) {
+  const m = useAppMotion();
   const rowRef = useRef(null);
   const isCentered = useInView(rowRef, { root: scrollRoot, margin: '-45% 0px -45% 0px' });
 
@@ -30,8 +33,8 @@ function AgendaRow({ item, isActive, scrollRoot }) {
         {isActive ? (
           <motion.span
             className="text-xs font-bold text-success"
-            animate={{ opacity: [0.6, 1, 0.6] }}
-            transition={{ duration: 2.5, repeat: Infinity, ease: 'easeInOut' }}
+            animate={m.reduced ? { opacity: 1 } : { opacity: [0.6, 1, 0.6] }}
+            transition={m.reduced ? { duration: 0 } : { duration: 2.5, repeat: Infinity, ease: 'easeInOut' }}
           >
             {item.time}
           </motion.span>
@@ -62,6 +65,7 @@ function TimetableView() {
 
   const [showModal, setShowModal] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
   const [formData, setFormData] = useState({
     name: '', subject_type: 'THEORY', theory_slot: '', lab_slot: '', room_number: ''
   });
@@ -138,13 +142,16 @@ function TimetableView() {
 
     if (hasClash) return;
 
+    setIsSaving(true);
     try {
       await api.addSubject(formData);
       fetchSubjects();
       setShowModal(false);
       setFormData({ name: '', subject_type: 'THEORY', theory_slot: '', lab_slot: '', room_number: '' });
-    } catch (err) { 
-      setErrorMsg(err.message || "Failed to save to database."); 
+    } catch (err) {
+      setErrorMsg(err.message || "Failed to save to database.");
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -161,11 +168,31 @@ function TimetableView() {
   const isClassActive = (dayName, timeString) => isClassActiveNow(dayName, timeString, now);
   const currentColIndex = getCurrentTimeColumnIndex(TIMES, now);
 
-  if (isLoading) return <div className="text-accent text-center mt-20 animate-pulse">Mapping FFCS Matrix...</div>;
+  if (isLoading) {
+    return (
+      <div className="w-full max-w-7xl pb-10 mx-auto flex flex-col h-[85vh]">
+        <div className="bg-surface p-6 rounded-xl border border-border mb-6 shadow-lg flex justify-between items-center">
+          <div className="flex flex-col gap-2">
+            <Skeleton className="h-6 w-48" />
+            <Skeleton className="h-3 w-56" />
+          </div>
+          <div className="flex gap-4 items-center">
+            <Skeleton className="h-9 w-48 rounded-lg" />
+            <Skeleton className="h-9 w-32 rounded" />
+          </div>
+        </div>
+        <div className="flex-1 bg-background rounded-xl border border-border overflow-hidden shadow-inner p-4 flex flex-col gap-3">
+          {[0, 1, 2, 3, 4].map((i) => (
+            <Skeleton key={i} className="h-12 w-full rounded" />
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="w-full max-w-7xl pb-10 mx-auto animate-fade-in flex flex-col h-[85vh]">
-      
+
       <header className="bg-surface p-6 rounded-xl border border-border mb-6 shadow-lg flex justify-between items-center shrink-0 transition-colors duration-300">
         <div>
           <h1 className="text-2xl font-bold text-textPrimary mb-1 flex items-center gap-2">🗓️ Timetable Matrix</h1>
@@ -226,7 +253,7 @@ function TimetableView() {
 
           <div className="flex gap-2 mt-4">
             <button type="button" onClick={() => setShowModal(false)} className="flex-1 bg-surfaceHover hover:bg-border text-textPrimary font-bold py-2 rounded transition-colors">Cancel</button>
-            <button type="submit" className="flex-1 bg-accent hover:bg-accentHover text-white font-bold py-2 rounded transition-colors">Save Mapping</button>
+            <button type="submit" disabled={isSaving} className="flex-1 bg-accent hover:bg-accentHover disabled:opacity-60 text-white font-bold py-2 rounded transition-colors flex items-center justify-center">{isSaving ? <JumpingDots /> : 'Save Mapping'}</button>
           </div>
         </form>
       </BottomSheet>

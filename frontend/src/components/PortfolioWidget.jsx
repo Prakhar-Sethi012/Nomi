@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { api } from '../services/api';
 import PinConfirmModal from './PinConfirmModal';
 import Pressable from './ui/Pressable';
+import Skeleton from './ui/Skeleton';
 
 function PortfolioWidget() {
   const [projects, setProjects] = useState([]);
@@ -58,7 +59,26 @@ function PortfolioWidget() {
   };
 
   if (isLoading) {
-    return <div className="mt-6 bg-surface p-6 rounded-xl border border-border h-48 flex items-center justify-center text-accent animate-pulse">Loading Developer Showcase...</div>;
+    return (
+      <div className="mt-6 bg-surface p-6 rounded-xl border border-border shadow-lg">
+        <div className="flex justify-between items-center mb-6">
+          <div className="flex flex-col gap-2">
+            <Skeleton className="h-5 w-40" />
+            <Skeleton className="h-3 w-56" />
+          </div>
+          <Skeleton className="h-8 w-32 rounded" />
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {[0, 1, 2].map((i) => (
+            <div key={i} className="bg-surfaceHover p-4 rounded-lg border border-border flex flex-col gap-3 h-32">
+              <Skeleton className="h-4 w-2/3" />
+              <Skeleton className="h-3 w-full" />
+              <Skeleton className="h-3 w-1/2" />
+            </div>
+          ))}
+        </div>
+      </div>
+    );
   }
 
   return (

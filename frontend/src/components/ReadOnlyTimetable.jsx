@@ -9,6 +9,7 @@ import { useAppMotion } from '../hooks/useAppMotion';
 // is IntersectionObserver-based (useInView), not tied to any animation
 // engine, so it keeps working even where reduced-motion collapses the rest.
 function AgendaRow({ item, isActive, scrollRoot }) {
+  const m = useAppMotion();
   const rowRef = useRef(null);
   const isCentered = useInView(rowRef, { root: scrollRoot, margin: '-45% 0px -45% 0px' });
 
@@ -27,8 +28,8 @@ function AgendaRow({ item, isActive, scrollRoot }) {
         {isActive ? (
           <motion.span
             className="text-xs font-bold text-success"
-            animate={{ opacity: [0.6, 1, 0.6] }}
-            transition={{ duration: 2.5, repeat: Infinity, ease: 'easeInOut' }}
+            animate={m.reduced ? { opacity: 1 } : { opacity: [0.6, 1, 0.6] }}
+            transition={m.reduced ? { duration: 0 } : { duration: 2.5, repeat: Infinity, ease: 'easeInOut' }}
           >
             {item.time}
           </motion.span>

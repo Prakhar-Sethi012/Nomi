@@ -1,8 +1,11 @@
 import React, { useState } from 'react';
+import { AnimatePresence, motion } from 'motion/react';
 import { api } from '../services/api';
 import Pressable from './ui/Pressable';
+import { useAppMotion } from '../hooks/useAppMotion';
 
 function AuthScreen({ onLoginSuccess }) {
+  const m = useAppMotion();
   // Modes: 'login', 'register', 'recovery'
   const [authMode, setAuthMode] = useState('login');
   
@@ -47,7 +50,7 @@ function AuthScreen({ onLoginSuccess }) {
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4 transition-colors duration-300">
-      <div className="bg-surface border border-border p-8 rounded-2xl shadow-2xl w-full max-w-md animate-fade-in relative overflow-hidden">
+      <motion.div layout transition={m.gentle} className="bg-surface border border-border p-8 rounded-2xl shadow-2xl w-full max-w-md animate-fade-in relative overflow-hidden">
         
         {/* Glow Effects */}
         {authMode === 'recovery' ? (
@@ -79,10 +82,10 @@ function AuthScreen({ onLoginSuccess }) {
         )}
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-5 relative z-10">
-          
-          {/* ================= RECOVERY FLOW ================= */}
+
+          <AnimatePresence mode="wait" initial={false}>
           {authMode === 'recovery' ? (
-            <>
+            <motion.div key="recovery" layout initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={m.base} className="flex flex-col gap-5">
               <div>
                 <label className="text-[10px] uppercase font-bold tracking-widest text-textSecondary mb-1 block">Registration Number</label>
                 <input 
@@ -116,22 +119,30 @@ function AuthScreen({ onLoginSuccess }) {
               <Pressable type="button" onClick={() => { setAuthMode('login'); setError(''); setSuccessMsg(''); }} className="text-xs text-textSecondary hover:text-textPrimary mt-2 font-bold transition-colors">
                 ← Cancel & Return to Login
               </Pressable>
-            </>
+            </motion.div>
           ) : (
-          
+
           /* ================= LOGIN / REGISTER FLOW ================= */
-            <>
-              {authMode === 'register' && (
-                <div>
-                  <label className="text-[10px] uppercase font-bold tracking-widest text-textSecondary mb-1 block">Full Name</label>
-                  <input 
-                    type="text" required placeholder="e.g. John Doe"
-                    value={formData.name} 
-                    onChange={e => setFormData({...formData, name: e.target.value})} 
-                    className="w-full p-3 bg-background border border-border rounded-lg text-textPrimary outline-none focus:border-accent transition-colors"
-                  />
-                </div>
-              )}
+            <motion.div key="login-register" layout initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={m.base} className="flex flex-col gap-5">
+              <AnimatePresence initial={false}>
+                {authMode === 'register' && (
+                  <motion.div
+                    layout
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={m.base}
+                  >
+                    <label className="text-[10px] uppercase font-bold tracking-widest text-textSecondary mb-1 block">Full Name</label>
+                    <input
+                      type="text" required placeholder="e.g. John Doe"
+                      value={formData.name}
+                      onChange={e => setFormData({...formData, name: e.target.value})}
+                      className="w-full p-3 bg-background border border-border rounded-lg text-textPrimary outline-none focus:border-accent transition-colors"
+                    />
+                  </motion.div>
+                )}
+              </AnimatePresence>
 
               <div>
                 <label className="text-[10px] uppercase font-bold tracking-widest text-textSecondary mb-1 block">Registration Number</label>
@@ -163,8 +174,9 @@ function AuthScreen({ onLoginSuccess }) {
               <Pressable disabled={isLoading} type="submit" haptic="tap" className="w-full bg-accent hover:bg-accentHover text-white font-black py-4 rounded-lg mt-2 transition-colors disabled:opacity-50">
                 {isLoading ? "AUTHENTICATING..." : (authMode === 'login' ? "LOGIN / DECRYPT" : "INITIALIZE PROFILE")}
               </Pressable>
-            </>
+            </motion.div>
           )}
+          </AnimatePresence>
         </form>
 
         {authMode !== 'recovery' && (
@@ -180,7 +192,7 @@ function AuthScreen({ onLoginSuccess }) {
             </p>
           </div>
         )}
-      </div>
+      </motion.div>
     </div>
   );
 }

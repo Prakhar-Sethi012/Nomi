@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../services/api';
 import { getTodayClasses, getNextClassInfo } from '../utils/timetableUtils';
+import Skeleton from './ui/Skeleton';
 
 // 🔥 NEW: Smart Time Formatter
 const formatSmartTime = (minutes) => {
@@ -51,7 +52,16 @@ function NextClassWidget() {
   }, [subjects]);
 
   if (isLoading || timeInfo.status === 'LOADING') {
-    return <div className="bg-surface p-6 rounded-xl border border-border animate-pulse h-32 flex items-center justify-center text-textSecondary">Scanning Schedule...</div>;
+    return (
+      <div className="bg-surface p-6 rounded-xl border border-border h-32 flex items-center justify-between">
+        <div className="flex flex-col gap-2">
+          <Skeleton className="h-3 w-28" />
+          <Skeleton className="h-6 w-40" />
+          <Skeleton className="h-3 w-24" />
+        </div>
+        <Skeleton className="h-10 w-10 rounded-full shrink-0" />
+      </div>
+    );
   }
 
   if (timeInfo.status === 'FREE_DAY') {

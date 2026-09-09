@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { calculateForecast } from '../utils/attendanceEngine'; 
+import { calculateForecast } from '../utils/attendanceEngine';
 import { api } from '../services/api';
+import Skeleton from './ui/Skeleton';
 
 function AttendanceStrategyView() {
   const [realSubjects, setRealSubjects] = useState([]);
@@ -82,11 +83,35 @@ function AttendanceStrategyView() {
     }
   };
 
-  if (isLoading) return <div className="text-textPrimary text-center mt-20 animate-pulse">Initializing Crystal Ball...</div>;
+  if (isLoading) {
+    return (
+      <div className="w-full max-w-6xl pb-10 mx-auto flex flex-col h-[85vh]">
+        <div className="bg-indigo-600 p-6 rounded-xl border border-indigo-500 mb-6 shadow-[0_0_15px_rgba(79,70,229,0.15)] flex justify-between items-start">
+          <div className="flex flex-col gap-2">
+            <Skeleton className="h-6 w-48 bg-white/20" />
+            <Skeleton className="h-3 w-72 bg-white/20" />
+          </div>
+          <Skeleton className="h-6 w-28 rounded bg-white/20" />
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+          {[0, 1, 2].map((i) => (
+            <div key={i} className="bg-surface p-5 rounded-xl border border-border shadow-lg flex flex-col gap-4 h-48">
+              <div className="flex justify-between items-start">
+                <Skeleton className="h-4 w-2/3" />
+                <Skeleton className="h-5 w-10" />
+              </div>
+              <Skeleton className="h-14 w-full rounded-lg" />
+              <Skeleton className="h-8 w-full rounded-lg" />
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="w-full max-w-6xl pb-10 mx-auto animate-fade-in flex flex-col h-[85vh]">
-      
+
       <header className="bg-indigo-600 p-6 rounded-xl border border-indigo-500 mb-6 shadow-[0_0_15px_rgba(79,70,229,0.15)]">
         <div className="flex justify-between items-start">
           <div>

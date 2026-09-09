@@ -1,9 +1,24 @@
 import React, { useState, useEffect } from 'react';
+import { AnimatePresence, motion } from 'motion/react';
 import { api } from '../services/api';
 import PinConfirmModal from './PinConfirmModal';
 import Pressable from './ui/Pressable';
 import BottomSheet from './ui/BottomSheet';
 import NumberRoll from './ui/NumberRoll';
+import SwipeRow from './ui/SwipeRow';
+import Skeleton from './ui/Skeleton';
+import JumpingDots from './ui/JumpingDots';
+import PullToRefresh from './ui/PullToRefresh';
+import { useAppMotion } from '../hooks/useAppMotion';
+
+// Push slides the next month in from the direction of travel while the
+// previous one drifts the other way and dims — a lighter version of
+// SocialRadar's push/pop, since this is a content swap, not a nav stack.
+const monthVariants = {
+  initial: (direction) => ({ x: direction > 0 ? 40 : -40, opacity: 0 }),
+  animate: { x: 0, opacity: 1 },
+  exit: (direction) => ({ x: direction > 0 ? -40 : 40, opacity: 0 }),
+};
 
 const numberToWords = (num) => {
   const a = ['', 'One ', 'Two ', 'Three ', 'Four ', 'Five ', 'Six ', 'Seven ', 'Eight ', 'Nine ', 'Ten ', 'Eleven ', 'Twelve ', 'Thirteen ', 'Fourteen ', 'Fifteen ', 'Sixteen ', 'Seventeen ', 'Eighteen ', 'Nineteen '];
@@ -29,11 +44,14 @@ const StatCard = ({ title, value, subtitle, valueColor = "text-textPrimary" }) =
 );
 
 function ExpensesView({ profile, setProfile }) {
+  const m = useAppMotion();
   const [expenses, setExpenses] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [viewDate, setViewDate] = useState(new Date());
+  const [monthDirection, setMonthDirection] = useState(1);
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [deleteTargetId, setDeleteTargetId] = useState(null);
 
   const getLocalDate = () => {
@@ -84,13 +102,18 @@ function ExpensesView({ profile, setProfile }) {
       alert("Please enter a valid expense amount greater than 0.");
       return;
     }
+    setIsSaving(true);
     try {
       const payload = { amount: finalAmount, reason: formData.reason, date: formData.date, tags: [formData.tags] };
       await api.addExpense(payload);
-      fetchFinanceData(); 
-      setIsModalOpen(false); 
-      setFormData({ ...formData, amount: '', reason: '' }); 
-    } catch (err) { console.error('Error saving expense', err); }
+      fetchFinanceData();
+      setIsModalOpen(false);
+      setFormData({ ...formData, amount: '', reason: '' });
+    } catch (err) {
+      console.error('Error saving expense', err);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const executeDeleteExpense = async (id) => {
@@ -164,8 +187,8 @@ function ExpensesView({ profile, setProfile }) {
   if (lastMonthTotal === 0 && monthTotal > 0) change = 100; 
   else if (lastMonthTotal > 0) change = ((monthTotal - lastMonthTotal) / lastMonthTotal) * 100;
 
-  const handlePrevMonth = () => { setViewDate(new Date(viewYear, viewMonth - 1, 1)); setSelectedCategory(null); };
-  const handleNextMonth = () => { setViewDate(new Date(viewYear, viewMonth + 1, 1)); setSelectedCategory(null); };
+  const handlePrevMonth = () => { setMonthDirection(-1); setViewDate(new Date(viewYear, viewMonth - 1, 1)); setSelectedCategory(null); };
+  const handleNextMonth = () => { setMonthDirection(1); setViewDate(new Date(viewYear, viewMonth + 1, 1)); setSelectedCategory(null); };
 
   const categoryColors = { food: '#f97316', travel: '#3b82f6', utilities: '#a855f7', entertainment: '#ec4899', other: '#64748b' };
   const iconMap = { food: '🍔', travel: '🚌', utilities: '⚡', entertainment: '🎮', other: '🧾' };
@@ -176,15 +199,15 @@ function ExpensesView({ profile, setProfile }) {
     return acc;
   }, {});
 
+  // Segment data for the SVG donut below — conic-gradient can't be animated,
+  // so each category becomes its own arc drawn on pathLength instead.
   let cumulativePercent = 0;
-  const gradientStops = Object.entries(categoryTotals).map(([tag, amount]) => {
-    const percent = (amount / monthTotal) * 100;
+  const donutSegments = Object.entries(categoryTotals).map(([tag, amount]) => {
+    const percent = monthTotal > 0 ? (amount / monthTotal) * 100 : 0;
     const start = cumulativePercent;
-    const end = cumulativePercent + percent;
-    cumulativePercent = end;
-    return `${categoryColors[tag]} ${start}% ${end}%`;
-  }).join(', ');
-  const chartStyle = monthTotal > 0 ? { background: `conic-gradient(${gradientStops})` } : { background: 'var(--color-surface-hover)' };
+    cumulativePercent += percent;
+    return { tag, amount, percent, start, color: categoryColors[tag] };
+  });
 
   const displayedExpenses = selectedCategory ? monthlyExpenses.filter(exp => exp.tags[0] === selectedCategory) : monthlyExpenses;
   const groupedExpenses = displayedExpenses.reduce((acc, exp) => {
@@ -195,7 +218,24 @@ function ExpensesView({ profile, setProfile }) {
   }, {});
   const sortedDates = Object.keys(groupedExpenses).sort((a, b) => new Date(b) - new Date(a));
 
-  if (isLoading) return <div className="text-emerald-400 font-mono animate-pulse mt-20 text-center">Syncing Bank Records...</div>;
+  if (isLoading) {
+    return (
+      <div className="w-full max-w-6xl pb-24 mx-auto mt-8">
+        <div className="rounded-[32px] p-10 mb-8 border border-border">
+          <Skeleton className="h-3 w-40 mb-4" />
+          <Skeleton className="h-14 w-64 mb-3" />
+          <Skeleton className="h-3 w-48" />
+        </div>
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+          {[0, 1, 2, 3].map((i) => <Skeleton key={i} className="h-28 rounded-3xl" />)}
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+          <Skeleton className="lg:col-span-5 h-96 rounded-[32px]" />
+          <Skeleton className="lg:col-span-7 h-96 rounded-[32px]" />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <>
@@ -204,10 +244,20 @@ function ExpensesView({ profile, setProfile }) {
         <div className="absolute bottom-[-100px] right-[-100px] w-[500px] h-[500px] bg-blue-500/10 rounded-full blur-[150px]" />
       </div>
 
-      <Pressable onClick={() => setIsModalOpen(true)} haptic="tap" className="fixed bottom-8 right-8 z-40 w-16 h-16 rounded-full bg-emerald-500 hover:bg-emerald-400 text-background text-3xl font-black shadow-[0_0_40px_rgba(16,185,129,0.5)] hover:scale-110 hover:-translate-y-1 transition-all flex items-center justify-center">
-        +
-      </Pressable>
+      <AnimatePresence>
+        {!isModalOpen && (
+          <Pressable
+            layoutId="expense-fab"
+            onClick={() => setIsModalOpen(true)}
+            haptic="tap"
+            className="fixed bottom-8 right-8 z-40 w-16 h-16 rounded-full bg-emerald-500 hover:bg-emerald-400 text-background text-3xl font-black shadow-[0_0_40px_rgba(16,185,129,0.5)] hover:scale-110 hover:-translate-y-1 transition-all flex items-center justify-center"
+          >
+            +
+          </Pressable>
+        )}
+      </AnimatePresence>
 
+      <PullToRefresh onRefresh={fetchFinanceData}>
       <div className="w-full max-w-6xl pb-24 relative z-10 animate-fade-in mx-auto mt-8">
         <div className="relative overflow-hidden rounded-[32px] p-10 mb-8 bg-gradient-to-r from-emerald-600/20 via-background to-blue-600/20 border border-border shadow-2xl">
           <div className="absolute top-6 right-6 md:top-8 md:right-8 flex items-center gap-3 bg-background/50 backdrop-blur-md px-3 py-1.5 rounded-full border border-border z-10">
@@ -216,6 +266,16 @@ function ExpensesView({ profile, setProfile }) {
             <Pressable onClick={handleNextMonth} disabled={isCurrentMonth} haptic="selection" className={`w-8 h-8 rounded-full font-bold transition-colors ${isCurrentMonth ? 'opacity-20 cursor-not-allowed' : 'hover:bg-surfaceHover text-textSecondary'}`}>→</Pressable>
           </div>
 
+          <AnimatePresence mode="wait" custom={monthDirection} initial={false}>
+          <motion.div
+            key={`${viewYear}-${viewMonth}`}
+            custom={monthDirection}
+            variants={monthVariants}
+            initial="initial"
+            animate="animate"
+            exit="exit"
+            transition={m.base}
+          >
           <p className="text-textSecondary uppercase tracking-[0.3em] text-xs font-bold relative z-10">Expense Dashboard</p>
           <h1 className="text-5xl md:text-6xl font-black text-textPrimary mt-4 drop-shadow-md relative z-10"><NumberRoll value={monthTotal} prefix="₹" grouped /></h1>
           <p className="text-emerald-400/80 font-mono text-[10px] uppercase tracking-wider mt-2 relative z-10">{numberToWords(Math.floor(monthTotal))} Rupees</p>
@@ -239,6 +299,8 @@ function ExpensesView({ profile, setProfile }) {
                <p className="text-xs text-danger font-bold mt-2">⚠️ You have exceeded your budget!</p>
             )}
           </div>
+          </motion.div>
+          </AnimatePresence>
         </div>
 
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
@@ -257,7 +319,25 @@ function ExpensesView({ profile, setProfile }) {
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
           <div className="lg:col-span-5 bg-surface/40 backdrop-blur-xl p-8 rounded-[32px] border border-border shadow-xl flex flex-col items-center">
-            <div className="relative w-64 h-64 rounded-full flex items-center justify-center shadow-[0_0_30px_rgba(0,0,0,0.5)] transition-transform hover:scale-105 duration-700 mt-4" style={chartStyle}>
+            <div className="relative w-64 h-64 rounded-full flex items-center justify-center shadow-[0_0_30px_rgba(0,0,0,0.5)] transition-transform hover:scale-105 duration-700 mt-4">
+              <svg viewBox="0 0 100 100" className="absolute inset-0 w-full h-full -rotate-90">
+                <circle cx="50" cy="50" r="45" fill="none" stroke="var(--color-surface-hover)" strokeWidth="10" />
+                {donutSegments.map((seg, i) => (
+                  <motion.circle
+                    key={seg.tag}
+                    cx="50" cy="50" r="45"
+                    fill="none"
+                    stroke={seg.color}
+                    strokeWidth="10"
+                    strokeLinecap="round"
+                    pathLength={1}
+                    style={{ pathOffset: seg.start / 100 }}
+                    initial={{ pathLength: 0 }}
+                    animate={{ pathLength: seg.percent / 100 }}
+                    transition={{ ...m.slow, delay: i * 0.08 }}
+                  />
+                ))}
+              </svg>
               <div className="absolute w-48 h-48 bg-background rounded-full flex flex-col items-center justify-center border-[8px] border-surface shadow-inner z-10">
                 <span className="text-textSecondary text-[10px] font-bold uppercase tracking-widest mb-1">Transactions</span>
                 <span className="text-5xl font-black text-textPrimary">{monthlyExpenses.length}</span>
@@ -265,20 +345,26 @@ function ExpensesView({ profile, setProfile }) {
               </div>
             </div>
             <div className="w-full space-y-6 mt-12">
-              {Object.entries(categoryTotals).map(([tag, amount]) => {
-                const percent = monthTotal > 0 ? (amount / monthTotal) * 100 : 0;
-                const isSelected = selectedCategory === tag;
+              {donutSegments.map((seg, i) => {
+                const isSelected = selectedCategory === seg.tag;
                 return (
-                  <Pressable as="div" key={tag} onClick={() => setSelectedCategory(isSelected ? null : tag)} haptic="selection" className={`cursor-pointer transition-all duration-300 ${selectedCategory && !isSelected ? 'opacity-30 grayscale' : 'opacity-100 hover:scale-[1.02]'}`}>
+                  <Pressable as="div" key={seg.tag} onClick={() => setSelectedCategory(isSelected ? null : seg.tag)} haptic="selection" className={`cursor-pointer transition-all duration-300 ${selectedCategory && !isSelected ? 'opacity-30 grayscale' : 'opacity-100 hover:scale-[1.02]'}`}>
                     <div className="flex justify-between items-end mb-2">
                       <div className="flex items-center gap-2">
-                        <span className="text-sm font-bold text-textPrimary capitalize">{tag}</span>
-                        <span className="text-[10px] text-textSecondary font-mono">₹{amount.toLocaleString('en-IN')}</span>
+                        <span className="text-sm font-bold text-textPrimary capitalize">{seg.tag}</span>
+                        <span className="text-[10px] text-textSecondary font-mono">₹{seg.amount.toLocaleString('en-IN')}</span>
                       </div>
-                      <span className="text-sm font-black text-textPrimary"><NumberRoll value={percent} decimals={1} suffix="%" /></span>
+                      <span className="text-sm font-black text-textPrimary"><NumberRoll value={seg.percent} decimals={1} suffix="%" /></span>
                     </div>
                     <div className="h-2.5 rounded-full bg-surfaceHover overflow-hidden shadow-inner">
-                      <div className="h-full rounded-full transition-all duration-1000 ease-out" style={{ width: `${percent}%`, backgroundColor: categoryColors[tag] }} />
+                      <motion.div
+                        key={`${seg.tag}-${selectedCategory || 'none'}`}
+                        className="h-full rounded-full"
+                        style={{ backgroundColor: seg.color }}
+                        initial={{ width: 0 }}
+                        animate={{ width: `${seg.percent}%` }}
+                        transition={{ ...m.slow, delay: i * 0.08 }}
+                      />
                     </div>
                   </Pressable>
                 );
@@ -323,20 +409,24 @@ function ExpensesView({ profile, setProfile }) {
                       </div>
                       <ul className="space-y-3">
                         {groupedExpenses[dateStr].map((exp) => (
-                          <li key={exp.id} className="group bg-surface/50 hover:bg-surfaceHover rounded-3xl p-5 border border-border hover:border-emerald-500/20 hover:-translate-y-1 transition-all flex justify-between items-center cursor-default shadow-sm hover:shadow-xl">
-                            <div className="flex gap-4 items-center">
-                              <div className="w-12 h-12 rounded-2xl flex items-center justify-center text-xl shadow-inner border border-border" style={{ backgroundColor: categoryColors[exp.tags[0] || 'other'] + '20', color: categoryColors[exp.tags[0] || 'other'] }}>
-                                {iconMap[exp.tags[0]] || '🧾'}
+                          <li key={exp.id} className="relative overflow-hidden rounded-3xl border border-border hover:border-emerald-500/20 hover:-translate-y-1 transition-all shadow-sm hover:shadow-xl">
+                            <SwipeRow onDelete={() => setDeleteTargetId(exp.id)}>
+                              <div className="group bg-surface/50 hover:bg-surfaceHover p-5 flex justify-between items-center cursor-default transition-colors">
+                                <div className="flex gap-4 items-center">
+                                  <div className="w-12 h-12 rounded-2xl flex items-center justify-center text-xl shadow-inner border border-border" style={{ backgroundColor: categoryColors[exp.tags[0] || 'other'] + '20', color: categoryColors[exp.tags[0] || 'other'] }}>
+                                    {iconMap[exp.tags[0]] || '🧾'}
+                                  </div>
+                                  <div>
+                                    <p className="font-bold text-textPrimary text-base">{exp.reason}</p>
+                                    <p className="text-[10px] text-textSecondary uppercase tracking-widest mt-1">{exp.tags[0]}</p>
+                                  </div>
+                                </div>
+                                <div className="flex items-center gap-4">
+                                  <span className="text-danger font-black text-xl lg:text-2xl">-₹{exp.amount.toLocaleString('en-IN')}</span>
+                                  <Pressable onClick={() => setDeleteTargetId(exp.id)} className="text-textSecondary hover:bg-dangerBg hover:text-danger w-8 h-8 rounded-xl flex items-center justify-center transition-all opacity-0 group-hover:opacity-100" title="Delete Record">✕</Pressable>
+                                </div>
                               </div>
-                              <div>
-                                <p className="font-bold text-textPrimary text-base">{exp.reason}</p>
-                                <p className="text-[10px] text-textSecondary uppercase tracking-widest mt-1">{exp.tags[0]}</p>
-                              </div>
-                            </div>
-                            <div className="flex items-center gap-4">
-                              <span className="text-danger font-black text-xl lg:text-2xl">-₹{exp.amount.toLocaleString('en-IN')}</span>
-                              <Pressable onClick={() => setDeleteTargetId(exp.id)} className="text-textSecondary hover:bg-dangerBg hover:text-danger w-8 h-8 rounded-xl flex items-center justify-center transition-all opacity-0 group-hover:opacity-100" title="Delete Record">✕</Pressable>
-                            </div>
+                            </SwipeRow>
                           </li>
                         ))}
                       </ul>
@@ -348,8 +438,9 @@ function ExpensesView({ profile, setProfile }) {
           </div>
         </div>
       </div>
+      </PullToRefresh>
 
-      <BottomSheet isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="New Transaction">
+      <BottomSheet isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="New Transaction" layoutId="expense-fab">
         <form onSubmit={handleSubmit} className="flex flex-col gap-5">
           <div className="relative">
             <span className="absolute left-5 top-1/2 -translate-y-1/2 text-textSecondary font-black text-2xl">₹</span>
@@ -375,8 +466,8 @@ function ExpensesView({ profile, setProfile }) {
               <input type="date" required value={formData.date} onChange={(e) => setFormData({...formData, date: e.target.value})} className="w-full bg-background border border-border rounded-2xl px-4 py-4 text-sm text-textPrimary focus:border-emerald-500 outline-none transition-all" />
             </div>
           </div>
-          <Pressable type="submit" haptic="tap" className="w-full mt-6 bg-emerald-500 hover:bg-emerald-400 text-background font-black py-4 rounded-2xl transition-all shadow-[0_0_20px_rgba(16,185,129,0.2)] text-lg hover:-translate-y-1">
-            Log Transaction
+          <Pressable type="submit" disabled={isSaving} haptic="tap" className="w-full mt-6 bg-emerald-500 hover:bg-emerald-400 disabled:opacity-60 text-background font-black py-4 rounded-2xl transition-all shadow-[0_0_20px_rgba(16,185,129,0.2)] text-lg hover:-translate-y-1 flex items-center justify-center">
+            {isSaving ? <JumpingDots /> : 'Log Transaction'}
           </Pressable>
         </form>
       </BottomSheet>

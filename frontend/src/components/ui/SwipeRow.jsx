@@ -13,13 +13,17 @@ const THRESHOLD = 72;
 // let go early and it springs back to rest, nothing happens. Renders as a
 // fragment so it can sit directly inside a parent that's already
 // `relative overflow-hidden` (its reveal layer anchors to that ancestor).
+//
+// Either side is optional — pass only `onDelete` for a delete-only row (e.g.
+// a transaction list has no "complete" concept) and that side simply never
+// arms, rather than revealing an action that would do nothing.
 function SwipeRow({ onDelete, onComplete, children, disabled }) {
   const m = useAppMotion();
   const [armed, setArmed] = useState(null);
   const armedRef = useRef(null);
 
   const handleDrag = (_event, info) => {
-    const next = info.offset.x <= -THRESHOLD ? 'delete' : info.offset.x >= THRESHOLD ? 'complete' : null;
+    const next = info.offset.x <= -THRESHOLD && onDelete ? 'delete' : info.offset.x >= THRESHOLD && onComplete ? 'complete' : null;
     if (next !== armedRef.current) {
       armedRef.current = next;
       setArmed(next);
@@ -37,12 +41,16 @@ function SwipeRow({ onDelete, onComplete, children, disabled }) {
   return (
     <>
       <div className="absolute inset-0 flex items-stretch pointer-events-none">
-        <div className={`flex-1 flex items-center pl-4 bg-success text-white font-bold text-xs uppercase tracking-wider transition-opacity ${armed === 'complete' ? 'opacity-100' : 'opacity-0'}`}>
-          ✓ Complete
-        </div>
-        <div className={`flex-1 flex items-center justify-end pr-4 bg-danger text-white font-bold text-xs uppercase tracking-wider transition-opacity ${armed === 'delete' ? 'opacity-100' : 'opacity-0'}`}>
-          Delete 🗑️
-        </div>
+        {onComplete && (
+          <div className={`flex-1 flex items-center pl-4 bg-success text-white font-bold text-xs uppercase tracking-wider transition-opacity ${armed === 'complete' ? 'opacity-100' : 'opacity-0'}`}>
+            ✓ Complete
+          </div>
+        )}
+        {onDelete && (
+          <div className={`flex-1 flex items-center justify-end pr-4 bg-danger text-white font-bold text-xs uppercase tracking-wider transition-opacity ${armed === 'delete' ? 'opacity-100' : 'opacity-0'}`}>
+            Delete 🗑️
+          </div>
+        )}
       </div>
       <motion.div
         drag={disabled ? false : 'x'}

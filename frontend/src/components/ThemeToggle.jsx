@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import ScrambleText from './ui/ScrambleText';
 
 const themes = [
   { id: 'dark', label: 'Command Dark', icon: '🌙' },
@@ -37,9 +38,10 @@ function ThemeToggle() {
       title="Toggle Theme"
     >
       <span>{activeTheme.icon}</span>
-      <span className="text-xs font-bold text-textSecondary hidden sm:block">
-        {activeTheme.label}
-      </span>
+      <ScrambleText
+        text={activeTheme.label}
+        className="text-xs font-bold text-textSecondary hidden sm:block"
+      />
     </button>
   );
 }

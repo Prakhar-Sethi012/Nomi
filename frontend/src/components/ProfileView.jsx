@@ -1,10 +1,13 @@
 import React, { useState } from 'react';
+import { AnimatePresence, motion } from 'motion/react';
 import { api } from '../services/api';
 import PinConfirmModal from './PinConfirmModal';
 import HoldToConfirm from './ui/HoldToConfirm';
 import NumberRoll from './ui/NumberRoll';
+import { useAppMotion } from '../hooks/useAppMotion';
 
 function ProfileView({ profile, setProfile, onLogout }) {
+  const m = useAppMotion();
   const [question, setQuestion] = useState(profile?.security_question || '');
   const [answer, setAnswer] = useState('');
   const [currentPin, setCurrentPin] = useState('');
@@ -99,7 +102,7 @@ function ProfileView({ profile, setProfile, onLogout }) {
           <form onSubmit={handleUpdateSecurity} className="flex flex-col gap-5">
 
             {/* PIN CHANGE BLOCK */}
-            <div className="bg-background p-5 rounded-2xl border border-border">
+            <motion.div layout transition={m.gentle} className="bg-background p-5 rounded-2xl border border-border">
               <h3 className="text-[10px] uppercase font-bold text-textSecondary tracking-widest block mb-3">Change App PIN</h3>
               <div className="flex gap-3">
                 <input
@@ -113,10 +116,21 @@ function ProfileView({ profile, setProfile, onLogout }) {
                   className="w-full bg-surface border border-border rounded-xl px-3 py-3 text-textPrimary font-mono tracking-[0.2em] focus:border-accent outline-none transition-all uppercase text-sm"
                 />
               </div>
-              {newPin && !currentPin && !answer && (
-                <p className="text-danger text-[9px] font-bold mt-2 uppercase tracking-wider">Provide Current PIN or Security Answer below to authorize.</p>
-              )}
-            </div>
+              <AnimatePresence initial={false}>
+                {newPin && !currentPin && !answer && (
+                  <motion.p
+                    layout
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={m.base}
+                    className="text-danger text-[9px] font-bold mt-2 uppercase tracking-wider"
+                  >
+                    Provide Current PIN or Security Answer below to authorize.
+                  </motion.p>
+                )}
+              </AnimatePresence>
+            </motion.div>
 
             {/* SECURITY QUESTION BLOCK */}
             <div className="bg-background p-5 rounded-2xl border border-border">

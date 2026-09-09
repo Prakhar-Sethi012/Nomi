@@ -12,7 +12,13 @@ import { useAppMotion } from '../../hooks/useAppMotion';
 // On md+ the exact same component reads as a centered dialog instead: the
 // grabber (and its drag handler) is just hidden there via CSS, so nothing
 // needs branching in JS.
-function BottomSheet({ isOpen, onClose, title, children }) {
+//
+// `layoutId` is optional: pass it to morph a specific trigger element (e.g.
+// a FAB) into this sheet via a shared layout transition. When present, the
+// panel's own slide-up entrance and drag-to-dismiss both step aside so they
+// don't fight the layout-driven position/size morph — the trigger becoming
+// the panel IS the animation in that case.
+function BottomSheet({ isOpen, onClose, title, children, layoutId }) {
   const m = useAppMotion();
   const dragControls = useDragControls();
   const panelRef = useRef(null);
@@ -50,17 +56,18 @@ function BottomSheet({ isOpen, onClose, title, children }) {
           <div className="fixed inset-0 z-50 flex items-end justify-center pointer-events-none md:items-center md:p-4">
             <motion.div
               ref={panelRef}
+              layoutId={layoutId}
               role="dialog"
               aria-modal="true"
               aria-label={title}
               onClick={(e) => e.stopPropagation()}
               className="pointer-events-auto w-full max-h-[85vh] flex flex-col bg-surface border-t border-border rounded-t-2xl shadow-2xl md:max-w-lg md:border md:rounded-2xl"
               style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
-              initial={{ y: '100%' }}
-              animate={{ y: 0 }}
-              exit={{ y: '100%' }}
+              initial={layoutId ? undefined : { y: '100%' }}
+              animate={layoutId ? undefined : { y: 0 }}
+              exit={layoutId ? undefined : { y: '100%' }}
               transition={m.sheet}
-              drag="y"
+              drag={layoutId ? false : 'y'}
               dragControls={dragControls}
               dragListener={false}
               dragConstraints={{ top: 0 }}

@@ -9,6 +9,7 @@ import ThemeToggle from './ThemeToggle';
 import { api } from '../services/api'; 
 import NextClassWidget from './NextClassWidget';
 import NumberRoll from './ui/NumberRoll';
+import PullToRefresh from './ui/PullToRefresh';
 
 function Dashboard({ profile, setProfile, setActiveTab }) {
   const [isEditingCgpa, setIsEditingCgpa] = useState(false);
@@ -17,19 +18,23 @@ function Dashboard({ profile, setProfile, setActiveTab }) {
   const today = new Date();
   const dateString = today.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' });
 
+  // Named (not inline) so pull-to-refresh can reuse the exact same sync
+  // instead of inventing a second "refresh the dashboard" path.
+  const syncProfile = async () => {
+    try {
+      const freshProfile = await api.getProfile();
+      setProfile(freshProfile);
+    } catch (err) {
+      console.error("Failed to background sync profile", err);
+    }
+  };
+
   // 🔥 NEW: Auto-Sync Profile on Mount
   // If you changed Ghost Mode in Radar, this pulls the fresh data the second you open the Dashboard!
   useEffect(() => {
-    const syncProfile = async () => {
-      try {
-        const freshProfile = await api.getProfile();
-        setProfile(freshProfile);
-      } catch (err) {
-        console.error("Failed to background sync profile", err);
-      }
-    };
     syncProfile();
-  }, [setProfile]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleCgpaSave = async (e) => {
     e.preventDefault();
@@ -67,6 +72,7 @@ function Dashboard({ profile, setProfile, setActiveTab }) {
   };
 
   return (
+    <PullToRefresh onRefresh={syncProfile}>
     <div className="w-full max-w-6xl mx-auto pb-10 animate-fade-in flex flex-col h-full">
       
       <header className="flex flex-col md:flex-row justify-between items-start md:items-center bg-surface p-6 rounded-xl border border-border mb-6 shadow-lg gap-4 shrink-0 transition-colors duration-300">
@@ -163,6 +169,7 @@ function Dashboard({ profile, setProfile, setActiveTab }) {
       
       <PortfolioWidget />
     </div>
+    </PullToRefresh>
   );
 }
 
