@@ -1,9 +1,26 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { AnimatePresence, motion, useDragControls } from 'motion/react';
 import { api } from '../services/api';
 import ReadOnlyTimetable from './ReadOnlyTimetable';
 import PinConfirmModal from './PinConfirmModal'; // 🔥 IMPORT MODAL
 import BottomSheet from './ui/BottomSheet';
 import HoldToConfirm from './ui/HoldToConfirm';
+import NotificationStack from './ui/NotificationStack';
+import SegmentedControl from './ui/SegmentedControl';
+import { useAppMotion } from '../hooks/useAppMotion';
+import { haptics } from '../utils/haptics';
+
+// Push slides the incoming screen in from the right while the outgoing one
+// parallaxes back and dims; pop reverses both. `direction` (+1 push, -1 pop)
+// is threaded through as `custom` so the same variant object serves both.
+const screenVariants = {
+  initial: (direction) => ({ x: direction > 0 ? '100%' : '-30%', opacity: direction > 0 ? 1 : 0.4 }),
+  animate: { x: 0, opacity: 1 },
+  exit: (direction) => ({ x: direction > 0 ? '-30%' : '100%', opacity: direction > 0 ? 0.4 : 1 }),
+};
+
+const EDGE_DRAG_THRESHOLD = 100;
+const EDGE_DRAG_VELOCITY = 500;
 
 const formatSmartTime = (minutes) => {
   if (minutes < 0) return { value: 'Now', unit: '' };
@@ -18,6 +35,21 @@ const formatSmartTime = (minutes) => {
 
 function SocialRadar({ profile, setProfile }) {
   const [viewLevel, setViewLevel] = useState(1);
+  const [direction, setDirection] = useState(1);
+  const [requestTab, setRequestTab] = useState('incoming');
+  // Named motionCfg (not `m`) since `m` is already this file's convention
+  // for a single meetup item in .map() callbacks.
+  const motionCfg = useAppMotion();
+  const dragControls = useDragControls();
+
+  // Wraps setViewLevel so every level change also records whether it's a
+  // push (deeper) or a pop (back) — the shared transition needs to know
+  // which way to slide/parallax.
+  const goToLevel = (nextLevel) => {
+    setDirection(nextLevel > viewLevel ? 1 : -1);
+    setViewLevel(nextLevel);
+  };
+
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
   const [historyLog, setHistoryLog] = useState(null);
@@ -79,6 +111,7 @@ function SocialRadar({ profile, setProfile }) {
       setProfile(freshProfile);
       setIncomingMeetups(incoming);
       setOutgoingMeetups(outgoing);
+      setDirection(-1);
       setViewLevel(1);
     } catch (err) { setError('Failed to load lobby data.'); }
     finally { setIsLoading(false); }
@@ -175,27 +208,80 @@ function SocialRadar({ profile, setProfile }) {
   const handleUpdateMeetup = async (id, status) => {
     try {
       await api.updateMeetupStatus(id, status);
-      loadLobby(); 
+      // Optimistic local update instead of a full loadLobby() refetch, so the
+      // card's own collapse-then-crossfade transition gets to play instead of
+      // the whole list jumping to a freshly-fetched snapshot mid-animation.
+      setIncomingMeetups(prev => prev.map(item => item.id === id ? { ...item, status } : item));
+      if (status === 'accepted') haptics.success(); else haptics.warning();
     } catch (err) { setError("Failed to update status."); }
   };
+
+  // A meetup request is a notification: the action row collapses on height
+  // and opacity once it's answered, and the status badge crossfades in to
+  // replace it, rather than the whole card snapping to its new state.
+  const renderIncomingMeetup = (meetup) => (
+    <motion.div layout className="bg-surface border border-border p-4 rounded-lg flex flex-col gap-3 shadow-lg">
+      <div className="flex justify-between items-start">
+        <div>
+          <p className="text-sm font-bold text-textPrimary"><span className="text-accent">{meetup.friend_name}</span> wants to meet!</p>
+          <p className="text-xs text-textSecondary mt-1">📍 {meetup.location}</p>
+          <p className="text-xs text-textSecondary">⏰ {new Date(meetup.meet_time).toLocaleString()}</p>
+        </div>
+        <AnimatePresence mode="wait" initial={false}>
+          {meetup.status === 'accepted' && (
+            <motion.span key="accepted" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="bg-success/10 text-success text-[10px] px-2 py-1 rounded font-bold uppercase border border-success/30 shrink-0">Accepted</motion.span>
+          )}
+          {meetup.status === 'pending' && (
+            <motion.span key="pending" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="bg-amber-900/40 text-amber-400 text-[10px] px-2 py-1 rounded font-bold uppercase border border-amber-500/30 shrink-0">Pending</motion.span>
+          )}
+          {meetup.status === 'declined' && (
+            <motion.span key="declined" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="bg-dangerBg text-danger text-[10px] px-2 py-1 rounded font-bold uppercase border border-danger/30 shrink-0">Declined</motion.span>
+          )}
+        </AnimatePresence>
+      </div>
+
+      <AnimatePresence>
+        {meetup.status === 'pending' && (
+          <motion.div
+            key="actions"
+            layout
+            initial={false}
+            exit={{ opacity: 0, height: 0 }}
+            transition={motionCfg.base}
+            className="flex gap-2 mt-1 overflow-hidden"
+          >
+            <button onClick={() => handleUpdateMeetup(meetup.id, 'accepted')} className="flex-1 bg-success/10 hover:bg-success text-success hover:text-white border border-success/30 px-3 py-1.5 rounded text-xs font-bold transition-all">Accept</button>
+            <button onClick={() => handleUpdateMeetup(meetup.id, 'declined')} className="flex-1 bg-dangerBg hover:bg-danger text-danger hover:text-white border border-danger/30 px-3 py-1.5 rounded text-xs font-bold transition-all">Decline</button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </motion.div>
+  );
 
   const loadRoster = async (circle) => {
     setIsLoading(true); setError(''); setPendingCircleAction(null); setCloningId(null);
     try {
       const rosterData = await api.getCircleRoster(circle.id);
-      setActiveCircle(circle); setRoster(rosterData); setViewLevel(2);
-    } catch (err) { setError('Failed to load roster.'); } 
+      setActiveCircle(circle); setRoster(rosterData); setDirection(1); setViewLevel(2);
+    } catch (err) { setError('Failed to load roster.'); }
     finally { setIsLoading(false); }
   };
 
   const loadFriendTimetable = async (friend) => {
-    if (friend.is_ghost) return; 
+    if (friend.is_ghost) return;
     setIsLoading(true); setError('');
     try {
       const timetableData = await api.getFriendTimetable(friend.user_id);
-      setActiveFriend(friend); setFriendTimetable(timetableData); setViewLevel(3);
-    } catch (err) { setError(err.message || 'Failed to access timetable.'); } 
+      setActiveFriend(friend); setFriendTimetable(timetableData); setDirection(1); setViewLevel(3);
+    } catch (err) { setError(err.message || 'Failed to access timetable.'); }
     finally { setIsLoading(false); }
+  };
+
+  const handleEdgePopDragEnd = (_event, info) => {
+    if (info.offset.x > EDGE_DRAG_THRESHOLD || info.velocity.x > EDGE_DRAG_VELOCITY) {
+      if (viewLevel === 3) goToLevel(2);
+      else if (viewLevel === 2) goToLevel(1);
+    }
   };
 
   if (isLoading) return <div className="text-accent text-center mt-20 animate-pulse font-mono">Syncing Database...</div>;
@@ -216,6 +302,29 @@ function SocialRadar({ profile, setProfile }) {
       {error && <div className="bg-dangerBg border border-danger text-danger p-3 rounded-lg text-sm text-center font-bold shrink-0">{error}</div>}
 
       <div className="flex-1 overflow-y-auto custom-scrollbar pr-2">
+      <AnimatePresence initial={false} custom={direction} mode="popLayout">
+        <motion.div
+          key={viewLevel}
+          custom={direction}
+          variants={screenVariants}
+          initial="initial"
+          animate="animate"
+          exit="exit"
+          transition={motionCfg.gentle}
+          drag={viewLevel > 1 ? 'x' : false}
+          dragControls={dragControls}
+          dragListener={false}
+          dragConstraints={{ left: 0 }}
+          onDragEnd={handleEdgePopDragEnd}
+          className="relative"
+        >
+        {viewLevel > 1 && (
+          <div
+            onPointerDown={(e) => dragControls.start(e)}
+            className="absolute left-0 top-0 bottom-0 w-5 z-20 touch-none"
+            aria-hidden="true"
+          />
+        )}
         {viewLevel === 1 && (
           <div className="flex flex-col gap-8 animate-fade-in">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -279,36 +388,34 @@ function SocialRadar({ profile, setProfile }) {
                 <h2 className="text-xl font-black text-textPrimary mb-1 flex items-center gap-2">☕ The Request Room</h2>
                 <p className="text-textSecondary text-xs mb-6 uppercase tracking-widest font-bold">Incoming & Outgoing Meetups</p>
 
+                <div className="md:hidden mb-6">
+                  <SegmentedControl
+                    value={requestTab}
+                    onChange={setRequestTab}
+                    options={[
+                      { value: 'incoming', label: '📥 Incoming' },
+                      { value: 'outgoing', label: '📤 Outgoing' },
+                    ]}
+                  />
+                </div>
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                   {/* Incoming Column */}
-                  <div>
+                  <div className={requestTab === 'incoming' ? '' : 'hidden md:block'}>
                     <h3 className="text-sm font-bold text-textPrimary mb-3 border-b border-border pb-2">📥 Incoming Requests</h3>
-                    <div className="flex flex-col gap-3">
-                      {incomingMeetups.length === 0 ? <p className="text-xs text-textSecondary italic">No incoming requests.</p> : incomingMeetups.map(m => (
-                        <div key={m.id} className="bg-surface border border-border p-4 rounded-lg flex flex-col gap-3 shadow-lg">
-                          <div className="flex justify-between items-start">
-                            <div>
-                              <p className="text-sm font-bold text-textPrimary"><span className="text-accent">{m.friend_name}</span> wants to meet!</p>
-                              <p className="text-xs text-textSecondary mt-1">📍 {m.location}</p>
-                              <p className="text-xs text-textSecondary">⏰ {new Date(m.meet_time).toLocaleString()}</p>
-                            </div>
-                            {m.status === 'accepted' && <span className="bg-success/10 text-success text-[10px] px-2 py-1 rounded font-bold uppercase border border-success/30">Accepted</span>}
-                            {m.status === 'pending' && <span className="bg-amber-900/40 text-amber-400 text-[10px] px-2 py-1 rounded font-bold uppercase border border-amber-500/30">Pending</span>}
-                          </div>
-
-                          {m.status === 'pending' && (
-                            <div className="flex gap-2 mt-1">
-                              <button onClick={() => handleUpdateMeetup(m.id, 'accepted')} className="flex-1 bg-success/10 hover:bg-success text-success hover:text-white border border-success/30 px-3 py-1.5 rounded text-xs font-bold transition-all">Accept</button>
-                              <button onClick={() => handleUpdateMeetup(m.id, 'declined')} className="flex-1 bg-dangerBg hover:bg-danger text-danger hover:text-white border border-danger/30 px-3 py-1.5 rounded text-xs font-bold transition-all">Decline</button>
-                            </div>
-                          )}
-                        </div>
-                      ))}
-                    </div>
+                    {incomingMeetups.length === 0 ? (
+                      <p className="text-xs text-textSecondary italic">No incoming requests.</p>
+                    ) : (
+                      <NotificationStack
+                        items={incomingMeetups}
+                        keyExtractor={(meetup) => meetup.id}
+                        renderItem={renderIncomingMeetup}
+                      />
+                    )}
                   </div>
 
                   {/* Outgoing Column */}
-                  <div>
+                  <div className={requestTab === 'outgoing' ? '' : 'hidden md:block'}>
                     <h3 className="text-sm font-bold text-textPrimary mb-3 border-b border-border pb-2">📤 Sent Requests</h3>
                     <div className="flex flex-col gap-3">
                       {outgoingMeetups.length === 0 ? <p className="text-xs text-textSecondary italic">No outgoing requests.</p> : outgoingMeetups.map(m => (
@@ -334,7 +441,7 @@ function SocialRadar({ profile, setProfile }) {
         {viewLevel === 2 && activeCircle && (
           <div className="animate-fade-in flex flex-col gap-6">
             <div className="flex justify-between items-center">
-              <button onClick={() => setViewLevel(1)} className="text-sm text-textSecondary hover:text-textPrimary flex items-center gap-2 transition-colors">← Back to Lobby</button>
+              <button onClick={() => goToLevel(1)} className="text-sm text-textSecondary hover:text-textPrimary flex items-center gap-2 transition-colors">← Back to Lobby</button>
 
               <div className="flex items-center gap-4">
                 {activeCircle.creator_id === myProfileId && (
@@ -373,7 +480,7 @@ function SocialRadar({ profile, setProfile }) {
                 const statusBg = friend.is_ghost ? 'bg-background border-border' : isFree ? 'bg-success/10 border-success/30' : 'bg-dangerBg border-danger/30';
 
                 return (
-                  <div key={friend.user_id} onClick={() => !friend.is_ghost && loadFriendTimetable(friend)} className={`group p-5 rounded-xl border shadow-lg transition-all flex flex-col h-full relative ${statusBg} ${friend.is_ghost ? 'cursor-not-allowed opacity-75' : 'cursor-pointer hover:scale-[1.02]'}`}>
+                  <motion.div key={friend.user_id} layoutId={`member-${friend.user_id}`} onClick={() => !friend.is_ghost && loadFriendTimetable(friend)} className={`group p-5 rounded-xl border shadow-lg transition-all flex flex-col h-full relative ${statusBg} ${friend.is_ghost ? 'cursor-not-allowed opacity-75' : 'cursor-pointer hover:scale-[1.02]'}`}>
 
                     {editingNicknameId === friend.user_id ? (
                       <form onSubmit={(e) => handleSaveNickname(e, friend.user_id)} className="flex items-center gap-2 mb-3" onClick={e => e.stopPropagation()}>
@@ -401,8 +508,20 @@ function SocialRadar({ profile, setProfile }) {
                             <button onClick={(e) => { e.stopPropagation(); setCloningId(null); }} className="text-[10px] bg-surfaceHover hover:bg-border text-textPrimary px-2 py-1 rounded">No</button>
                           </div>
                         ) : friend.cloneSuccess ? (
-                           <div className="text-[10px] text-success font-bold bg-success/20 px-2 py-1.5 rounded border border-success/30 animate-fade-in flex items-center">
-                              ✓ Cloned
+                           <div className="text-[10px] text-success font-bold bg-success/20 px-2 py-1.5 rounded border border-success/30 flex items-center gap-1.5">
+                              <svg viewBox="0 0 24 24" className="w-3 h-3 shrink-0" fill="none">
+                                <motion.path
+                                  d="M4 12l6 6L20 6"
+                                  stroke="currentColor"
+                                  strokeWidth="3"
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  initial={{ pathLength: 0 }}
+                                  animate={{ pathLength: 1 }}
+                                  transition={{ duration: 0.4, ease: 'easeOut' }}
+                                />
+                              </svg>
+                              Cloned
                            </div>
                         ) : (
                           <button onClick={(e) => { e.stopPropagation(); setCloningId(friend.user_id); }} className="opacity-0 group-hover:opacity-100 text-xs bg-surface hover:bg-success/20 text-textSecondary hover:text-success border border-border hover:border-success px-2 py-1.5 rounded transition-all">
@@ -442,7 +561,7 @@ function SocialRadar({ profile, setProfile }) {
                         </div>
                       )}
                     </div>
-                  </div>
+                  </motion.div>
                 );
               })}
             </div>
@@ -450,9 +569,9 @@ function SocialRadar({ profile, setProfile }) {
         )}
 
         {viewLevel === 3 && activeFriend && (
-          <div className="animate-fade-in flex flex-col gap-6">
-            <button onClick={() => setViewLevel(2)} className="self-start text-sm text-textSecondary hover:text-textPrimary flex items-center gap-2 transition-colors">← Back to {activeCircle.name} Roster</button>
-            <div className="bg-surface p-6 rounded-xl border border-border shadow-lg">
+          <div className="flex flex-col gap-6">
+            <button onClick={() => goToLevel(2)} className="self-start text-sm text-textSecondary hover:text-textPrimary flex items-center gap-2 transition-colors">← Back to {activeCircle.name} Roster</button>
+            <motion.div layoutId={`member-${activeFriend.user_id}`} className="bg-surface p-6 rounded-xl border border-border shadow-lg">
               <h2 className="text-xl font-black text-textPrimary mb-2">{activeFriend.name}'s Schedule</h2>
               <p className="text-textSecondary text-sm mb-6">Read-only view.</p>
 
@@ -461,9 +580,11 @@ function SocialRadar({ profile, setProfile }) {
               ) : (
                 <ReadOnlyTimetable subjects={friendTimetable} />
               )}
-            </div>
+            </motion.div>
           </div>
         )}
+        </motion.div>
+      </AnimatePresence>
       </div>
 
       {/* JOIN SEARCH CIRCLE SHEET */}

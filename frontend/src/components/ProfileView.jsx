@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { api } from '../services/api';
 import PinConfirmModal from './PinConfirmModal';
 import HoldToConfirm from './ui/HoldToConfirm';
+import NumberRoll from './ui/NumberRoll';
 
 function ProfileView({ profile, setProfile, onLogout }) {
   const [question, setQuestion] = useState(profile?.security_question || '');
@@ -81,11 +82,11 @@ function ProfileView({ profile, setProfile, onLogout }) {
         <div className="flex gap-4 mt-6 z-10">
           <div className="bg-background border border-border px-4 py-2 rounded-xl">
             <span className="block text-[10px] text-textSecondary uppercase font-bold tracking-widest">CGPA</span>
-            <span className="text-lg font-black text-textPrimary">{profile.cgpa ? profile.cgpa.toFixed(2) : "0.00"}</span>
+            <span className="text-lg font-black text-textPrimary"><NumberRoll value={profile?.cgpa || 0} decimals={2} /></span>
           </div>
           <div className="bg-background border border-border px-4 py-2 rounded-xl">
             <span className="block text-[10px] text-textSecondary uppercase font-bold tracking-widest">Streak</span>
-            <span className="text-lg font-black text-orange-400">🔥 {profile.current_streak}</span>
+            <span className="text-lg font-black text-orange-400">🔥 <NumberRoll value={profile?.current_streak || 0} /></span>
           </div>
         </div>
       </header>

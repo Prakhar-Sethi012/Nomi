@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../services/api';
+import NumberRoll from './ui/NumberRoll';
 
 function ExpensesWidget({ profile, setActiveTab }) {
   const [expenses, setExpenses] = useState([]);
@@ -49,7 +50,7 @@ function ExpensesWidget({ profile, setActiveTab }) {
 
         <div className="flex flex-col items-center justify-center mb-8">
           <p className="text-[10px] uppercase font-bold text-textSecondary tracking-widest mb-1">Total Spent</p>
-          <p className="text-5xl font-black text-textPrimary">₹{totalSpent.toFixed(0)}</p>
+          <p className="text-5xl font-black text-textPrimary"><NumberRoll value={totalSpent} prefix="₹" /></p>
         </div>
 
         <div className="bg-background p-4 rounded-lg border border-border shadow-inner">

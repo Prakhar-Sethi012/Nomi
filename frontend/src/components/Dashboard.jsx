@@ -8,6 +8,7 @@ import DailyQuote from './DailyQuote';
 import ThemeToggle from './ThemeToggle';
 import { api } from '../services/api'; 
 import NextClassWidget from './NextClassWidget';
+import NumberRoll from './ui/NumberRoll';
 
 function Dashboard({ profile, setProfile, setActiveTab }) {
   const [isEditingCgpa, setIsEditingCgpa] = useState(false);
@@ -103,7 +104,7 @@ function Dashboard({ profile, setProfile, setActiveTab }) {
                 className="text-xs bg-background text-accent px-3 py-1.5 rounded border border-accent/30 cursor-pointer hover:bg-surfaceHover hover:border-accent transition-all flex items-center gap-1.5 group shadow-inner"
                 title="Click to update CGPA"
               >
-                <span>CGPA: <strong className="text-textPrimary text-[13px]">{profile?.cgpa ? profile.cgpa.toFixed(2) : "0.00"}</strong></span>
+                <span>CGPA: <strong className="text-textPrimary text-[13px]"><NumberRoll value={profile?.cgpa || 0} decimals={2} /></strong></span>
                 <span className="text-[10px] opacity-0 group-hover:opacity-100 transition-opacity">✎</span>
               </div>
             )}
@@ -134,7 +135,7 @@ function Dashboard({ profile, setProfile, setActiveTab }) {
 
           <div className="text-left md:text-right border-l border-border pl-4">
             <div className="text-3xl font-black text-orange-500 flex items-center md:justify-end gap-2 drop-shadow-md">
-              <span className="animate-pulse">🔥</span> Day {profile?.current_streak}
+              <span className="animate-pulse">🔥</span> Day <NumberRoll value={profile?.current_streak || 0} />
             </div>
             <p className="text-textSecondary text-sm mt-1 uppercase tracking-widest font-bold">Current Streak</p>
           </div>

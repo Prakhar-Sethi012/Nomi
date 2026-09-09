@@ -3,6 +3,7 @@ import { api } from '../services/api';
 import PinConfirmModal from './PinConfirmModal';
 import Pressable from './ui/Pressable';
 import BottomSheet from './ui/BottomSheet';
+import NumberRoll from './ui/NumberRoll';
 
 const numberToWords = (num) => {
   const a = ['', 'One ', 'Two ', 'Three ', 'Four ', 'Five ', 'Six ', 'Seven ', 'Eight ', 'Nine ', 'Ten ', 'Eleven ', 'Twelve ', 'Thirteen ', 'Fourteen ', 'Fifteen ', 'Sixteen ', 'Seventeen ', 'Eighteen ', 'Nineteen '];
@@ -216,7 +217,7 @@ function ExpensesView({ profile, setProfile }) {
           </div>
 
           <p className="text-textSecondary uppercase tracking-[0.3em] text-xs font-bold relative z-10">Expense Dashboard</p>
-          <h1 className="text-5xl md:text-6xl font-black text-textPrimary mt-4 drop-shadow-md relative z-10">₹{monthTotal.toLocaleString('en-IN')}</h1>
+          <h1 className="text-5xl md:text-6xl font-black text-textPrimary mt-4 drop-shadow-md relative z-10"><NumberRoll value={monthTotal} prefix="₹" grouped /></h1>
           <p className="text-emerald-400/80 font-mono text-[10px] uppercase tracking-wider mt-2 relative z-10">{numberToWords(Math.floor(monthTotal))} Rupees</p>
 
           <div className="mt-8 max-w-md relative z-10">
@@ -241,14 +242,14 @@ function ExpensesView({ profile, setProfile }) {
         </div>
 
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-          <StatCard title="Today" value={`₹${todayTotal.toLocaleString('en-IN')}`} subtitle={todaySubtitle} />
-          <StatCard title="This Week" value={`₹${weekTotal.toLocaleString('en-IN')}`} subtitle={weekSubtitle} />
-          <StatCard title="Daily Avg" value={`₹${dailyAverage.toFixed(0)}`} subtitle={`${daysElapsed} Days Elapsed`} />
+          <StatCard title="Today" value={<NumberRoll value={todayTotal} prefix="₹" grouped />} subtitle={todaySubtitle} />
+          <StatCard title="This Week" value={<NumberRoll value={weekTotal} prefix="₹" grouped />} subtitle={weekSubtitle} />
+          <StatCard title="Daily Avg" value={<NumberRoll value={dailyAverage} prefix="₹" />} subtitle={`${daysElapsed} Days Elapsed`} />
 
           <div className="bg-surface/70 backdrop-blur-xl rounded-3xl p-6 border border-border flex flex-col justify-center relative group">
             <p className="text-textSecondary text-[10px] uppercase tracking-widest font-bold mb-1">Monthly Trend</p>
             <h2 className={`text-2xl lg:text-3xl font-black ${change > 0 ? 'text-danger' : 'text-emerald-400'}`}>
-              {change > 0 ? '+' : ''}{change.toFixed(1)}%
+              {change > 0 ? '+' : ''}<NumberRoll value={change} decimals={1} suffix="%" />
             </h2>
             <p className="text-[10px] text-textSecondary mt-1.5 font-bold uppercase tracking-wider">vs Last Month</p>
           </div>
@@ -274,7 +275,7 @@ function ExpensesView({ profile, setProfile }) {
                         <span className="text-sm font-bold text-textPrimary capitalize">{tag}</span>
                         <span className="text-[10px] text-textSecondary font-mono">₹{amount.toLocaleString('en-IN')}</span>
                       </div>
-                      <span className="text-sm font-black text-textPrimary">{percent.toFixed(1)}%</span>
+                      <span className="text-sm font-black text-textPrimary"><NumberRoll value={percent} decimals={1} suffix="%" /></span>
                     </div>
                     <div className="h-2.5 rounded-full bg-surfaceHover overflow-hidden shadow-inner">
                       <div className="h-full rounded-full transition-all duration-1000 ease-out" style={{ width: `${percent}%`, backgroundColor: categoryColors[tag] }} />

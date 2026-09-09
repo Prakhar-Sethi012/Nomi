@@ -1,10 +1,32 @@
 import React, { useState, useEffect } from 'react';
+import { AnimatePresence, motion } from 'motion/react';
 import { api } from '../services/api';
 import Pressable from './ui/Pressable';
+import NumberRoll from './ui/NumberRoll';
+import { useAppMotion } from '../hooks/useAppMotion';
+import { scaleIn } from '../motion/variants';
+
+function AttendanceRing({ percent, conducted }) {
+  const m = useAppMotion();
+  const color = conducted === 0 ? 'text-textSecondary' : percent >= 75 ? 'text-success' : 'text-danger';
+
+  return (
+    <svg viewBox="0 0 36 36" className="w-8 h-8 -rotate-90 shrink-0">
+      <circle cx="18" cy="18" r="15" fill="none" strokeWidth="3" className="stroke-current text-border" />
+      <motion.circle
+        cx="18" cy="18" r="15" fill="none" strokeWidth="3" strokeLinecap="round"
+        className={`stroke-current ${color}`}
+        animate={{ pathLength: percent / 100 }}
+        transition={m.gentle}
+      />
+    </svg>
+  );
+}
 
 function DashboardAttendance() {
   const [subjects, setSubjects] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const m = useAppMotion();
 
   const fetchSubjects = async () => {
     try {
@@ -59,48 +81,69 @@ function DashboardAttendance() {
             const conducted = sub.conducted_classes || 0;
             const total = sub.total_classes || 60; // Fallback just in case
             const currentPct = conducted === 0 ? 0 : (attended / conducted) * 100;
-            
+
             // 🔥 NEW: Check if max classes reached
             const isMaxed = conducted >= total;
-            
+
             return (
               <div key={sub.id} className="bg-background p-3 rounded-lg border border-border flex flex-col gap-2">
 
                 <div className="flex justify-between items-start">
-                  <div>
-                    <h3 className="text-sm font-bold text-textPrimary leading-tight">{sub.name}</h3>
-                    <p className="text-[10px] font-mono text-textSecondary mt-0.5">
-                      {sub.room_number || 'Room TBA'} • {conducted}/{total} Classes
-                    </p>
+                  <div className="flex items-center gap-3">
+                    <AttendanceRing percent={currentPct} conducted={conducted} />
+                    <div>
+                      <h3 className="text-sm font-bold text-textPrimary leading-tight">{sub.name}</h3>
+                      <p className="text-[10px] font-mono text-textSecondary mt-0.5">
+                        {sub.room_number || 'Room TBA'} • <NumberRoll value={conducted} />/<NumberRoll value={total} /> Classes
+                      </p>
+                    </div>
                   </div>
                   <span className={`text-xs font-black ${currentPct >= 75 ? 'text-success' : conducted > 0 ? 'text-danger' : 'text-textSecondary'}`}>
-                    {conducted > 0 ? `${currentPct.toFixed(1)}%` : 'N/A'}
+                    {conducted > 0 ? <NumberRoll value={currentPct} decimals={1} suffix="%" /> : 'N/A'}
                   </span>
                 </div>
 
-                <div className="flex gap-2 mt-1">
-                  {isMaxed ? (
-                    <div className="flex-1 bg-surfaceHover border border-border text-textSecondary text-[10px] uppercase tracking-wider font-bold py-1.5 rounded text-center opacity-70 cursor-not-allowed">
-                      Max Classes Reached
-                    </div>
-                  ) : (
-                    <>
-                      <Pressable
-                        onClick={() => logAttendance(sub.id, false)}
-                        haptic="tap"
-                        className="flex-1 bg-surface hover:bg-dangerBg border border-border hover:border-danger/50 text-textSecondary hover:text-danger text-xs font-bold py-1.5 rounded transition-all"
+                <div className="flex gap-2 mt-1 relative">
+                  <AnimatePresence mode="wait" initial={false}>
+                    {isMaxed ? (
+                      <motion.div
+                        key="maxed"
+                        variants={scaleIn}
+                        initial="hidden"
+                        animate="visible"
+                        exit="exit"
+                        transition={m.fast}
+                        className="flex-1 bg-surfaceHover border border-border text-textSecondary text-[10px] uppercase tracking-wider font-bold py-1.5 rounded text-center opacity-70 cursor-not-allowed"
                       >
-                        - Absent
-                      </Pressable>
-                      <Pressable
-                        onClick={() => logAttendance(sub.id, true)}
-                        haptic="tap"
-                        className="flex-1 bg-surface hover:bg-success/20 border border-border hover:border-success/50 text-textSecondary hover:text-success text-xs font-bold py-1.5 rounded transition-all"
+                        Max Classes Reached
+                      </motion.div>
+                    ) : (
+                      <motion.div
+                        key="active"
+                        variants={scaleIn}
+                        initial="hidden"
+                        animate="visible"
+                        exit="exit"
+                        transition={m.fast}
+                        className="flex-1 flex gap-2"
                       >
-                        + Present
-                      </Pressable>
-                    </>
-                  )}
+                        <Pressable
+                          onClick={() => logAttendance(sub.id, false)}
+                          haptic="warning"
+                          className="flex-1 bg-surface hover:bg-dangerBg border border-border hover:border-danger/50 text-textSecondary hover:text-danger text-xs font-bold py-1.5 rounded transition-all"
+                        >
+                          - Absent
+                        </Pressable>
+                        <Pressable
+                          onClick={() => logAttendance(sub.id, true)}
+                          haptic="success"
+                          className="flex-1 bg-surface hover:bg-success/20 border border-border hover:border-success/50 text-textSecondary hover:text-success text-xs font-bold py-1.5 rounded transition-all"
+                        >
+                          + Present
+                        </Pressable>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </div>
 
               </div>

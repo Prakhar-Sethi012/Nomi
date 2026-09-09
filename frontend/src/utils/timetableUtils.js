@@ -128,6 +128,24 @@ export const isClassActiveNow = (dayName, timeString, now = new Date()) => {
   }
 };
 
+// The grid column nearest "now" — the first column whose end time hasn't
+// passed yet, so it reads as "currently in" during a class and "coming up
+// next" between them. Day-independent: TIMES is the same across every day.
+export const getCurrentTimeColumnIndex = (times = TIMES, now = new Date()) => {
+  const currentMinutes = now.getHours() * 60 + now.getMinutes();
+
+  for (let i = 0; i < times.length; i++) {
+    if (times[i] === 'LUNCH') continue;
+    const [startStr, endStr] = times[i].split(' - ');
+    if (!startStr || !endStr) continue;
+
+    const [endH, endM] = endStr.split(':').map(Number);
+    if (currentMinutes <= endH * 60 + endM) return i;
+  }
+
+  return times.length - 1;
+};
+
 // Returns an array of classes for a specific date (defaults to today)
 export const getTodayClasses = (subjects, dateObj = new Date()) => {
   const jsDay = dateObj.getDay(); // 0 = Sun, 1 = Mon ... 6 = Sat
