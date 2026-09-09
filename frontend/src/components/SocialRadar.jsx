@@ -3,6 +3,7 @@ import { api } from '../services/api';
 import ReadOnlyTimetable from './ReadOnlyTimetable';
 import PinConfirmModal from './PinConfirmModal'; // 🔥 IMPORT MODAL
 import BottomSheet from './ui/BottomSheet';
+import HoldToConfirm from './ui/HoldToConfirm';
 
 const formatSmartTime = (minutes) => {
   if (minutes < 0) return { value: 'Now', unit: '' };
@@ -343,12 +344,21 @@ function SocialRadar({ profile, setProfile }) {
                 )}
 
                 {/* 🔥 OPEN MODAL BUTTON */}
-                <button
-                  onClick={() => setPendingCircleAction(activeCircle.creator_id === myProfileId ? 'delete' : 'leave')}
-                  className="text-xs bg-dangerBg hover:bg-danger text-danger hover:text-white border border-danger/30 px-3 py-1.5 rounded transition-all font-bold tracking-wider uppercase"
-                >
-                  {activeCircle.creator_id === myProfileId ? '🗑️ Destroy Circle' : '🚪 Leave Circle'}
-                </button>
+                {activeCircle.creator_id === myProfileId ? (
+                  <HoldToConfirm
+                    onConfirm={() => setPendingCircleAction('delete')}
+                    className="text-xs bg-dangerBg text-danger border border-danger/30 px-3 py-1.5 rounded font-bold tracking-wider uppercase"
+                  >
+                    🗑️ Destroy Circle
+                  </HoldToConfirm>
+                ) : (
+                  <button
+                    onClick={() => setPendingCircleAction('leave')}
+                    className="text-xs bg-dangerBg hover:bg-danger text-danger hover:text-white border border-danger/30 px-3 py-1.5 rounded transition-all font-bold tracking-wider uppercase"
+                  >
+                    🚪 Leave Circle
+                  </button>
+                )}
               </div>
             </div>
 
