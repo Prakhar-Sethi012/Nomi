@@ -1,6 +1,25 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { motion } from 'motion/react';
 import { api } from '../services/api';
 import Pressable from './ui/Pressable';
+import NotificationStack from './ui/NotificationStack';
+import SwipeRow from './ui/SwipeRow';
+
+// The 3-second undo window's own countdown, read straight off the
+// `remaining` state the completion timer already keeps — no separate clock.
+function UndoRing({ remaining, total = 3 }) {
+  return (
+    <svg viewBox="0 0 20 20" className="w-3.5 h-3.5 -rotate-90 shrink-0">
+      <circle cx="10" cy="10" r="8" fill="none" strokeWidth="2" className="stroke-current text-success/25" />
+      <motion.circle
+        cx="10" cy="10" r="8" fill="none" strokeWidth="2" strokeLinecap="round"
+        className="stroke-current text-success"
+        animate={{ pathLength: remaining / total }}
+        transition={{ duration: 1, ease: 'linear' }}
+      />
+    </svg>
+  );
+}
 
 function TasksWidget({ setProfile }) {
   const [tasks, setTasks] = useState([]);
@@ -140,6 +159,95 @@ function TasksWidget({ setProfile }) {
     }));
   };
 
+  // Swipe-left delete is a direct discard, distinct from the checkbox's
+  // complete-then-undo flow — no grace period, since abandoning a task
+  // isn't the same action as finishing it.
+  const handleSwipeDelete = async (id) => {
+    try {
+      await api.deleteTask(id);
+      fetchTasks();
+    } catch {
+      setError('Failed to delete task.');
+    }
+  };
+
+  const renderTaskRow = (task) => {
+    const isOverdue = new Date(task.due_date).setHours(0,0,0,0) < new Date().setHours(0,0,0,0);
+    const isRecurring = task.frequency && task.frequency !== 'Once';
+    const completing = completingTasks[task.id];
+
+    return (
+      <div className={`group relative overflow-hidden rounded-lg border transition-colors duration-500 ${
+        completing ? 'border-success' : isOverdue ? 'border-danger/60' : 'border-border hover:border-accent'
+      }`}>
+        <SwipeRow
+          disabled={!!completing}
+          onDelete={() => handleSwipeDelete(task.id)}
+          onComplete={() => toggleComplete(task.id)}
+        >
+          <div className={`relative p-3 transition-all duration-500 ${
+            completing ? 'opacity-40 scale-[0.98] bg-surfaceHover' : isOverdue ? 'bg-dangerBg' : 'bg-surfaceHover'
+          }`}>
+
+            {!completing && (
+              <Pressable
+                onClick={() => openEditMode(task)}
+                className="absolute top-3 right-3 text-textSecondary hover:text-accent opacity-0 group-hover:opacity-100 transition-opacity"
+                title="Edit Task"
+              >
+                ✎
+              </Pressable>
+            )}
+
+            <div className="flex justify-between items-start mb-2 pr-6">
+              <div className="flex items-start gap-3">
+                <Pressable onClick={() => toggleComplete(task.id)} haptic={completing ? undefined : 'tap'} className={`mt-0.5 shrink-0 w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors ${completing ? 'bg-success border-success' : 'border-border hover:border-success'}`}>
+                  {completing && <span className="text-white text-xs">✓</span>}
+                </Pressable>
+                <div>
+                  <p className={`font-medium text-sm leading-tight transition-all ${completing ? 'text-textSecondary line-through' : isOverdue ? 'text-danger' : 'text-textPrimary'}`}>
+                    {isRecurring && <span className="text-accent mr-1" title={`Repeats ${task.frequency}`}>↻</span>}
+                    {task.title}
+                    {isOverdue && !completing && <span className="ml-2 text-[9px] bg-dangerBg text-danger px-1.5 py-0.5 rounded uppercase tracking-wider font-bold">Overdue</span>}
+                  </p>
+                  {completing && (
+                    <div className="flex items-center gap-1.5 mt-1">
+                      <UndoRing remaining={completing.remaining} />
+                      <p className="text-[10px] text-success font-bold">{isRecurring ? 'Rescheduling...' : 'Undo?'}</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div className="flex justify-between items-end ml-8">
+              <div className="flex flex-wrap gap-1.5">
+                {task.tags.map(tag => (
+                  <span key={tag} className={`text-[10px] uppercase tracking-wider font-bold bg-surface border border-border px-2 py-0.5 rounded ${completing ? 'text-textSecondary' : 'text-accent'}`}>
+                    {tag}
+                  </span>
+                ))}
+              </div>
+              <p className={`text-xs whitespace-nowrap ml-2 ${isOverdue ? 'text-danger font-bold' : 'text-textSecondary'}`}>
+                {new Date(task.due_date).toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+              </p>
+            </div>
+          </div>
+        </SwipeRow>
+      </div>
+    );
+  };
+
+  // Overdue tasks sort to the top — that's the card the collapsed
+  // notification pile actually shows, so the most urgent item is the one
+  // visible without expanding.
+  const sortedTasks = [...tasks].sort((a, b) => {
+    const today = new Date().setHours(0, 0, 0, 0);
+    const aOverdue = new Date(a.due_date).setHours(0, 0, 0, 0) < today;
+    const bOverdue = new Date(b.due_date).setHours(0, 0, 0, 0) < today;
+    return aOverdue === bOverdue ? 0 : aOverdue ? -1 : 1;
+  });
+
   if (isLoading) return <div className="bg-surface p-6 rounded-xl border border-border h-80 flex items-center justify-center text-accent animate-pulse">Syncing tasks...</div>;
 
   return (
@@ -211,66 +319,13 @@ function TasksWidget({ setProfile }) {
           {tasks.length === 0 ? (
             <div className="flex-1 flex items-center justify-center text-textSecondary text-sm">No pending tasks. You're all caught up!</div>
           ) : (
-            <ul className="space-y-3 overflow-y-auto pr-2 custom-scrollbar flex-1">
-              {tasks.map((task) => {
-                const isOverdue = new Date(task.due_date).setHours(0,0,0,0) < new Date().setHours(0,0,0,0);
-                const isRecurring = task.frequency && task.frequency !== 'Once';
-
-                return (
-                  <li key={task.id} className={`group bg-surfaceHover p-3 rounded-lg border transition-all duration-500 relative ${
-                    completingTasks[task.id]
-                      ? 'opacity-40 border-success scale-[0.98]'
-                      : isOverdue
-                        ? 'border-danger/60 bg-dangerBg'
-                        : 'border-border hover:border-accent'
-                  }`}>
-
-                    {!completingTasks[task.id] && (
-                      <Pressable
-                        onClick={() => openEditMode(task)}
-                        className="absolute top-3 right-3 text-textSecondary hover:text-accent opacity-0 group-hover:opacity-100 transition-opacity"
-                        title="Edit Task"
-                      >
-                        ✎
-                      </Pressable>
-                    )}
-
-                    <div className="flex justify-between items-start mb-2 pr-6">
-                      <div className="flex items-start gap-3">
-                        <Pressable onClick={() => toggleComplete(task.id)} haptic={completingTasks[task.id] ? undefined : 'tap'} className={`mt-0.5 shrink-0 w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors ${completingTasks[task.id] ? 'bg-success border-success' : 'border-border hover:border-success'}`}>
-                          {completingTasks[task.id] && <span className="text-white text-xs">✓</span>}
-                        </Pressable>
-                        <div>
-                          <p className={`font-medium text-sm leading-tight transition-all ${completingTasks[task.id] ? 'text-textSecondary line-through' : isOverdue ? 'text-danger' : 'text-textPrimary'}`}>
-                            {isRecurring && <span className="text-accent mr-1" title={`Repeats ${task.frequency}`}>↻</span>}
-                            {task.title}
-                            {isOverdue && !completingTasks[task.id] && <span className="ml-2 text-[9px] bg-dangerBg text-danger px-1.5 py-0.5 rounded uppercase tracking-wider font-bold">Overdue</span>}
-                          </p>
-                          {completingTasks[task.id] && (
-                            <p className="text-[10px] text-success font-bold mt-1">
-                              {isRecurring ? 'Rescheduling...' : `Clearing in ${completingTasks[task.id].remaining}s...`} Undo?
-                            </p>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="flex justify-between items-end ml-8">
-                      <div className="flex flex-wrap gap-1.5">
-                        {task.tags.map(tag => (
-                          <span key={tag} className={`text-[10px] uppercase tracking-wider font-bold bg-surface border border-border px-2 py-0.5 rounded ${completingTasks[task.id] ? 'text-textSecondary' : 'text-accent'}`}>
-                            {tag}
-                          </span>
-                        ))}
-                      </div>
-                      <p className={`text-xs whitespace-nowrap ml-2 ${isOverdue ? 'text-danger font-bold' : 'text-textSecondary'}`}>
-                        {new Date(task.due_date).toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
-                      </p>
-                    </div>
-                  </li>
-                );
-              })}
-            </ul>
+            <div className="overflow-y-auto pr-2 custom-scrollbar flex-1">
+              <NotificationStack
+                items={sortedTasks}
+                keyExtractor={(task) => task.id}
+                renderItem={renderTaskRow}
+              />
+            </div>
           )}
         </>
       )}
