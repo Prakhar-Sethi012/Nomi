@@ -134,7 +134,7 @@ function PortfolioWidget() {
 
                 <Pressable
                   onClick={() => setDeleteTarget(proj.id)} // 🔥 MODIFIED: Opens Modal
-                  className="absolute top-2 right-2 w-6 h-6 bg-dangerBg text-danger rounded text-xs opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center hover:bg-danger hover:text-white z-10"
+                  className="absolute top-2 right-2 w-6 h-6 bg-dangerBg text-danger rounded text-xs opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity flex items-center justify-center hover:bg-danger hover:text-white z-10"
                   title="Delete Project"
                 >
                   ✕

@@ -111,7 +111,7 @@ function Dashboard({ profile, setProfile, setActiveTab }) {
                 title="Click to update CGPA"
               >
                 <span>CGPA: <strong className="text-textPrimary text-[13px]"><NumberRoll value={profile?.cgpa || 0} decimals={2} /></strong></span>
-                <span className="text-[10px] opacity-0 group-hover:opacity-100 transition-opacity">✎</span>
+                <span className="text-[10px] opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">✎</span>
               </div>
             )}
           </div>

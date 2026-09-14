@@ -87,7 +87,7 @@ function CloseFriendsView() {
 
   if (isLoading) {
     return (
-      <div className="w-full max-w-6xl pb-10 mx-auto flex flex-col gap-6 h-[85vh]">
+      <div className="w-full max-w-6xl pb-10 mx-auto flex flex-col gap-6 h-auto md:h-[85dvh]">
         <header className="bg-surface p-6 rounded-xl border border-border shadow-lg flex justify-between items-center shrink-0">
           <div className="flex flex-col gap-2">
             <Skeleton className="h-6 w-40" />
@@ -110,7 +110,7 @@ function CloseFriendsView() {
   }
 
   return (
-    <div className="w-full max-w-6xl pb-10 mx-auto animate-fade-in flex flex-col gap-6 h-[85vh]">
+    <div className="w-full max-w-6xl pb-10 mx-auto animate-fade-in flex flex-col gap-6 h-auto md:h-[85dvh]">
 
       <header className="bg-surface p-6 rounded-xl border border-border shadow-lg flex justify-between items-center shrink-0">
         <div>
@@ -119,7 +119,7 @@ function CloseFriendsView() {
         </div>
       </header>
 
-      <div className="flex-1 overflow-y-auto custom-scrollbar pr-2">
+      <div className="flex-1 md:min-h-0 overflow-visible md:overflow-y-auto custom-scrollbar pr-2">
         {!activeFriend ? (
           <div className="animate-fade-in">
             {friends.length === 0 ? (
@@ -159,14 +159,14 @@ function CloseFriendsView() {
                            <button onClick={(e) => { e.stopPropagation(); setDeletingId(null); }} className="text-[10px] bg-surfaceHover hover:bg-border text-textPrimary px-2 py-1 rounded">No</button>
                          </div>
                       ) : (
-                        <button onClick={(e) => { e.stopPropagation(); setDeletingId(friend.user_id); }} className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 text-xs text-textSecondary hover:text-danger transition-opacity bg-surface/80 px-2 py-1 rounded-md">
+                        <button onClick={(e) => { e.stopPropagation(); setDeletingId(friend.user_id); }} className="absolute top-4 right-4 opacity-100 md:opacity-0 md:group-hover:opacity-100 text-xs text-textSecondary hover:text-danger transition-opacity bg-surface/80 px-2 py-1 rounded-md">
                            ✕ Un-clone
                         </button>
                       )}
 
                       {/* 🔥 NEW: MEETUP BUTTON */}
                       <div className="absolute bottom-4 right-4 flex gap-2">
-                        <button onClick={(e) => { e.stopPropagation(); setMeetupModalUser(friend); }} className="opacity-0 group-hover:opacity-100 text-xs bg-surface hover:bg-accent/30 text-textSecondary hover:text-accent border border-border hover:border-accent px-2 py-1.5 rounded transition-all">
+                        <button onClick={(e) => { e.stopPropagation(); setMeetupModalUser(friend); }} className="opacity-100 md:opacity-0 md:group-hover:opacity-100 text-xs bg-surface hover:bg-accent/30 text-textSecondary hover:text-accent border border-border hover:border-accent px-2 py-1.5 rounded transition-all">
                           🤝 Meet
                         </button>
                       </div>

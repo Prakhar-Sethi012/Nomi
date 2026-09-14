@@ -85,7 +85,7 @@ function AttendanceStrategyView() {
 
   if (isLoading) {
     return (
-      <div className="w-full max-w-6xl pb-10 mx-auto flex flex-col h-[85vh]">
+      <div className="w-full max-w-6xl pb-10 mx-auto flex flex-col h-auto md:h-[85dvh]">
         <div className="bg-indigo-600 p-6 rounded-xl border border-indigo-500 mb-6 shadow-[0_0_15px_rgba(79,70,229,0.15)] flex justify-between items-start">
           <div className="flex flex-col gap-2">
             <Skeleton className="h-6 w-48 bg-white/20" />
@@ -110,7 +110,7 @@ function AttendanceStrategyView() {
   }
 
   return (
-    <div className="w-full max-w-6xl pb-10 mx-auto animate-fade-in flex flex-col h-[85vh]">
+    <div className="w-full max-w-6xl pb-10 mx-auto animate-fade-in flex flex-col h-auto md:h-[85dvh]">
 
       <header className="bg-indigo-600 p-6 rounded-xl border border-indigo-500 mb-6 shadow-[0_0_15px_rgba(79,70,229,0.15)]">
         <div className="flex justify-between items-start">

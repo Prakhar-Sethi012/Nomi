@@ -193,7 +193,7 @@ function TasksWidget({ setProfile }) {
             {!completing && (
               <Pressable
                 onClick={() => openEditMode(task)}
-                className="absolute top-3 right-3 text-textSecondary hover:text-accent opacity-0 group-hover:opacity-100 transition-opacity"
+                className="absolute top-3 right-3 text-textSecondary hover:text-accent opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity"
                 title="Edit Task"
               >
                 ✎

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { AnimatePresence, motion, useDragControls } from 'motion/react';
 import { api } from '../services/api';
 import ReadOnlyTimetable from './ReadOnlyTimetable';
@@ -289,7 +290,7 @@ function SocialRadar({ profile, setProfile }) {
 
   if (isLoading) {
     return (
-      <div className="w-full max-w-6xl pb-10 mx-auto flex flex-col gap-6 h-[85vh]">
+      <div className="w-full max-w-6xl pb-10 mx-auto flex flex-col gap-6 h-auto md:h-[85dvh]">
         <div className="bg-surface p-6 rounded-xl border border-border shadow-lg flex justify-between items-center">
           <div className="flex flex-col gap-2">
             <Skeleton className="h-6 w-40" />
@@ -312,7 +313,7 @@ function SocialRadar({ profile, setProfile }) {
   }
 
   return (
-    <div className="w-full max-w-6xl pb-10 mx-auto animate-fade-in flex flex-col gap-6 h-[85vh]">
+    <div className="w-full max-w-6xl pb-10 mx-auto animate-fade-in flex flex-col gap-6 h-auto md:h-[85dvh]">
 
       <header className="bg-surface p-6 rounded-xl border border-border shadow-lg flex flex-col md:flex-row justify-between items-center gap-4 shrink-0">
         <div>
@@ -524,7 +525,7 @@ function SocialRadar({ profile, setProfile }) {
                       <div className="flex justify-between items-start mb-3">
                         <div className="flex items-center gap-2">
                           <h3 className="text-lg font-bold text-textPrimary">{friend.name}</h3>
-                          <button onClick={(e) => { e.stopPropagation(); setEditingNicknameId(friend.user_id); setNewNickname(friend.name !== friend.real_name ? friend.name : ''); }} className="text-xs opacity-0 group-hover:opacity-100 text-textSecondary hover:text-accent transition-opacity bg-background/80 px-2 py-1 rounded-md">✏️ Edit</button>
+                          <button onClick={(e) => { e.stopPropagation(); setEditingNicknameId(friend.user_id); setNewNickname(friend.name !== friend.real_name ? friend.name : ''); }} className="text-xs opacity-100 md:opacity-0 md:group-hover:opacity-100 text-textSecondary hover:text-accent transition-opacity bg-background/80 px-2 py-1 rounded-md">✏️ Edit</button>
                         </div>
                         <div className={`w-3 h-3 rounded-full ${friend.is_ghost ? 'bg-textSecondary' : isFree ? 'bg-success shadow-[0_0_8px_rgba(16,185,129,0.8)]' : 'bg-danger'}`}></div>
                       </div>
@@ -555,12 +556,12 @@ function SocialRadar({ profile, setProfile }) {
                               Cloned
                            </div>
                         ) : (
-                          <button onClick={(e) => { e.stopPropagation(); setCloningId(friend.user_id); }} className="opacity-0 group-hover:opacity-100 text-xs bg-surface hover:bg-success/20 text-textSecondary hover:text-success border border-border hover:border-success px-2 py-1.5 rounded transition-all">
+                          <button onClick={(e) => { e.stopPropagation(); setCloningId(friend.user_id); }} className="opacity-100 md:opacity-0 md:group-hover:opacity-100 text-xs bg-surface hover:bg-success/20 text-textSecondary hover:text-success border border-border hover:border-success px-2 py-1.5 rounded transition-all">
                             💾 Clone
                           </button>
                         )}
 
-                        <button onClick={(e) => { e.stopPropagation(); setMeetupModalUser(friend); }} className="opacity-0 group-hover:opacity-100 text-xs bg-surface hover:bg-accent/30 text-textSecondary hover:text-accent border border-border hover:border-accent px-2 py-1.5 rounded transition-all">
+                        <button onClick={(e) => { e.stopPropagation(); setMeetupModalUser(friend); }} className="opacity-100 md:opacity-0 md:group-hover:opacity-100 text-xs bg-surface hover:bg-accent/30 text-textSecondary hover:text-accent border border-border hover:border-accent px-2 py-1.5 rounded transition-all">
                           🤝 Meet
                         </button>
                       </div>
@@ -659,9 +660,9 @@ function SocialRadar({ profile, setProfile }) {
       </BottomSheet>
 
       {/* AUDIT LOG MODAL */}
-      {historyLog && (
+      {historyLog && createPortal(
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in" onClick={() => setHistoryLog(null)}>
-          <div className="bg-surface border border-border rounded-xl p-6 shadow-2xl max-w-md w-full max-h-[80vh] flex flex-col" onClick={e => e.stopPropagation()}>
+          <div className="bg-surface border border-border rounded-xl p-6 shadow-2xl max-w-md w-full max-h-[80dvh] flex flex-col" onClick={e => e.stopPropagation()}>
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-xl font-black text-textPrimary">📜 Audit Log (30 Days)</h3>
               <button onClick={() => setHistoryLog(null)} className="text-textSecondary hover:text-textPrimary">✕</button>
@@ -681,7 +682,8 @@ function SocialRadar({ profile, setProfile }) {
               ))}
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* 🔥 NEW PIN MODAL FOR CIRCLES */}

@@ -97,7 +97,7 @@ function LinksView({ userId }) {
               </div>
 
               {/* ACTION BUTTONS (Copy & Delete) */}
-              <div className="absolute top-3 right-3 flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+              <div className="absolute top-3 right-3 flex flex-col gap-2 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
                 
                 {/* Copy Button */}
                 <CopyButton

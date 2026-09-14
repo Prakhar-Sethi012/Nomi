@@ -423,7 +423,7 @@ function ExpensesView({ profile, setProfile }) {
                                 </div>
                                 <div className="flex items-center gap-4">
                                   <span className="text-danger font-black text-xl lg:text-2xl">-₹{exp.amount.toLocaleString('en-IN')}</span>
-                                  <Pressable onClick={() => setDeleteTargetId(exp.id)} className="text-textSecondary hover:bg-dangerBg hover:text-danger w-8 h-8 rounded-xl flex items-center justify-center transition-all opacity-0 group-hover:opacity-100" title="Delete Record">✕</Pressable>
+                                  <Pressable onClick={() => setDeleteTargetId(exp.id)} className="text-textSecondary hover:bg-dangerBg hover:text-danger w-8 h-8 rounded-xl flex items-center justify-center transition-all opacity-100 md:opacity-0 md:group-hover:opacity-100" title="Delete Record">✕</Pressable>
                                 </div>
                               </div>
                             </SwipeRow>

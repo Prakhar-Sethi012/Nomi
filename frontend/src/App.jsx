@@ -154,7 +154,7 @@ function App() {
 
       </nav>
 
-      <div className="w-full max-w-6xl flex justify-center pb-24 md:pb-0">
+      <div className="w-full max-w-6xl flex justify-center pb-[calc(6rem+env(safe-area-inset-bottom))] md:pb-0">
         <PageTransition tabKey={activeTab}>
           {activeTab === 'dashboard' && <Dashboard profile={profile} setProfile={setProfile} setActiveTab={setActiveTab} />}
           {activeTab === 'scratchpad' && <ScratchpadView userId={profile.id} />}

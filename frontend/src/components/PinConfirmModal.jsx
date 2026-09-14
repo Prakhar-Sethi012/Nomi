@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { AnimatePresence, motion, useAnimation } from 'motion/react';
 import { api } from '../services/api';
 import Pressable from './ui/Pressable';
@@ -73,7 +74,7 @@ function PinConfirmModal({ isOpen, onClose, onConfirm, actionText = "Delete Item
     }
   };
 
-  return (
+  return createPortal(
     <AnimatePresence>
       {isOpen && (
         <motion.div
@@ -121,7 +122,8 @@ function PinConfirmModal({ isOpen, onClose, onConfirm, actionText = "Delete Item
           </motion.div>
         </motion.div>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body
   );
 }
 

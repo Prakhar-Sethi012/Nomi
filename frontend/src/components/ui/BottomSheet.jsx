@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { AnimatePresence, motion, useDragControls } from 'motion/react';
 import { useAppMotion } from '../../hooks/useAppMotion';
 
@@ -37,7 +38,7 @@ function BottomSheet({ isOpen, onClose, title, children, layoutId }) {
     if (info.offset.y > 100 || info.velocity.y > 500) onClose();
   };
 
-  return (
+  return createPortal(
     <>
       <AnimatePresence>
         {isOpen && (
@@ -61,7 +62,7 @@ function BottomSheet({ isOpen, onClose, title, children, layoutId }) {
               aria-modal="true"
               aria-label={title}
               onClick={(e) => e.stopPropagation()}
-              className="pointer-events-auto w-full max-h-[85vh] flex flex-col bg-surface border-t border-border rounded-t-2xl shadow-2xl md:max-w-lg md:border md:rounded-2xl"
+              className="pointer-events-auto w-full max-h-[85dvh] flex flex-col bg-surface border-t border-border rounded-t-2xl shadow-2xl md:max-w-lg md:border md:rounded-2xl"
               style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
               initial={layoutId ? undefined : { y: '100%' }}
               animate={layoutId ? undefined : { y: 0 }}
@@ -92,7 +93,8 @@ function BottomSheet({ isOpen, onClose, title, children, layoutId }) {
           </div>
         )}
       </AnimatePresence>
-    </>
+    </>,
+    document.body
   );
 }
 

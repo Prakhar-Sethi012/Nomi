@@ -170,7 +170,7 @@ function TimetableView() {
 
   if (isLoading) {
     return (
-      <div className="w-full max-w-7xl pb-10 mx-auto flex flex-col h-[85vh]">
+      <div className="w-full max-w-7xl pb-10 mx-auto flex flex-col h-auto md:h-[85dvh]">
         <div className="bg-surface p-6 rounded-xl border border-border mb-6 shadow-lg flex justify-between items-center">
           <div className="flex flex-col gap-2">
             <Skeleton className="h-6 w-48" />
@@ -191,7 +191,7 @@ function TimetableView() {
   }
 
   return (
-    <div className="w-full max-w-7xl pb-10 mx-auto animate-fade-in flex flex-col h-[85vh]">
+    <div className="w-full max-w-7xl pb-10 mx-auto animate-fade-in flex flex-col h-auto md:h-[85dvh]">
 
       <header className="bg-surface p-6 rounded-xl border border-border mb-6 shadow-lg flex justify-between items-center shrink-0 transition-colors duration-300">
         <div>
@@ -259,7 +259,7 @@ function TimetableView() {
       </BottomSheet>
 
       {viewMode === 'grid' && (
-        <div className="flex-1 bg-background rounded-xl border border-border overflow-auto custom-scrollbar shadow-inner transition-colors duration-300 snap-x snap-mandatory">
+        <div className="flex-1 md:min-h-0 bg-background rounded-xl border border-border overflow-x-auto md:overflow-auto custom-scrollbar shadow-inner transition-colors duration-300 snap-x snap-mandatory">
           <table className="w-full text-left border-collapse min-w-[1000px]">
             <thead>
               <tr>
@@ -305,7 +305,7 @@ function TimetableView() {
                             <span className="text-xs font-bold text-white leading-tight line-clamp-2">{cellData.data.name}</span>
                             <span className="text-[9px] text-white/70 mt-1">{cellStr} • {cellData.data.room_number || 'TBA'}</span>
                           </div>
-                          <div className="absolute top-0 right-0 hidden group-hover:flex">
+                          <div className="absolute top-0 right-0 flex md:hidden md:group-hover:flex">
                             <button onClick={() => setDeleteSubjectId(cellData.data.id)} className="bg-danger text-white text-[10px] px-1.5 py-0.5 rounded-bl-md shadow hover:bg-red-500">✕</button>
                           </div>
                         </td>
@@ -326,7 +326,7 @@ function TimetableView() {
       )}
 
       {viewMode === 'agenda' && (
-        <div ref={agendaScrollRef} className="flex-1 overflow-y-auto custom-scrollbar pr-2 flex flex-col gap-6">
+        <div ref={agendaScrollRef} className="flex-1 md:min-h-0 overflow-visible md:overflow-y-auto custom-scrollbar pr-2 flex flex-col gap-6">
           {DAYS.map((day, rIndex) => {
             const activeClassesToday = MASTER_GRID[rIndex].map((cellStr, cIndex) => ({
               time: TIMES[cIndex],

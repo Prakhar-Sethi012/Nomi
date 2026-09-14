@@ -139,7 +139,7 @@ function ScratchpadView({ userId }) {
   };
 
   return (
-    <div className="w-full max-w-6xl pb-10 mx-auto animate-fade-in flex flex-col h-[85vh]">
+    <div className="w-full max-w-6xl pb-10 mx-auto animate-fade-in flex flex-col h-auto md:h-[85dvh]">
       <header className="bg-surface p-6 rounded-xl border border-border mb-6 shadow-lg flex justify-between items-center shrink-0">
         <div>
           <h1 className="text-2xl font-bold text-textPrimary mb-1">The Scratchpad</h1>
@@ -186,7 +186,7 @@ function ScratchpadView({ userId }) {
                             <h3 className="font-bold text-textPrimary text-sm truncate pr-2">{note.title || 'Untitled'}</h3>
                             <button
                               onClick={(e) => { e.stopPropagation(); setDeleteNoteId(note.id); }}
-                              className="text-textSecondary hover:text-danger opacity-0 group-hover:opacity-100 transition-opacity"
+                              className="text-textSecondary hover:text-danger opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity"
                             >
                               ✕
                             </button>

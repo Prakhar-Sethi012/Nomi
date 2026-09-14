@@ -56,9 +56,20 @@
   --color-success: #22c55e; 
 }
 
+/* Mobile-PWA hardening: kill the 300ms tap delay + double-tap zoom without
+   touching pinch-zoom, and drop the native gray tap flash that clashes with
+   Pressable's own whileTap animation. */
+html {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
 /* Smooth transitions for theme switching */
 body {
   background-color: var(--color-bg);
   color: var(--color-text-primary);
   transition: background-color 0.3s ease, color 0.3s ease;
+  /* Stops the browser's own overscroll/rubber-band + native pull-to-refresh
+     from fighting the custom PullToRefresh drag gesture. */
+  overscroll-behavior-y: contain;
 }

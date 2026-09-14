@@ -77,7 +77,7 @@ function ReadOnlyTimetable({ subjects }) {
   const currentColIndex = getCurrentTimeColumnIndex(TIMES, now);
 
   return (
-    <div className="w-full flex flex-col h-[70vh] animate-fade-in">
+    <div className="w-full flex flex-col h-auto md:h-[70dvh] animate-fade-in">
       <div className="flex gap-4 items-center mb-4 self-end">
         <SegmentedControl
           value={viewMode}
@@ -90,7 +90,7 @@ function ReadOnlyTimetable({ subjects }) {
       </div>
 
       {viewMode === 'grid' && (
-        <div className="flex-1 bg-background rounded-xl border border-border overflow-auto custom-scrollbar shadow-inner snap-x snap-mandatory">
+        <div className="flex-1 md:min-h-0 bg-background rounded-xl border border-border overflow-x-auto md:overflow-auto custom-scrollbar shadow-inner snap-x snap-mandatory">
           <table className="w-full text-left border-collapse min-w-[1000px]">
             <thead>
               <tr>
@@ -144,7 +144,7 @@ function ReadOnlyTimetable({ subjects }) {
       )}
 
       {viewMode === 'agenda' && (
-        <div ref={agendaScrollRef} className="flex-1 overflow-y-auto custom-scrollbar pr-2 flex flex-col gap-6">
+        <div ref={agendaScrollRef} className="flex-1 md:min-h-0 overflow-visible md:overflow-y-auto custom-scrollbar pr-2 flex flex-col gap-6">
           {DAYS.map((day, rIndex) => {
             const activeClassesToday = MASTER_GRID[rIndex].map((cellStr, cIndex) => ({
               time: TIMES[cIndex], cellData: getSubjectForCell(cellStr)

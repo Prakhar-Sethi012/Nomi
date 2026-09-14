@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { AnimatePresence, motion } from 'motion/react';
 import Pressable from '../ui/Pressable';
 import { useAppMotion } from '../../hooks/useAppMotion';
@@ -26,7 +27,7 @@ function MoreSheet({ isOpen, activeTab, onSelect, onClose, onLogout }) {
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [isOpen, onClose]);
 
-  return (
+  return createPortal(
     <>
       <AnimatePresence>
         {isOpen && (
@@ -84,7 +85,8 @@ function MoreSheet({ isOpen, activeTab, onSelect, onClose, onLogout }) {
           </motion.div>
         )}
       </AnimatePresence>
-    </>
+    </>,
+    document.body
   );
 }
 
