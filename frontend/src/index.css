@@ -64,6 +64,33 @@ html {
   -webkit-tap-highlight-color: transparent;
 }
 
+/* Distinctive typography (skills.md): extreme weight contrast instead of the
+   safe 400/500/600 range, applied globally via bare selectors so every
+   existing h1/h2/h3 and body copy across the app picks it up for free.
+   Weight itself is left to each heading's own font-bold/font-black utility
+   (a class selector always outranks this bare-tag rule on specificity, so
+   a font-weight here would be silently dead code almost everywhere) — those
+   utilities already sit at 700/900, which is real contrast against body's 300. */
+h1, h2, h3 {
+  font-family: theme('fontFamily.display');
+  letter-spacing: -0.02em;
+}
+
+body, p {
+  font-family: theme('fontFamily.sans');
+  font-weight: 300;
+}
+
+/* Subtle theme-adaptive blueprint grid — reads var(--color-border) so it
+   stays coherent across all three themes instead of a hardcoded rgba tone.
+   Used behind the Scratchpad's fullscreen Focus Mode for atmospheric depth. */
+.bg-grid-pattern {
+  background-image:
+    linear-gradient(var(--color-border) 1px, transparent 1px),
+    linear-gradient(90deg, var(--color-border) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+
 /* Smooth transitions for theme switching */
 body {
   background-color: var(--color-bg);

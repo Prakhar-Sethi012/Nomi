@@ -6,6 +6,16 @@ export default {
   ],
   theme: {
     extend: {
+      fontFamily: {
+        // Command Center's own aesthetic reference: terminal/hacker-console,
+        // already implied by the existing copy ("Decrypting Terminal...",
+        // Cyberpunk theme, mono-set PINs/passcodes) — Space Grotesk gives
+        // headers a distinctive geometric weight, JetBrains Mono replaces the
+        // generic system mono stack everywhere `font-mono` is already used.
+        display: ['"Space Grotesk"', 'sans-serif'],
+        sans: ['Inter', 'sans-serif'],
+        mono: ['"JetBrains Mono"', 'monospace'],
+      },
       colors: {
         background: "var(--color-bg)",
         surface: "var(--color-surface)",
