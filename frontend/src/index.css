@@ -2,13 +2,16 @@
 @tailwind components;
 @tailwind utilities;
 
-/* 1. COMMAND DARK (default) — same navy base as before, but the accent moves
-   off the "safe blue" skills.md explicitly flags, to a mission-control amber. */
+/* 1. COMMAND DARK (default) — true OLED black instead of the old slate-navy
+   base, so it actually reads as a high-end terminal rather than "dark grey
+   app". Surfaces are a barely-there charcoal, just enough lift to separate
+   cards from the black behind them. Accent unchanged: mission-control amber,
+   off the "safe blue" skills.md explicitly flags. */
 :root {
-  --color-bg: #0f172a;
-  --color-surface: #1e293b;
-  --color-surface-hover: #334155;
-  --color-border: #334155;
+  --color-bg: #000000;
+  --color-surface: #0a0a0a;
+  --color-surface-hover: #161616;
+  --color-border: #1f1f1f;
 
   --color-text-primary: #ffffff;
   --color-text-secondary: #94a3b8;
