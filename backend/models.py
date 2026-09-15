@@ -1,7 +1,33 @@
-from sqlalchemy import Column, Integer, String, Float, Date, ARRAY, DateTime, Boolean, ForeignKey,JSON
+import json
+from sqlalchemy import Column, Integer, String, Float, Date, DateTime, Boolean, ForeignKey, Text, TypeDecorator
 from sqlalchemy.orm import relationship
 import datetime
 from database import Base
+
+
+class JSONEncodedValue(TypeDecorator):
+    """Stores an arbitrary JSON-serializable Python value (list, dict, ...)
+    as plain TEXT, so the same column definition works unmodified on both
+    SQLite (no native array type) and Postgres — instead of the Postgres-only
+    ARRAY(String). Swaps in transparently at the ORM layer: reads still come
+    back as a real Python list/dict, writes are json.dumps() under the hood.
+    """
+    impl = Text
+    cache_ok = True
+
+    def __init__(self, default_factory=dict, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.default_factory = default_factory
+
+    def process_bind_param(self, value, dialect):
+        if value is None:
+            value = self.default_factory()
+        return json.dumps(value)
+
+    def process_result_value(self, value, dialect):
+        if value is None:
+            return self.default_factory()
+        return json.loads(value)
 
 class Profile(Base):
     __tablename__ = "profile"
@@ -13,12 +39,12 @@ class Profile(Base):
     app_pin = Column(String, nullable=False)          
     current_streak = Column(Integer, default=0)
     last_active_date = Column(Date, nullable=True)
-    custom_task_tags = Column(ARRAY(String), default=[]) 
+    custom_task_tags = Column(JSONEncodedValue(list), default=list)
     is_ghost = Column(Boolean, default=False)
     monthly_limit = Column(Float, nullable=True, default=0.0)
     is_npc = Column(Boolean, default=False)
     managed_by = Column(Integer, ForeignKey("profile.id", ondelete="CASCADE"), nullable=True)
-    monthly_budgets = Column(JSON, default={})
+    monthly_budgets = Column(JSONEncodedValue(dict), default=dict)
     security_question = Column(String, nullable=True)
     security_answer = Column(String, nullable=True)
     
@@ -30,9 +56,9 @@ class Task(Base):
     title = Column(String, nullable=False)
     task_type = Column(String, nullable=False)        
     due_date = Column(DateTime, nullable=False)
-    status = Column(String, default="Pending")        
-    tags = Column(ARRAY(String), nullable=False)      
-    completed_at = Column(DateTime, nullable=True)    
+    status = Column(String, default="Pending")
+    tags = Column(JSONEncodedValue(list), nullable=False)
+    completed_at = Column(DateTime, nullable=True)
     is_todo = Column(Boolean, default=False)
     frequency = Column(String, default="Once", nullable=False)
     
@@ -58,7 +84,7 @@ class Expense(Base):
     amount = Column(Float, nullable=False)
     reason = Column(String, nullable=False)
     date = Column(Date, nullable=False)
-    tags = Column(ARRAY(String), nullable=False)      
+    tags = Column(JSONEncodedValue(list), nullable=False)
 
 class PortfolioItem(Base):
     __tablename__ = "portfolio"
@@ -68,7 +94,7 @@ class PortfolioItem(Base):
     item_type = Column(String, nullable=False)        
     title = Column(String, nullable=False)
     description = Column(String, nullable=True)
-    links = Column(ARRAY(String), default=[])         
+    links = Column(JSONEncodedValue(list), default=list)
 
 # ==========================================
 # MULTIPLAYER SOCIAL MODELS
