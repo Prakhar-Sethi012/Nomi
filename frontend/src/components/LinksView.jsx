@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import CopyButton from './ui/CopyButton';
+import PinConfirmModal from './PinConfirmModal';
 
 function LinksView({ userId }) {
   // Namespaced per-user so switching accounts on a shared browser doesn't
@@ -18,6 +19,7 @@ function LinksView({ userId }) {
 
   const [showForm, setShowForm] = useState(false);
   const [formData, setFormData] = useState({ name: '', url: '', icon: '🔗', desc: '' });
+  const [deleteTargetId, setDeleteTargetId] = useState(null);
 
   // 2. Auto-save to local storage whenever the links array changes
   useEffect(() => {
@@ -32,9 +34,13 @@ function LinksView({ userId }) {
     setFormData({ name: '', url: '', icon: '🔗', desc: '' });
   };
 
-  const handleDelete = (e, id) => {
+  const handleDeleteClick = (e, id) => {
     e.preventDefault(); // Stop the link from opening
     e.stopPropagation(); // Stop the click from bubbling up
+    setDeleteTargetId(id);
+  };
+
+  const executeDeleteLink = (id) => {
     setLinks(links.filter(link => link.id !== id));
   };
 
@@ -107,8 +113,8 @@ function LinksView({ userId }) {
                 />
 
                 {/* Delete Button */}
-                <button 
-                  onClick={(e) => handleDelete(e, link.id)}
+                <button
+                  onClick={(e) => handleDeleteClick(e, link.id)}
                   className="bg-slate-700 hover:bg-red-900/80 text-slate-400 hover:text-red-400 p-1.5 rounded-md border border-slate-600 hover:border-red-500/50 transition-colors"
                   title="Delete Link"
                 >
@@ -119,6 +125,16 @@ function LinksView({ userId }) {
           ))}
         </div>
       )}
+
+      <PinConfirmModal
+        isOpen={deleteTargetId !== null}
+        onClose={() => setDeleteTargetId(null)}
+        onConfirm={() => {
+          executeDeleteLink(deleteTargetId);
+          setDeleteTargetId(null);
+        }}
+        actionText="Delete Link"
+      />
     </div>
   );
 }
