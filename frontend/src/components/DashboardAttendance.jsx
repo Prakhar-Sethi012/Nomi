@@ -59,7 +59,7 @@ function DashboardAttendance() {
 
   if (isLoading) {
     return (
-      <div className="bg-surface p-5 rounded-xl border border-border shadow-lg flex flex-col h-full max-h-[400px] gap-3">
+      <div className="bg-surface p-5 rounded-xl border border-border shadow-lg flex flex-col h-auto md:h-full md:max-h-[400px] gap-3">
         <div className="flex justify-between items-end mb-1 shrink-0 border-b border-border pb-3">
           <Skeleton className="h-5 w-28" />
           <Skeleton className="h-3 w-20" />
@@ -78,7 +78,7 @@ function DashboardAttendance() {
   }
 
   return (
-    <div className="bg-surface p-5 rounded-xl border border-border shadow-lg flex flex-col h-full max-h-[400px]">
+    <div className="bg-surface p-5 rounded-xl border border-border shadow-lg flex flex-col h-auto md:h-full md:max-h-[400px]">
 
       <div className="flex justify-between items-end mb-4 shrink-0 border-b border-border pb-3">
         <div>
@@ -90,7 +90,7 @@ function DashboardAttendance() {
         <span className="text-[10px] text-accent uppercase tracking-widest font-bold">Synced w/ Timetable</span>
       </div>
 
-      <div className="flex-1 overflow-y-auto custom-scrollbar pr-2 flex flex-col gap-3">
+      <div className="flex-1 md:min-h-0 overflow-visible md:overflow-y-auto custom-scrollbar pr-2 flex flex-col gap-3">
         {subjects.length === 0 ? (
           <p className="text-xs text-textSecondary text-center mt-10">Go to the Timetable tab to add your classes first.</p>
         ) : (

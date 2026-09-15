@@ -251,7 +251,7 @@ function TasksWidget({ setProfile }) {
 
   if (isLoading) {
     return (
-      <div className="bg-surface p-5 rounded-xl border border-border shadow-lg flex flex-col h-[400px] gap-3">
+      <div className="bg-surface p-5 rounded-xl border border-border shadow-lg flex flex-col h-auto md:h-[400px] gap-3">
         <div className="flex justify-between items-center mb-1">
           <Skeleton className="h-6 w-32" />
           <Skeleton className="h-5 w-8 rounded-full" />
@@ -270,7 +270,7 @@ function TasksWidget({ setProfile }) {
   }
 
   return (
-    <div className="bg-surface p-5 rounded-xl border border-border shadow-lg flex flex-col h-[400px]">
+    <div className="bg-surface p-5 rounded-xl border border-border shadow-lg flex flex-col h-auto md:h-[400px]">
       <h2 className="text-xl font-bold text-textPrimary mb-4 flex justify-between items-center">
         Action Items
         {!showForm && !editingTaskId && <span className="text-xs bg-accent text-white px-2 py-1 rounded-full">{tasks.length}</span>}
@@ -279,7 +279,7 @@ function TasksWidget({ setProfile }) {
       {error && <div className="bg-dangerBg border border-danger text-danger text-xs p-2 rounded mb-2 overflow-x-auto max-h-16 font-mono">{error}</div>}
 
       {showForm || editingTaskId ? (
-        <form onSubmit={handleSubmit} className="flex-1 flex flex-col gap-3 overflow-y-auto custom-scrollbar pr-2">
+        <form onSubmit={handleSubmit} className="flex-1 md:min-h-0 flex flex-col gap-3 overflow-visible md:overflow-y-auto custom-scrollbar pr-2">
           <input type="text" placeholder="Task Title" required value={formData.title} onChange={(e) => setFormData({...formData, title: e.target.value})} className="w-full p-2 bg-background rounded text-sm text-textPrimary border border-border focus:border-accent outline-none" />
 
           <div className="flex gap-2">
@@ -338,7 +338,7 @@ function TasksWidget({ setProfile }) {
           {tasks.length === 0 ? (
             <div className="flex-1 flex items-center justify-center text-textSecondary text-sm">No pending tasks. You're all caught up!</div>
           ) : (
-            <div className="overflow-y-auto pr-2 custom-scrollbar flex-1">
+            <div className="overflow-visible md:overflow-y-auto pr-2 custom-scrollbar flex-1 md:min-h-0">
               <NotificationStack
                 items={sortedTasks}
                 keyExtractor={(task) => task.id}
