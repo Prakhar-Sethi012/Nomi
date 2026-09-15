@@ -51,3 +51,37 @@ export function CloudOverlay() {
     </div>
   );
 }
+
+const RAY_COUNT = 8;
+
+// A sun that pops in, then glows and pulses a few times with rays radiating
+// out from its center — reads as "brightening up" rather than a static icon.
+export function SunOverlay() {
+  return (
+    <div className="absolute inset-0 overflow-hidden flex items-center justify-end pr-8">
+      <motion.div
+        className="relative w-20 h-20"
+        initial={{ opacity: 0, scale: 0.5 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.6, ease: 'easeOut' }}
+      >
+        <motion.div
+          className="absolute inset-0 rounded-full bg-amber-300"
+          style={{ filter: 'blur(18px)' }}
+          animate={{ opacity: [0.4, 0.85, 0.4], scale: [1, 1.2, 1] }}
+          transition={{ duration: 1.4, repeat: 2, ease: 'easeInOut' }}
+        />
+        {Array.from({ length: RAY_COUNT }).map((_, i) => (
+          <motion.div
+            key={i}
+            className="absolute top-1/2 left-1/2 w-1 h-7 bg-amber-200/70 rounded-full origin-bottom"
+            style={{ transform: `rotate(${i * 45}deg) translateY(-36px)` }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: [0, 0.9, 0] }}
+            transition={{ duration: 1.4, repeat: 2, delay: i * 0.08, ease: 'easeInOut' }}
+          />
+        ))}
+      </motion.div>
+    </div>
+  );
+}

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { RainOverlay, CloudOverlay } from './ui/WeatherAnimations';
+import { RainOverlay, CloudOverlay, SunOverlay } from './ui/WeatherAnimations';
 
 // Maps the widget's already-computed theme label to which localized
 // animation should play over the card — kept separate from getWeatherTheme
@@ -7,6 +7,7 @@ import { RainOverlay, CloudOverlay } from './ui/WeatherAnimations';
 const getAnimationType = (themeText) => {
   if (themeText === 'Raining') return 'rainy';
   if (themeText === 'Partly Cloudy' || themeText === 'Cloudy') return 'cloudy';
+  if (themeText === 'Clear Sky') return 'sunny';
   return null;
 };
 
@@ -141,6 +142,7 @@ function WeatherWidget() {
 
       {animationType === 'rainy' && <RainOverlay key={`rainy-${refreshKey}`} />}
       {animationType === 'cloudy' && <CloudOverlay key={`cloudy-${refreshKey}`} />}
+      {animationType === 'sunny' && <SunOverlay key={`sunny-${refreshKey}`} />}
 
       <div className="flex items-center gap-3 relative z-10">
         <div className="text-4xl filter drop-shadow-md">
