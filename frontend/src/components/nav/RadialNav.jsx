@@ -13,6 +13,22 @@ const DRAG_SURFACE_SIZE = (RADIUS + ITEM_SIZE) * 2;
 const RING_R = RADIUS - 5; // 5px inset so the stroke doesn't clip at the viewBox edge
 const RING_SIZE = RADIUS * 2;
 
+// Curved label geometry — this is a *separate*, much smaller arc than the
+// big wheel-radius guide ring above: it hugs just outside each icon's own
+// boundary, not the orbit path. Same for every item, so it's one constant
+// path string reused by all of them rather than recomputed per instance.
+const ICON_RADIUS = ITEM_SIZE / 2;
+const LABEL_PAD = 22; // clearance around the icon box for the curved text
+const LABEL_ARC_R = ICON_RADIUS + 7;
+const LABEL_BOX = ITEM_SIZE + LABEL_PAD * 2;
+const LABEL_CENTER = LABEL_PAD + ICON_RADIUS;
+// A semicircle arcing over the TOP of the icon (sweep-flag 0), left point to
+// right point. Text laid along this — left to right, un-flipped — renders
+// with each glyph's baseline hugging the curve and its cap-height pointing
+// away from the icon: exactly "letters arch over the top, bottoms point
+// inward toward the icon" with no manual per-character rotation at all.
+const LABEL_CURVE_D = `M ${LABEL_CENTER - LABEL_ARC_R} ${LABEL_CENTER} A ${LABEL_ARC_R} ${LABEL_ARC_R} 0 0 0 ${LABEL_CENTER + LABEL_ARC_R} ${LABEL_CENTER}`;
+
 // Dashboard, Timetable, and Profile are pinned outside the wheel (see
 // PinnedNavButton below and App.jsx's top-right Profile pin) since they're
 // the three destinations reached often enough that a two-step "open wheel,
@@ -61,28 +77,47 @@ function RadialNavItem({ item, index, rotation, layout, isOpen, isActive, m, onN
   // stacked at opacity 0. Recomputed off the same opacity transform rather
   // than a fixed threshold on `isOpen`, so it tracks the real edge-fade too.
   const pointerEvents = useTransform(opacity, (o) => (o > 0.05 ? 'auto' : 'none'));
+  const pathId = `radial-label-curve-${item.id}`;
 
   return (
     <div
       className="absolute left-1/2 top-1/2 pointer-events-none"
       style={{ width: ITEM_SIZE, height: ITEM_SIZE, marginLeft: -ITEM_SIZE / 2, marginTop: -ITEM_SIZE / 2 }}
     >
-      <motion.button
-        type="button"
-        onClick={() => onNavigate(item)}
-        aria-label={item.label}
-        title={item.label}
-        style={{ x, y, opacity, scale, pointerEvents }}
-        className={`absolute inset-0 rounded-full flex items-center justify-center text-xl shadow-lg border transition-colors ${
-          item.isDanger
-            ? 'bg-dangerBg border-danger/40 text-danger'
-            : isActive
-              ? 'bg-accent border-accentHover text-white'
-              : 'bg-surface border-border text-textPrimary'
-        }`}
-      >
-        {item.icon}
-      </motion.button>
+      {/* Icon + curved label move together as one rigid unit, so the label
+          never needs its own per-frame rotation math — it just inherits
+          whatever x/y/scale the icon already has. */}
+      <motion.div style={{ x, y, opacity, scale, pointerEvents }} className="absolute inset-0">
+        <svg
+          viewBox={`0 0 ${LABEL_BOX} ${LABEL_BOX}`}
+          style={{ position: 'absolute', left: -LABEL_PAD, top: -LABEL_PAD, width: LABEL_BOX, height: LABEL_BOX }}
+          className={`pointer-events-none ${item.isDanger ? 'text-danger' : 'text-textSecondary'}`}
+          aria-hidden="true"
+        >
+          <path id={pathId} d={LABEL_CURVE_D} fill="none" />
+          <text fill="currentColor" style={{ fontSize: 9, fontWeight: 700 }}>
+            <textPath href={`#${pathId}`} startOffset="50%" textAnchor="middle">
+              {item.label}
+            </textPath>
+          </text>
+        </svg>
+
+        <button
+          type="button"
+          onClick={() => onNavigate(item)}
+          aria-label={item.label}
+          title={item.label}
+          className={`absolute inset-0 rounded-full flex items-center justify-center text-xl shadow-lg border transition-colors ${
+            item.isDanger
+              ? 'bg-dangerBg border-danger/40 text-danger'
+              : isActive
+                ? 'bg-accent border-accentHover text-white'
+                : 'bg-surface border-border text-textPrimary'
+          }`}
+        >
+          {item.icon}
+        </button>
+      </motion.div>
     </div>
   );
 }
