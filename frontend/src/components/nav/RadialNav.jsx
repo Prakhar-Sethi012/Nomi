@@ -10,6 +10,8 @@ const RADIUS = 115;
 const ITEM_SIZE = 48;
 const FAB_SIZE = 64;
 const DRAG_SURFACE_SIZE = (RADIUS + ITEM_SIZE) * 2;
+const RING_R = RADIUS - 5; // 5px inset so the stroke doesn't clip at the viewBox edge
+const RING_SIZE = RADIUS * 2;
 
 // Dashboard, Timetable, and Profile are pinned outside the wheel (see
 // PinnedNavButton below and App.jsx's top-right Profile pin) since they're
@@ -167,6 +169,44 @@ function RadialNav({ activeTab, onSelect, onLogout }) {
         <PinnedNavButton item={HOME_ITEM} isActive={activeTab === 'dashboard'} onClick={() => handlePinnedSelect('dashboard')} />
 
         <div className="relative" style={{ width: FAB_SIZE, height: FAB_SIZE }}>
+
+          {/* Guide ring: a static "track" the icons visually slide along.
+              Deliberately doesn't rotate with the wheel — a fixed rail with
+              icons moving along it reads more like a real track than one
+              where the rail itself also spins. Purely decorative, so it
+              sits behind everything else and never intercepts a touch. */}
+          <AnimatePresence>
+            {isOpen && (
+              <motion.div
+                key="radial-guide-ring"
+                className="absolute pointer-events-none"
+                style={{
+                  width: RING_SIZE,
+                  height: RING_SIZE,
+                  left: '50%',
+                  top: '50%',
+                  marginLeft: -RING_SIZE / 2,
+                  marginTop: -RING_SIZE / 2,
+                }}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={m.base}
+              >
+                <svg viewBox={`0 0 ${RING_SIZE} ${RING_SIZE}`} className="w-full h-full overflow-visible" aria-hidden="true">
+                  <path
+                    d={`M ${RADIUS - RING_R} ${RADIUS} A ${RING_R} ${RING_R} 0 0 0 ${RADIUS + RING_R} ${RADIUS}`}
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.5"
+                    strokeDasharray="3 7"
+                    strokeLinecap="round"
+                    className="text-border"
+                  />
+                </svg>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           {/* Drag surface: sits behind the FAB/icons in stacking order, so
               taps on them still win hit-testing, but any touch landing on
