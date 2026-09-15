@@ -12,8 +12,7 @@ import ExpensesView from './components/ExpensesView';
 import AuthScreen from './components/AuthScreen';
 import SocialRadar from './components/SocialRadar';
 import CloseFriendsView from './components/CloseFriendsView';
-import BottomTabBar from './components/nav/BottomTabBar';
-import MoreSheet from './components/nav/MoreSheet';
+import RadialNav from './components/nav/RadialNav';
 import PageTransition from './components/ui/PageTransition';
 
 function App() {
@@ -21,7 +20,6 @@ function App() {
   const [profile, setProfile] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(!!localStorage.getItem('token'));
-  const [isMoreOpen, setIsMoreOpen] = useState(false);
 
   // =========================================
   // 1. AUTHENTICATE & FETCH PROFILE
@@ -75,18 +73,6 @@ function App() {
     localStorage.removeItem('token');
     setIsAuthenticated(false);
     setProfile(null);
-  };
-
-  // =========================================
-  // 4. BOTTOM TAB BAR SELECTION (mobile)
-  // =========================================
-  const handleBottomTabSelect = (tabId) => {
-    if (tabId === 'more') {
-      setIsMoreOpen((prev) => !prev);
-      return;
-    }
-    setIsMoreOpen(false);
-    setActiveTab(tabId);
   };
 
   // =========================================
@@ -168,14 +154,7 @@ function App() {
         </PageTransition>
       </div>
 
-      <BottomTabBar activeTab={activeTab} isMoreOpen={isMoreOpen} onSelect={handleBottomTabSelect} />
-      <MoreSheet
-        isOpen={isMoreOpen}
-        activeTab={activeTab}
-        onSelect={setActiveTab}
-        onClose={() => setIsMoreOpen(false)}
-        onLogout={handleLogout}
-      />
+      <RadialNav activeTab={activeTab} onSelect={setActiveTab} onLogout={handleLogout} />
     </div>
   );
 }

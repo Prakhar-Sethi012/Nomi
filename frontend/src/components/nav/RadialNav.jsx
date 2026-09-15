@@ -48,6 +48,13 @@ function RadialNavItem({ item, index, rotation, layout, isOpen, isActive, m, onN
   const y = useTransform([rotation, progress], ([r, p]) => layout.getPosition(index, r).y * p);
   const opacity = useTransform([rotation, progress], ([r, p]) => layout.getPosition(index, r).opacity * p);
   const scale = useTransform([rotation, progress], ([r, p]) => layout.getPosition(index, r).scale * (0.5 + 0.5 * p));
+  // A collapsed/edge-faded icon must never be tappable just because it's
+  // still technically mounted — otherwise the *first* item in DOM order
+  // (or whichever one ends up on top during the brief fan-out animation)
+  // can silently eat a tap meant for the FAB while everything is still
+  // stacked at opacity 0. Recomputed off the same opacity transform rather
+  // than a fixed threshold on `isOpen`, so it tracks the real edge-fade too.
+  const pointerEvents = useTransform(opacity, (o) => (o > 0.05 ? 'auto' : 'none'));
 
   return (
     <div
@@ -59,8 +66,8 @@ function RadialNavItem({ item, index, rotation, layout, isOpen, isActive, m, onN
         onClick={() => onNavigate(item)}
         aria-label={item.label}
         title={item.label}
-        style={{ x, y, opacity, scale }}
-        className={`absolute inset-0 rounded-full pointer-events-auto flex items-center justify-center text-xl shadow-lg border transition-colors ${
+        style={{ x, y, opacity, scale, pointerEvents }}
+        className={`absolute inset-0 rounded-full flex items-center justify-center text-xl shadow-lg border transition-colors ${
           item.isDanger
             ? 'bg-dangerBg border-danger/40 text-danger'
             : isActive
