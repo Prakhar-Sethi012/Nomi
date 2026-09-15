@@ -1,11 +1,9 @@
-import { useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 
 const DROP_COUNT = 7;
 
 // A handful of raindrops falling top to bottom, staggered so they don't all
-// land in sync. Plays a few times then just stops — this is a one-shot
-// "weather just loaded" moment, not a permanent background loop.
+// land in sync, looping forever for as long as the widget stays rainy.
 export function RainOverlay() {
   return (
     <>
@@ -18,7 +16,8 @@ export function RainOverlay() {
           animate={{ y: '140%', opacity: [0, 1, 1, 0] }}
           transition={{
             duration: 0.9,
-            repeat: 3,
+            repeat: Infinity,
+            repeatType: 'loop',
             delay: i * 0.15,
             ease: 'easeIn',
           }}
@@ -35,7 +34,8 @@ const CLOUDS = [
 ];
 
 // Three soft, blurred blobs drifting left-to-right at different heights and
-// speeds so it reads as "clouds" rather than one shape sliding by.
+// speeds so it reads as "clouds" rather than one shape sliding by, looping
+// forever for as long as the widget stays cloudy.
 export function CloudOverlay() {
   return (
     <>
@@ -46,7 +46,13 @@ export function CloudOverlay() {
           style={{ top: cloud.top, width: cloud.size, height: cloud.size * 0.55 }}
           initial={{ x: '-30%', opacity: 0 }}
           animate={{ x: '130%', opacity: [0, 0.7, 0.7, 0] }}
-          transition={{ duration: cloud.duration, delay: i * 1, ease: 'linear' }}
+          transition={{
+            duration: cloud.duration,
+            delay: i * 1,
+            repeat: Infinity,
+            repeatType: 'loop',
+            ease: 'linear',
+          }}
         />
       ))}
     </>
@@ -55,8 +61,8 @@ export function CloudOverlay() {
 
 const RAY_COUNT = 8;
 
-// A sun that pops in, then glows and pulses a few times with rays radiating
-// out from its center — reads as "brightening up" rather than a static icon.
+// A sun that pops in, then glows and pulses forever with rays radiating out
+// from its center — reads as "brightening up" rather than a static icon.
 export function SunOverlay() {
   return (
     <div className="w-full h-full flex items-center justify-end pr-8">
@@ -70,7 +76,7 @@ export function SunOverlay() {
           className="absolute inset-0 rounded-full bg-amber-300"
           style={{ filter: 'blur(18px)' }}
           animate={{ opacity: [0.4, 0.85, 0.4], scale: [1, 1.2, 1] }}
-          transition={{ duration: 1.4, repeat: 2, ease: 'easeInOut' }}
+          transition={{ duration: 1.4, repeat: Infinity, repeatType: 'loop', ease: 'easeInOut' }}
         />
         {Array.from({ length: RAY_COUNT }).map((_, i) => (
           <motion.div
@@ -79,7 +85,7 @@ export function SunOverlay() {
             style={{ transform: `rotate(${i * 45}deg) translateY(-36px)` }}
             initial={{ opacity: 0 }}
             animate={{ opacity: [0, 0.9, 0] }}
-            transition={{ duration: 1.4, repeat: 2, delay: i * 0.08, ease: 'easeInOut' }}
+            transition={{ duration: 1.4, repeat: Infinity, repeatType: 'loop', delay: i * 0.08, ease: 'easeInOut' }}
           />
         ))}
       </motion.div>
@@ -87,38 +93,17 @@ export function SunOverlay() {
   );
 }
 
-// Roughly how long each overlay takes to play itself out (last stagger delay
-// + its own duration), so we know when it's safe to unmount instead of
-// leaving finished-but-invisible animation nodes sitting in the DOM forever.
-const OVERLAY_LIFETIME_MS = { rainy: 4600, cloudy: 8500, sunny: 5000 };
-
 // Single mount point WeatherWidget renders regardless of weather type: picks
-// the right overlay, keys it so a manual refresh replays it from scratch,
-// and removes it from the DOM once its animation has actually finished
-// instead of leaving it invisible-but-mounted indefinitely.
+// the right overlay and keys it so a manual refresh replays it from scratch.
+// The overlay itself loops forever for as long as `type` stays set — it only
+// leaves (with a graceful fade) when the weather type changes to one with no
+// animation, or the widget unmounts.
 export function WeatherAnimationOverlay({ type, refreshKey }) {
-  const instanceKey = `${type}-${refreshKey}`;
-  const [visible, setVisible] = useState(true);
-  // Resetting `visible` when the key changes belongs during render, not in an
-  // effect — this is React's own "adjust state when a prop changes" pattern,
-  // and it avoids a set-state-in-effect that would otherwise double-render.
-  const [lastKey, setLastKey] = useState(instanceKey);
-  if (instanceKey !== lastKey) {
-    setLastKey(instanceKey);
-    setVisible(true);
-  }
-
-  useEffect(() => {
-    if (!type) return;
-    const timer = setTimeout(() => setVisible(false), OVERLAY_LIFETIME_MS[type] ?? 5000);
-    return () => clearTimeout(timer);
-  }, [type, refreshKey]);
-
   return (
     <AnimatePresence>
-      {visible && type && (
+      {type && (
         <motion.div
-          key={instanceKey}
+          key={`${type}-${refreshKey}`}
           className="absolute inset-0 overflow-hidden pointer-events-none"
           exit={{ opacity: 0, transition: { duration: 0.5 } }}
         >
