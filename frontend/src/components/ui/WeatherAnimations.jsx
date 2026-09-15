@@ -10,7 +10,7 @@ export function RainOverlay() {
       {Array.from({ length: DROP_COUNT }).map((_, i) => (
         <motion.div
           key={i}
-          className="absolute top-0 w-[2px] h-5 rounded-full bg-gradient-to-b from-blue-300/0 via-blue-300/80 to-blue-400"
+          className="absolute top-0 w-[3px] h-6 rounded-full bg-gradient-to-b from-cyan-200/0 via-cyan-100 to-white shadow-[0_0_6px_rgba(165,243,252,0.9)]"
           style={{ left: `${(i / DROP_COUNT) * 90 + 5}%` }}
           initial={{ y: '-20%', opacity: 0 }}
           animate={{ y: '140%', opacity: [0, 1, 1, 0] }}
@@ -33,7 +33,7 @@ const CLOUDS = [
   { top: '75%', size: 46, duration: 5.5 },
 ];
 
-// Three soft, blurred blobs drifting left-to-right at different heights and
+// Three bold, blurred blobs drifting left-to-right at different heights and
 // speeds so it reads as "clouds" rather than one shape sliding by, looping
 // forever for as long as the widget stays cloudy.
 export function CloudOverlay() {
@@ -42,10 +42,10 @@ export function CloudOverlay() {
       {CLOUDS.map((cloud, i) => (
         <motion.div
           key={i}
-          className="absolute rounded-full bg-white/40 blur-md"
+          className="absolute rounded-full bg-white blur-md shadow-[0_0_20px_rgba(255,255,255,0.6)]"
           style={{ top: cloud.top, width: cloud.size, height: cloud.size * 0.55 }}
           initial={{ x: '-30%', opacity: 0 }}
-          animate={{ x: '130%', opacity: [0, 0.7, 0.7, 0] }}
+          animate={{ x: '130%', opacity: [0, 1, 1, 0] }}
           transition={{
             duration: cloud.duration,
             delay: i * 1,
@@ -73,18 +73,19 @@ export function SunOverlay() {
         transition={{ duration: 0.6, ease: 'easeOut' }}
       >
         <motion.div
-          className="absolute inset-0 rounded-full bg-amber-300"
-          style={{ filter: 'blur(18px)' }}
-          animate={{ opacity: [0.4, 0.85, 0.4], scale: [1, 1.2, 1] }}
+          className="absolute inset-0 rounded-full bg-yellow-300 shadow-[0_0_45px_18px_rgba(253,224,71,0.8)]"
+          style={{ filter: 'blur(22px)' }}
+          animate={{ opacity: [0.75, 1, 0.75], scale: [1, 1.25, 1] }}
           transition={{ duration: 1.4, repeat: Infinity, repeatType: 'loop', ease: 'easeInOut' }}
         />
+        <div className="absolute inset-[6px] rounded-full bg-amber-400" />
         {Array.from({ length: RAY_COUNT }).map((_, i) => (
           <motion.div
             key={i}
-            className="absolute top-1/2 left-1/2 w-1 h-7 bg-amber-200/70 rounded-full origin-bottom"
-            style={{ transform: `rotate(${i * 45}deg) translateY(-36px)` }}
+            className="absolute top-1/2 left-1/2 w-1.5 h-8 bg-yellow-200 rounded-full origin-bottom shadow-[0_0_8px_rgba(254,240,138,0.9)]"
+            style={{ transform: `rotate(${i * 45}deg) translateY(-38px)` }}
             initial={{ opacity: 0 }}
-            animate={{ opacity: [0, 0.9, 0] }}
+            animate={{ opacity: [0, 1, 0] }}
             transition={{ duration: 1.4, repeat: Infinity, repeatType: 'loop', delay: i * 0.08, ease: 'easeInOut' }}
           />
         ))}
