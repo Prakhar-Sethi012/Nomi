@@ -4,7 +4,10 @@ import ScrambleText from './ui/ScrambleText';
 const themes = [
   { id: 'dark', label: 'Command Dark', icon: '🌙' },
   { id: 'light', label: 'Paper Light', icon: '☀️' },
-  { id: 'cyberpunk', label: 'Cyberpunk', icon: '🧑‍💻' }
+  { id: 'cyberpunk', label: 'Cyberpunk', icon: '🧑‍💻' },
+  { id: 'brutalist', label: 'Brutalist', icon: '🧱' },
+  { id: 'vaporwave', label: 'Vaporwave', icon: '🌴' },
+  { id: 'nordic', label: 'Nordic', icon: '❄️' }
 ];
 
 function ThemeToggle() {
