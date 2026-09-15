@@ -26,3 +26,28 @@ export function RainOverlay() {
     </div>
   );
 }
+
+const CLOUDS = [
+  { top: '20%', size: 56, duration: 5 },
+  { top: '50%', size: 38, duration: 6.5 },
+  { top: '75%', size: 46, duration: 5.5 },
+];
+
+// Three soft, blurred blobs drifting left-to-right at different heights and
+// speeds so it reads as "clouds" rather than one shape sliding by.
+export function CloudOverlay() {
+  return (
+    <div className="absolute inset-0 overflow-hidden">
+      {CLOUDS.map((cloud, i) => (
+        <motion.div
+          key={i}
+          className="absolute rounded-full bg-white/40 blur-md"
+          style={{ top: cloud.top, width: cloud.size, height: cloud.size * 0.55 }}
+          initial={{ x: '-30%', opacity: 0 }}
+          animate={{ x: '130%', opacity: [0, 0.7, 0.7, 0] }}
+          transition={{ duration: cloud.duration, delay: i * 1, ease: 'linear' }}
+        />
+      ))}
+    </div>
+  );
+}
