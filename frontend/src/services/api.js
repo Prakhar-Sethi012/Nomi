@@ -1,4 +1,4 @@
-const BASE_URL = 'http://127.0.0.1:8000';
+const BASE_URL = 'http://localhost:8000';
 const fetchAPI = async (endpoint, options = {}) => {
   // 1. Grab the VIP wristband from local storage
   const token = localStorage.getItem('token');
