@@ -140,6 +140,21 @@ function App() {
 
       </nav>
 
+      {/* Pinned Profile shortcut (mobile only) — lives up here rather than in
+          RadialNav's bottom cluster since it's anchored to the opposite
+          corner of the screen, not the FAB. */}
+      <button
+        onClick={() => setActiveTab('profile')}
+        aria-label="Profile"
+        title="Profile"
+        className={`md:hidden fixed z-30 w-11 h-11 rounded-full shadow-lg border flex items-center justify-center text-lg transition-colors ${
+          activeTab === 'profile' ? 'bg-accent border-accentHover text-white' : 'bg-surface border-border text-textPrimary'
+        }`}
+        style={{ top: 'calc(env(safe-area-inset-top) + 12px)', right: '16px' }}
+      >
+        👤
+      </button>
+
       <div className="w-full max-w-6xl flex justify-center pb-[calc(6rem+env(safe-area-inset-bottom))] md:pb-0">
         <PageTransition tabKey={activeTab}>
           {activeTab === 'dashboard' && <Dashboard profile={profile} setProfile={setProfile} setActiveTab={setActiveTab} />}

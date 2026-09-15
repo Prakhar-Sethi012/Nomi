@@ -11,18 +11,22 @@ const ITEM_SIZE = 48;
 const FAB_SIZE = 64;
 const DRAG_SURFACE_SIZE = (RADIUS + ITEM_SIZE) * 2;
 
+// Dashboard, Timetable, and Profile are pinned outside the wheel (see
+// PinnedNavButton below and App.jsx's top-right Profile pin) since they're
+// the three destinations reached often enough that a two-step "open wheel,
+// find icon" flow was too much friction — everything else still lives here.
 const NAV_ITEMS = [
-  { id: 'dashboard', label: 'Dashboard', icon: '🏠' },
-  { id: 'timetable', label: 'Timetable', icon: '🗓️' },
   { id: 'expenses', label: 'Finance', icon: '💰' },
   { id: 'radar', label: 'Radar', icon: '📡' },
   { id: 'scratchpad', label: 'Scratchpad', icon: '📝' },
   { id: 'strategy', label: 'Strategy', icon: '🔮' },
   { id: 'links', label: 'Directory', icon: '🔗' },
   { id: 'closeFriends', label: 'Close Friends', icon: '💾' },
-  { id: 'profile', label: 'Profile', icon: '👤' },
   { id: 'logout', label: 'Logout', icon: '🚪', isDanger: true },
 ];
+
+const HOME_ITEM = { id: 'dashboard', label: 'Home', icon: '🏠' };
+const TIMETABLE_ITEM = { id: 'timetable', label: 'Timetable', icon: '🗓️' };
 
 // One arc item. A separate component (not an inline callback inside a
 // .map()) so its useTransform/useMotionValue calls sit at the top level of
@@ -81,11 +85,32 @@ function RadialNavItem({ item, index, rotation, layout, isOpen, isActive, m, onN
   );
 }
 
-// Replaces BottomTabBar + MoreSheet with a single FAB that expands into a
-// semi-circular dial: drag left/right to rotate through all 10 destinations
-// (9 tabs + Logout — the flat bar always had a Logout entry in MoreSheet,
-// so this keeps that reachable rather than dropping it), tap a visible icon
-// to navigate. Mobile only, same `md:hidden` split as the bar it replaces.
+// A permanently-visible flanking icon (Home / Timetable) — unlike the wheel
+// items, these never animate open/closed and don't care about `rotation` at
+// all, so they're plain elements rather than another useTransform consumer.
+function PinnedNavButton({ item, isActive, onClick }) {
+  return (
+    <motion.button
+      type="button"
+      onClick={onClick}
+      whileTap={{ scale: 0.92 }}
+      aria-label={item.label}
+      title={item.label}
+      className={`w-12 h-12 rounded-full flex items-center justify-center text-xl shadow-lg border transition-colors ${
+        isActive ? 'bg-accent border-accentHover text-white' : 'bg-surface border-border text-textPrimary'
+      }`}
+    >
+      {item.icon}
+    </motion.button>
+  );
+}
+
+// Replaces BottomTabBar + MoreSheet with Home/Timetable pinned either side of
+// a central FAB that expands into a semi-circular dial for everything else:
+// drag left/right to rotate through the remaining destinations (Profile is
+// pinned too, but at the top of the screen — see App.jsx — since it isn't
+// part of this bottom cluster), tap a visible icon to navigate. Mobile only,
+// same `md:hidden` split as the bar it replaces.
 function RadialNav({ activeTab, onSelect, onLogout }) {
   const [isOpen, setIsOpen] = useState(false);
   const m = useAppMotion();
@@ -113,6 +138,12 @@ function RadialNav({ activeTab, onSelect, onLogout }) {
     else onSelect(item.id);
   };
 
+  const handlePinnedSelect = (tabId) => {
+    haptics.selection();
+    setIsOpen(false);
+    onSelect(tabId);
+  };
+
   return (
     <>
       <AnimatePresence>
@@ -130,9 +161,11 @@ function RadialNav({ activeTab, onSelect, onLogout }) {
       </AnimatePresence>
 
       <div
-        className="md:hidden fixed bottom-4 inset-x-0 z-30 flex justify-center"
+        className="md:hidden fixed bottom-4 inset-x-0 z-30 flex items-center justify-center gap-5"
         style={{ marginBottom: 'env(safe-area-inset-bottom)' }}
       >
+        <PinnedNavButton item={HOME_ITEM} isActive={activeTab === 'dashboard'} onClick={() => handlePinnedSelect('dashboard')} />
+
         <div className="relative" style={{ width: FAB_SIZE, height: FAB_SIZE }}>
 
           {/* Drag surface: sits behind the FAB/icons in stacking order, so
@@ -185,6 +218,8 @@ function RadialNav({ activeTab, onSelect, onLogout }) {
             +
           </motion.button>
         </div>
+
+        <PinnedNavButton item={TIMETABLE_ITEM} isActive={activeTab === 'timetable'} onClick={() => handlePinnedSelect('timetable')} />
       </div>
     </>
   );
