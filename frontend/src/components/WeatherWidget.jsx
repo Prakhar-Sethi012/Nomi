@@ -1,4 +1,13 @@
 import React, { useState, useEffect } from 'react';
+import { RainOverlay } from './ui/WeatherAnimations';
+
+// Maps the widget's already-computed theme label to which localized
+// animation should play over the card — kept separate from getWeatherTheme
+// so the visual effect and the theme colors/copy can evolve independently.
+const getAnimationType = (themeText) => {
+  if (themeText === 'Raining') return 'rainy';
+  return null;
+};
 
 // 🔥 105 Randomized Developer Weather Quotes (15 per condition)
 const WEATHER_QUOTES = {
@@ -120,6 +129,7 @@ function WeatherWidget() {
   }, []);
 
   const currentTheme = weatherData?.theme || getWeatherTheme(undefined);
+  const animationType = getAnimationType(currentTheme.text);
 
   return (
     <div className={`relative overflow-hidden px-5 py-3 rounded-xl border bg-gradient-to-br shadow-lg flex items-center justify-between gap-5 transition-all duration-700 ease-in-out ${currentTheme.bg} min-w-[280px]`}>
@@ -127,6 +137,8 @@ function WeatherWidget() {
       <div className="absolute right-0 top-1/2 -translate-y-1/2 text-[90px] opacity-10 pointer-events-none select-none blur-[2px] translate-x-4">
         {currentTheme.icon}
       </div>
+
+      {animationType === 'rainy' && <RainOverlay key={`rainy-${refreshKey}`} />}
 
       <div className="flex items-center gap-3 relative z-10">
         <div className="text-4xl filter drop-shadow-md">
