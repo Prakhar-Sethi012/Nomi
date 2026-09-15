@@ -6,7 +6,13 @@ import { registerSW } from 'virtual:pwa-register'
 
 const updateSW = registerSW({
   onNeedRefresh() {
-    console.log("New content available, refreshing...")
+    // registerType is 'autoUpdate' — that's a promise to actually activate
+    // and reload automatically, not just log it. Without this call the new
+    // service worker sits "waiting" forever and the tab keeps running
+    // whatever JS was cached at last visit, silently, with no error — which
+    // is exactly what made an already-fixed bug (the invisible PIN modal)
+    // look like it was still broken after the fix had shipped.
+    updateSW(true)
   },
   onOfflineReady() {
     console.log("App is ready to work offline!")
