@@ -1,4 +1,5 @@
-import { motion } from 'motion/react';
+import { useEffect, useState } from 'react';
+import { AnimatePresence, motion } from 'motion/react';
 
 const DROP_COUNT = 7;
 
@@ -7,7 +8,7 @@ const DROP_COUNT = 7;
 // "weather just loaded" moment, not a permanent background loop.
 export function RainOverlay() {
   return (
-    <div className="absolute inset-0 overflow-hidden">
+    <>
       {Array.from({ length: DROP_COUNT }).map((_, i) => (
         <motion.div
           key={i}
@@ -23,7 +24,7 @@ export function RainOverlay() {
           }}
         />
       ))}
-    </div>
+    </>
   );
 }
 
@@ -37,7 +38,7 @@ const CLOUDS = [
 // speeds so it reads as "clouds" rather than one shape sliding by.
 export function CloudOverlay() {
   return (
-    <div className="absolute inset-0 overflow-hidden">
+    <>
       {CLOUDS.map((cloud, i) => (
         <motion.div
           key={i}
@@ -48,7 +49,7 @@ export function CloudOverlay() {
           transition={{ duration: cloud.duration, delay: i * 1, ease: 'linear' }}
         />
       ))}
-    </div>
+    </>
   );
 }
 
@@ -58,7 +59,7 @@ const RAY_COUNT = 8;
 // out from its center — reads as "brightening up" rather than a static icon.
 export function SunOverlay() {
   return (
-    <div className="absolute inset-0 overflow-hidden flex items-center justify-end pr-8">
+    <div className="w-full h-full flex items-center justify-end pr-8">
       <motion.div
         className="relative w-20 h-20"
         initial={{ opacity: 0, scale: 0.5 }}
@@ -83,5 +84,49 @@ export function SunOverlay() {
         ))}
       </motion.div>
     </div>
+  );
+}
+
+// Roughly how long each overlay takes to play itself out (last stagger delay
+// + its own duration), so we know when it's safe to unmount instead of
+// leaving finished-but-invisible animation nodes sitting in the DOM forever.
+const OVERLAY_LIFETIME_MS = { rainy: 4600, cloudy: 8500, sunny: 5000 };
+
+// Single mount point WeatherWidget renders regardless of weather type: picks
+// the right overlay, keys it so a manual refresh replays it from scratch,
+// and removes it from the DOM once its animation has actually finished
+// instead of leaving it invisible-but-mounted indefinitely.
+export function WeatherAnimationOverlay({ type, refreshKey }) {
+  const instanceKey = `${type}-${refreshKey}`;
+  const [visible, setVisible] = useState(true);
+  // Resetting `visible` when the key changes belongs during render, not in an
+  // effect — this is React's own "adjust state when a prop changes" pattern,
+  // and it avoids a set-state-in-effect that would otherwise double-render.
+  const [lastKey, setLastKey] = useState(instanceKey);
+  if (instanceKey !== lastKey) {
+    setLastKey(instanceKey);
+    setVisible(true);
+  }
+
+  useEffect(() => {
+    if (!type) return;
+    const timer = setTimeout(() => setVisible(false), OVERLAY_LIFETIME_MS[type] ?? 5000);
+    return () => clearTimeout(timer);
+  }, [type, refreshKey]);
+
+  return (
+    <AnimatePresence>
+      {visible && type && (
+        <motion.div
+          key={instanceKey}
+          className="absolute inset-0 overflow-hidden pointer-events-none"
+          exit={{ opacity: 0, transition: { duration: 0.5 } }}
+        >
+          {type === 'rainy' && <RainOverlay />}
+          {type === 'cloudy' && <CloudOverlay />}
+          {type === 'sunny' && <SunOverlay />}
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 }
