@@ -118,7 +118,7 @@ function Dashboard({ profile, setProfile, setActiveTab }) {
         </div>
         
         {/* COLUMN 2 (CENTER) */}
-        <div className="flex-1 hidden md:flex justify-center">
+        <div className="w-full md:flex-1 flex justify-center">
           <WeatherWidget />
         </div>
 
