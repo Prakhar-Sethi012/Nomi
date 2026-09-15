@@ -3,17 +3,17 @@ import React, { useState, useEffect } from 'react';
 // 🔥 105 Randomized Developer Weather Quotes (15 per condition)
 const WEATHER_QUOTES = {
   clear: [
-    "Clear skies. Go touch some grass.", "Sun's out, bugs out.", "Brightness set to 100%.", 
+    "Clear skies. Go touch some grass.", "Sun's out, bugs out.", "Brightness set to 100%.",
     "Light mode activated by nature.", "Perfect weather for a kernel panic.", "Soak in the UV rays.",
-    "Time to compile outside.", "Vellore heat hitting hard.", "Don't forget to hydrate.", 
-    "No umbrella needed today.", "Nature's high-res display.", "Clear skies, clear mind.", 
+    "Time to compile outside.", "Vellore heat hitting hard.", "Don't forget to hydrate.",
+    "No umbrella needed today.", "Nature's high-res display.", "Clear skies, clear mind.",
     "Sunny with a chance of productive.", "Bask in the glory of a successful build.", "No clouds, no excuses."
   ],
   cloudy: [
     "Cloudy. Perfect dark-mode weather.", "Partly cloudy, mostly coding.", "Clouds in the sky, head in the cloud.",
     "A bit gray, like my terminal.", "No screen glare today.", "Cloudy with a chance of syntax errors.",
     "Looks like an AWS outage out there.", "Sun is taking a quick break.", "Diffuse lighting for better focus.",
-    "Cozy enough to stay inside.", "The sky is rendering...", "Gray skies, colorful code.", 
+    "Cozy enough to stay inside.", "The sky is rendering...", "Gray skies, colorful code.",
     "Sweater weather approaching.", "Ideal conditions for a coding marathon.", "Nature's blue light filter."
   ],
   foggy: [
@@ -61,23 +61,27 @@ const getRandomQuote = (type) => {
 function WeatherWidget() {
   const [weatherData, setWeatherData] = useState(null);
   const [isRefreshing, setIsRefreshing] = useState(true);
+  // Bumped every time fresh weather data lands (first load AND manual
+  // refresh) so we can key the animation overlay on it and force Framer
+  // Motion to replay from scratch instead of just sitting at its end state.
+  const [refreshKey, setRefreshKey] = useState(0);
 
   const getWeatherTheme = (code) => {
     if (code === undefined) return { icon: '⏳', text: 'Loading', message: 'Looking out the window...', bg: 'from-slate-800 to-slate-900', accent: 'text-slate-400' };
-    
-    if (code === 0) 
+
+    if (code === 0)
       return { icon: '☀️', text: 'Clear Sky', message: getRandomQuote('clear'), bg: 'from-amber-500/10 to-orange-900/40 border-orange-500/20', accent: 'text-orange-400' };
-    if (code >= 1 && code <= 3) 
+    if (code >= 1 && code <= 3)
       return { icon: '⛅', text: 'Partly Cloudy', message: getRandomQuote('cloudy'), bg: 'from-blue-400/10 to-slate-800/60 border-blue-400/20', accent: 'text-blue-300' };
-    if (code >= 45 && code <= 48) 
+    if (code >= 45 && code <= 48)
       return { icon: '🌫️', text: 'Foggy', message: getRandomQuote('foggy'), bg: 'from-slate-400/10 to-slate-800/60 border-slate-400/20', accent: 'text-slate-300' };
-    if (code >= 51 && code <= 67) 
+    if (code >= 51 && code <= 67)
       return { icon: '🌧️', text: 'Raining', message: getRandomQuote('raining'), bg: 'from-blue-600/20 to-slate-900/80 border-blue-500/30', accent: 'text-blue-400' };
-    if (code >= 71 && code <= 77) 
+    if (code >= 71 && code <= 77)
       return { icon: '❄️', text: 'Snowing', message: getRandomQuote('snowing'), bg: 'from-indigo-200/10 to-slate-800/60 border-indigo-200/20', accent: 'text-indigo-200' };
-    if (code >= 95) 
+    if (code >= 95)
       return { icon: '⛈️', text: 'Thunderstorm', message: getRandomQuote('thunder'), bg: 'from-purple-600/20 to-slate-900/80 border-purple-500/30', accent: 'text-purple-400' };
-    
+
     return { icon: '☁️', text: 'Cloudy', message: getRandomQuote('default'), bg: 'from-slate-700/20 to-slate-900/60 border-slate-600/30', accent: 'text-slate-300' };
   };
 
@@ -105,6 +109,7 @@ function WeatherWidget() {
       });
     } finally {
       setIsRefreshing(false);
+      setRefreshKey((k) => k + 1);
     }
   };
 
@@ -118,7 +123,7 @@ function WeatherWidget() {
 
   return (
     <div className={`relative overflow-hidden px-5 py-3 rounded-xl border bg-gradient-to-br shadow-lg flex items-center justify-between gap-5 transition-all duration-700 ease-in-out ${currentTheme.bg} min-w-[280px]`}>
-      
+
       <div className="absolute right-0 top-1/2 -translate-y-1/2 text-[90px] opacity-10 pointer-events-none select-none blur-[2px] translate-x-4">
         {currentTheme.icon}
       </div>
@@ -156,8 +161,8 @@ function WeatherWidget() {
           </div>
         </div>
 
-        <button 
-          onClick={fetchWeather} 
+        <button
+          onClick={fetchWeather}
           disabled={isRefreshing}
           className="text-white/40 hover:text-white bg-black/20 hover:bg-black/40 p-2 rounded-lg backdrop-blur-md transition-all disabled:opacity-50 shrink-0 shadow-inner"
         >
