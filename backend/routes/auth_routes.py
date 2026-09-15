@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 import models, schemas, auth
 from database import get_db
 from utils.rate_limit import enforce_rate_limit
@@ -11,8 +11,10 @@ def _client_ip(request: Request) -> str:
     return request.client.host if request.client else "unknown"
 
 class LoginRequest(BaseModel):
-    reg_no: str
-    app_pin: str
+    # Was unbounded on both fields — reg_no now matches ProfileCreate's own
+    # bound, app_pin matches the 4-char pattern every other PIN field uses.
+    reg_no: str = Field(..., min_length=8, max_length=20)
+    app_pin: str = Field(..., pattern=r"^[a-zA-Z0-9]{4}$")
 
 class AuthResponse(BaseModel):
     token: str
