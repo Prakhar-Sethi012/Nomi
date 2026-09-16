@@ -10,6 +10,7 @@ import Skeleton from './ui/Skeleton';
 import JumpingDots from './ui/JumpingDots';
 import PullToRefresh from './ui/PullToRefresh';
 import { useAppMotion } from '../hooks/useAppMotion';
+import { getCategoryGradient } from '../utils/colorGradients';
 
 // Push slides the next month in from the direction of travel while the
 // previous one drifts the other way and dims — a lighter version of
@@ -192,6 +193,12 @@ function ExpensesView({ profile, setProfile }) {
 
   const categoryColors = { food: '#f97316', travel: '#3b82f6', utilities: '#a855f7', entertainment: '#ec4899', other: '#64748b' };
   const iconMap = { food: '🍔', travel: '🚌', utilities: '⚡', entertainment: '🎮', other: '🧾' };
+  // Each category's flat color, expanded into a 4-stop tint/shade gradient
+  // for the donut arcs and progress bars below — richer than one flat
+  // color per segment, but still unmistakably "that category's color".
+  const categoryGradients = Object.fromEntries(
+    Object.entries(categoryColors).map(([tag, hex]) => [tag, getCategoryGradient(hex)])
+  );
 
   const categoryTotals = monthlyExpenses.reduce((acc, exp) => {
     const tag = exp.tags[0] || 'other';
@@ -321,13 +328,22 @@ function ExpensesView({ profile, setProfile }) {
           <div className="lg:col-span-5 bg-surface/40 backdrop-blur-xl p-8 rounded-[32px] border border-border shadow-xl flex flex-col items-center">
             <div className="relative w-64 h-64 rounded-full flex items-center justify-center shadow-[0_0_30px_rgba(0,0,0,0.5)] transition-transform hover:scale-105 duration-700 mt-4">
               <svg viewBox="0 0 100 100" className="absolute inset-0 w-full h-full -rotate-90">
+                <defs>
+                  {Object.entries(categoryGradients).map(([tag, stops]) => (
+                    <linearGradient key={tag} id={`donut-grad-${tag}`} x1="0%" y1="0%" x2="100%" y2="100%">
+                      {stops.map((c, si) => (
+                        <stop key={si} offset={`${(si / (stops.length - 1)) * 100}%`} stopColor={c} />
+                      ))}
+                    </linearGradient>
+                  ))}
+                </defs>
                 <circle cx="50" cy="50" r="45" fill="none" stroke="var(--color-surface-hover)" strokeWidth="10" />
                 {donutSegments.map((seg, i) => (
                   <motion.circle
                     key={seg.tag}
                     cx="50" cy="50" r="45"
                     fill="none"
-                    stroke={seg.color}
+                    stroke={`url(#donut-grad-${seg.tag})`}
                     strokeWidth="10"
                     strokeLinecap="round"
                     pathLength={1}
@@ -360,7 +376,7 @@ function ExpensesView({ profile, setProfile }) {
                       <motion.div
                         key={`${seg.tag}-${selectedCategory || 'none'}`}
                         className="h-full rounded-full"
-                        style={{ backgroundColor: seg.color }}
+                        style={{ background: `linear-gradient(90deg, ${categoryGradients[seg.tag].join(', ')})` }}
                         initial={{ width: 0 }}
                         animate={{ width: `${seg.percent}%` }}
                         transition={{ ...m.slow, delay: i * 0.08 }}
