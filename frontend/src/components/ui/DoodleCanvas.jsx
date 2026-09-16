@@ -123,9 +123,23 @@ const DoodleCanvas = forwardRef(function DoodleCanvas({ doodleKey, color = DEFAU
       render();
     };
 
+    // Setting canvas.width/height (inside resize()) wipes the whole backing
+    // buffer and forces a full redraw of every stroke — fine once, but the
+    // Focus Mode expand/collapse transition fires ResizeObserver dozens of
+    // times a second while it animates, so without debouncing this turned
+    // into a redraw storm for the whole transition. First tick still runs
+    // immediately so the canvas has correct dimensions right away.
+    let firstResize = true;
+    let resizeTimer = null;
     const observer = new ResizeObserver((entries) => {
       const { width, height } = entries[0].contentRect;
-      resize(width, height);
+      if (firstResize) {
+        firstResize = false;
+        resize(width, height);
+        return;
+      }
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(() => resize(width, height), 120);
     });
     observer.observe(container);
 
@@ -143,6 +157,7 @@ const DoodleCanvas = forwardRef(function DoodleCanvas({ doodleKey, color = DEFAU
 
     return () => {
       observer.disconnect();
+      clearTimeout(resizeTimer);
       canvas.removeEventListener('wheel', onWheel);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
