@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { WeatherAnimationOverlay } from './ui/WeatherAnimations';
 import { getPersonalizedMessage } from '../utils/weatherMessages';
+import { getPersonalizedWeatherQuote } from '../utils/weatherQuoteEngine';
 
 // Maps the widget's already-computed theme label to which localized
 // animation should play over the card — kept separate from getWeatherTheme
@@ -70,10 +71,12 @@ const getRandomQuote = (type) => {
   return quotes[Math.floor(Math.random() * quotes.length)];
 };
 
-// Tries a personalized, temp-and-condition-specific line first (see
-// utils/weatherMessages.js); only falls back to the generic developer-humor
-// quote pool when nothing there matches.
-const pickMessage = (type, temp) => getPersonalizedMessage(type, temp) || getRandomQuote(type);
+// Tries the full condition+temperature quote engine first (see
+// utils/weatherQuoteEngine.js) — falls back to the older placeholder
+// personalization, then the generic developer-humor pool, only when the
+// engine has nothing for this code (e.g. snow, which it doesn't cover).
+const pickMessage = (type, temp, code) =>
+  getPersonalizedWeatherQuote(temp, code) || getPersonalizedMessage(type, temp) || getRandomQuote(type);
 
 // Used only when the browser can't/won't provide a real location (permission
 // denied, no geolocation support, timed out) — VIT Vellore campus.
@@ -160,16 +163,16 @@ function WeatherWidget() {
     const snowCm = current.snowfall ?? 0;
 
     if (code === 0)
-      return { icon: '☀️', text: 'Clear Sky', message: pickMessage('clear', temp), tone: 'accent' };
+      return { icon: '☀️', text: 'Clear Sky', message: pickMessage('clear', temp, code), tone: 'accent' };
     if (code >= 45 && code <= 48)
-      return { icon: '🌫️', text: 'Foggy', message: pickMessage('foggy', temp), tone: 'secondary' };
+      return { icon: '🌫️', text: 'Foggy', message: pickMessage('foggy', temp, code), tone: 'secondary' };
 
     // 51-67 is drizzle/rain/freezing-rain, 80-82 is rain showers — but the
     // code alone is a noisy signal for "is it actually raining right now".
     // Cross-check against the real measured amount before calling it Raining.
     const isRainCode = (code >= 51 && code <= 67) || (code >= 80 && code <= 82);
     if (isRainCode && rainMm >= RAIN_MM_THRESHOLD)
-      return { icon: '🌧️', text: 'Raining', message: pickMessage('raining', temp), tone: 'accent' };
+      return { icon: '🌧️', text: 'Raining', message: pickMessage('raining', temp, code), tone: 'accent' };
 
     const isSnowCode = (code >= 71 && code <= 77) || code === 85 || code === 86;
     if (isSnowCode && snowCm >= SNOW_CM_THRESHOLD)
