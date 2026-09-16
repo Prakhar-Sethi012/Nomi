@@ -164,40 +164,40 @@ function WeatherWidget() {
           {currentTheme.icon}
         </div>
         <div className="flex flex-col">
-          <div className="flex text-white items-start leading-none">
+          <div className="flex text-textPrimary items-start leading-none">
             <span className="text-3xl font-black tracking-tighter">
               {weatherData?.temp ?? '--'}
             </span>
-            <span className="text-sm font-bold text-white/50 ml-0.5 mt-0.5">°C</span>
+            <span className="text-sm font-bold text-textSecondary ml-0.5 mt-0.5">°C</span>
           </div>
           <p className={`text-[11px] font-bold mt-1 uppercase tracking-wide ${toneClass}`}>
             {currentTheme.text}
           </p>
-          <p className="text-[9px] text-white/60 mt-0.5 max-w-[140px] leading-tight italic">
+          <p className="text-[9px] text-textSecondary mt-0.5 max-w-[140px] leading-tight italic opacity-80">
             "{currentTheme.message}"
           </p>
         </div>
       </div>
 
-      <div className="w-px h-10 bg-white/10 relative z-10 hidden sm:block"></div>
+      <div className="w-px h-10 bg-border relative z-10 hidden sm:block"></div>
 
       <div className="flex items-center gap-4 relative z-10">
         <div className="flex flex-col gap-1 text-right">
-          <p className="text-[10px] font-bold text-white/80 flex items-center justify-end gap-1">
+          <p className="text-[10px] font-bold text-textPrimary flex items-center justify-end gap-1">
             <span className="opacity-50">📍</span> {weatherData?.location || 'Detecting'}
           </p>
-          <div className="flex gap-2 text-[9px] uppercase tracking-wider font-bold text-white/40 justify-end mt-0.5">
-            <span>Hum: <strong className="text-white/80">{weatherData?.humidity || '--'}</strong></span>
-            <span>Feel: <strong className="text-white/80">{weatherData?.feelsLike ? `${weatherData.feelsLike}°` : '--'}</strong></span>
+          <div className="flex gap-2 text-[9px] uppercase tracking-wider font-bold text-textSecondary justify-end mt-0.5">
+            <span>Hum: <strong className="text-textPrimary">{weatherData?.humidity || '--'}</strong></span>
+            <span>Feel: <strong className="text-textPrimary">{weatherData?.feelsLike ? `${weatherData.feelsLike}°` : '--'}</strong></span>
           </div>
         </div>
 
         <button
           onClick={fetchWeather}
           disabled={isRefreshing}
-          className="text-white/40 hover:text-white bg-black/20 hover:bg-black/40 p-2 rounded-lg backdrop-blur-md transition-all disabled:opacity-50 shrink-0 shadow-inner"
+          className="text-textSecondary hover:text-textPrimary bg-background/50 hover:bg-surfaceHover border border-border p-2 rounded-lg backdrop-blur-md transition-all disabled:opacity-50 shrink-0 shadow-inner"
         >
-          <svg className={`w-3.5 h-3.5 ${isRefreshing ? 'animate-spin text-white' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className={`w-3.5 h-3.5 ${isRefreshing ? 'animate-spin text-accent' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
           </svg>
         </button>
