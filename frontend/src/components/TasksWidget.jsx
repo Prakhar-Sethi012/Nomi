@@ -364,7 +364,7 @@ function TasksWidget({ setProfile }) {
           {tasks.length === 0 ? (
             <div className="flex-1 flex items-center justify-center text-textSecondary text-sm">No pending tasks. You're all caught up!</div>
           ) : (
-            <div className="overflow-visible md:overflow-y-auto pr-2 custom-scrollbar flex-1 md:min-h-0">
+            <div className="overflow-visible md:overflow-y-auto pr-2 custom-scrollbar flex-1 md:min-h-0 flex flex-col justify-center">
               <NotificationStack
                 items={sortedTasks}
                 keyExtractor={(task) => task.id}
