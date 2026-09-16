@@ -4,6 +4,7 @@ import { api } from '../services/api';
 import PinConfirmModal from './PinConfirmModal';
 import HoldToConfirm from './ui/HoldToConfirm';
 import NumberRoll from './ui/NumberRoll';
+import SlotMachineText from './ui/SlotMachineText';
 import { useAppMotion } from '../hooks/useAppMotion';
 
 function ProfileView({ profile, setProfile, onLogout }) {
@@ -79,7 +80,9 @@ function ProfileView({ profile, setProfile, onLogout }) {
         <div className="w-24 h-24 bg-background border-2 border-indigo-500/50 rounded-full flex items-center justify-center text-4xl shadow-inner z-10 mb-4">
           👨‍💻
         </div>
-        <h1 className="text-3xl font-black text-textPrimary z-10">{profile.name}</h1>
+        <h1 className="text-3xl font-black text-textPrimary z-10">
+          <SlotMachineText key={profile?.name} text={profile?.name || ''} />
+        </h1>
         <p className="text-textSecondary font-mono tracking-widest uppercase mt-1 z-10">{profile.reg_no}</p>
 
         <div className="flex gap-4 mt-6 z-10">
