@@ -236,7 +236,14 @@ function WeatherWidget() {
   useEffect(() => {
     fetchWeather();
     const interval = setInterval(fetchWeather, 30 * 60 * 1000);
-    return () => clearInterval(interval);
+    return () => {
+      clearInterval(interval);
+      // Bump past whatever request is in flight so its eventual
+      // geolocation/fetch/reverse-geocode result finds fetchIdRef already
+      // moved on and bails out at the staleness check above, instead of
+      // calling setState on an unmounted widget once it finally resolves.
+      fetchIdRef.current += 1;
+    };
   }, []);
 
   const currentTheme = weatherData?.theme || getWeatherTheme(undefined);
