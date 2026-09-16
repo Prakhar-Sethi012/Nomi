@@ -116,6 +116,12 @@ const DoodleCanvas = forwardRef(function DoodleCanvas({ doodleKey, color = DEFAU
 
     const resize = (cssWidth, cssHeight) => {
       if (cssWidth <= 0 || cssHeight <= 0) return;
+      // ResizeObserver can fire with the exact same rect it just reported
+      // (a layout recalc that changed nothing, or a debounced tick that
+      // lands after a settle) — skip the wipe-and-redraw when nothing
+      // actually changed instead of paying for it anyway.
+      const prev = sizeRef.current;
+      if (prev.width === cssWidth && prev.height === cssHeight) return;
       dprRef.current = window.devicePixelRatio || 1;
       sizeRef.current = { width: cssWidth, height: cssHeight };
       canvas.width = Math.max(1, Math.round(cssWidth * dprRef.current));
