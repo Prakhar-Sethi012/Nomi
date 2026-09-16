@@ -69,6 +69,43 @@ const getRandomQuote = (type) => {
   return quotes[Math.floor(Math.random() * quotes.length)];
 };
 
+// Used only when the browser can't/won't provide a real location (permission
+// denied, no geolocation support, timed out) — VIT Vellore campus.
+const FALLBACK_COORDS = { latitude: 12.9165, longitude: 79.1325 };
+const FALLBACK_LABEL = 'Vellore, TN';
+
+// Wraps the callback-style Geolocation API in a promise. `enableHighAccuracy`
+// + a short `maximumAge` favor a fresh GPS fix over a stale/coarse
+// network-triangulated one, since the whole point of asking is accuracy.
+const getCurrentCoords = () => new Promise((resolve, reject) => {
+  if (!navigator.geolocation) {
+    reject(new Error('Geolocation not supported'));
+    return;
+  }
+  navigator.geolocation.getCurrentPosition(
+    (pos) => resolve({ latitude: pos.coords.latitude, longitude: pos.coords.longitude }),
+    (err) => reject(err),
+    { enableHighAccuracy: true, timeout: 8000, maximumAge: 5 * 60 * 1000 }
+  );
+});
+
+// Free, key-less, CORS-friendly reverse geocoder — turns raw coordinates into
+// a "City, Region" label. Returns null on any failure so the caller can fall
+// back to plain coordinates rather than showing a broken location string.
+const reverseGeocode = async (latitude, longitude) => {
+  try {
+    const res = await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${latitude}&longitude=${longitude}&localityLanguage=en`);
+    if (!res.ok) return null;
+    const data = await res.json();
+    const city = data.city || data.locality;
+    const region = data.principalSubdivisionCode?.split('-')[1] || data.principalSubdivision;
+    if (city && region && city !== region) return `${city}, ${region}`;
+    return city || region || null;
+  } catch {
+    return null;
+  }
+};
+
 // Weather conditions no longer carry their own hardcoded palette (a fixed
 // amber/blue/purple regardless of theme) — each maps to one of the app's own
 // themed tokens instead, so the card automatically repaints itself whenever
@@ -93,21 +130,42 @@ function WeatherWidget() {
   // Motion to replay from scratch instead of just sitting at its end state.
   const [refreshKey, setRefreshKey] = useState(0);
 
-  const getWeatherTheme = (code) => {
-    if (code === undefined) return { icon: '⏳', text: 'Loading', message: 'Looking out the window...', tone: 'secondary' };
+  // Below this much rain/snow in the current 15-minute sample, treat it as
+  // noise rather than actual weather. 0.3mm/15min (~1.2mm/hr) is the point
+  // most people would actually call "it's raining" — Open-Meteo's model has
+  // been observed reporting a drizzle weather_code (53) alongside amounts as
+  // low as 0.2mm, which is imperceptible mist, not real rain on the ground.
+  const RAIN_MM_THRESHOLD = 0.3;
+  const SNOW_CM_THRESHOLD = 0.3;
+
+  const getWeatherTheme = (current) => {
+    if (!current) return { icon: '⏳', text: 'Loading', message: 'Looking out the window...', tone: 'secondary' };
+
+    const code = current.weather_code;
+    const rainMm = (current.rain ?? 0) + (current.showers ?? 0);
+    const snowCm = current.snowfall ?? 0;
 
     if (code === 0)
       return { icon: '☀️', text: 'Clear Sky', message: getRandomQuote('clear'), tone: 'accent' };
-    if (code >= 1 && code <= 3)
-      return { icon: '⛅', text: 'Partly Cloudy', message: getRandomQuote('cloudy'), tone: 'secondary' };
     if (code >= 45 && code <= 48)
       return { icon: '🌫️', text: 'Foggy', message: getRandomQuote('foggy'), tone: 'secondary' };
-    if (code >= 51 && code <= 67)
+
+    // 51-67 is drizzle/rain/freezing-rain, 80-82 is rain showers — but the
+    // code alone is a noisy signal for "is it actually raining right now".
+    // Cross-check against the real measured amount before calling it Raining.
+    const isRainCode = (code >= 51 && code <= 67) || (code >= 80 && code <= 82);
+    if (isRainCode && rainMm >= RAIN_MM_THRESHOLD)
       return { icon: '🌧️', text: 'Raining', message: getRandomQuote('raining'), tone: 'accent' };
-    if (code >= 71 && code <= 77)
+
+    const isSnowCode = (code >= 71 && code <= 77) || code === 85 || code === 86;
+    if (isSnowCode && snowCm >= SNOW_CM_THRESHOLD)
       return { icon: '❄️', text: 'Snowing', message: getRandomQuote('snowing'), tone: 'accent' };
+
     if (code >= 95)
       return { icon: '⛈️', text: 'Thunderstorm', message: getRandomQuote('thunder'), tone: 'danger' };
+
+    if (code >= 1 && code <= 3)
+      return { icon: '⛅', text: 'Partly Cloudy', message: getRandomQuote('cloudy'), tone: 'secondary' };
 
     return { icon: '☁️', text: 'Cloudy', message: getRandomQuote('default'), tone: 'secondary' };
   };
@@ -115,18 +173,31 @@ function WeatherWidget() {
   const fetchWeather = async () => {
     setIsRefreshing(true);
     try {
-      // 12.9165, 79.1325 is Vellore
-      const res = await fetch('https://api.open-meteo.com/v1/forecast?latitude=12.9165&longitude=79.1325&current=temperature_2m,relative_humidity_2m,apparent_temperature,weather_code&timezone=auto');
+      let coords = FALLBACK_COORDS;
+      let usedGPS = false;
+      try {
+        coords = await getCurrentCoords();
+        usedGPS = true;
+      } catch {
+        // Permission denied, unsupported, or timed out — silently keep
+        // reporting for the campus fallback instead of surfacing an error.
+      }
+
+      const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${coords.latitude}&longitude=${coords.longitude}&current=temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,rain,showers,snowfall&timezone=auto`);
       if (!res.ok) throw new Error("Network response was not ok");
       const data = await res.json();
+
+      const location = usedGPS
+        ? (await reverseGeocode(coords.latitude, coords.longitude)) || `${coords.latitude.toFixed(2)}°, ${coords.longitude.toFixed(2)}°`
+        : FALLBACK_LABEL;
 
       setWeatherData({
         temp: Math.round(data.current.temperature_2m),
         feelsLike: Math.round(data.current.apparent_temperature),
         humidity: `${data.current.relative_humidity_2m}%`,
-        location: 'Vellore, TN',
+        location,
         timeUpdated: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        theme: getWeatherTheme(data.current.weather_code)
+        theme: getWeatherTheme(data.current)
       });
     } catch (error) {
       console.error("Failed to fetch live weather", error);
