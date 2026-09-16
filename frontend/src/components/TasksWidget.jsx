@@ -239,10 +239,20 @@ function TasksWidget({ setProfile }) {
     );
   };
 
-  // Overdue tasks sort to the top — that's the card the collapsed
+  // Matches "imp" and "important" both — the quick-select chip in the form
+  // below adds the literal tag "important", so a strict `=== 'imp'` check
+  // would never actually fire from the app's own UI.
+  const isImportant = (task) => task.tags?.some((t) => t.toLowerCase().includes('imp'));
+
+  // Important tasks are forced to the top regardless of due date; overdue
+  // tasks sort to the top of whatever's left — that's the card the collapsed
   // notification pile actually shows, so the most urgent item is the one
   // visible without expanding.
   const sortedTasks = [...tasks].sort((a, b) => {
+    const aImportant = isImportant(a);
+    const bImportant = isImportant(b);
+    if (aImportant !== bImportant) return aImportant ? -1 : 1;
+
     const today = new Date().setHours(0, 0, 0, 0);
     const aOverdue = new Date(a.due_date).setHours(0, 0, 0, 0) < today;
     const bOverdue = new Date(b.due_date).setHours(0, 0, 0, 0) < today;
@@ -343,6 +353,7 @@ function TasksWidget({ setProfile }) {
                 items={sortedTasks}
                 keyExtractor={(task) => task.id}
                 renderItem={renderTaskRow}
+                itemLabel="Task"
               />
             </div>
           )}
