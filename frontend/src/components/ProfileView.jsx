@@ -6,6 +6,7 @@ import HoldToConfirm from './ui/HoldToConfirm';
 import NumberRoll from './ui/NumberRoll';
 import SlotMachineText from './ui/SlotMachineText';
 import { useAppMotion } from '../hooks/useAppMotion';
+import { isBiometricSupported, hasBiometricCredential, registerBiometric, clearBiometricCredential } from '../utils/webauthn';
 
 function ProfileView({ profile, setProfile, onLogout }) {
   const m = useAppMotion();
@@ -15,6 +16,22 @@ function ProfileView({ profile, setProfile, onLogout }) {
   const [newPin, setNewPin] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [showSelfDestructPin, setShowSelfDestructPin] = useState(false);
+  const [biometricEnrolled, setBiometricEnrolled] = useState(hasBiometricCredential());
+
+  const handleToggleBiometrics = async () => {
+    if (biometricEnrolled) {
+      clearBiometricCredential();
+      setBiometricEnrolled(false);
+      return;
+    }
+    try {
+      await registerBiometric({ regNo: profile.reg_no, token: localStorage.getItem('token') });
+      setBiometricEnrolled(true);
+      alert('Face ID / Touch ID enabled on this device!');
+    } catch (err) {
+      alert(err.message || 'Failed to enable biometric login.');
+    }
+  };
 
   const handleUpdateSecurity = async (e) => {
     e.preventDefault();
@@ -156,6 +173,24 @@ function ProfileView({ profile, setProfile, onLogout }) {
               {isLoading ? 'Encrypting...' : 'Save Security Settings'}
             </button>
           </form>
+
+          {isBiometricSupported() && (
+            <div className="bg-background p-5 rounded-2xl border border-border mt-5">
+              <h3 className="text-[10px] uppercase font-bold text-textSecondary tracking-widest block mb-1">Face ID / Touch ID</h3>
+              <p className="text-xs text-textSecondary mb-3">
+                {biometricEnrolled ? 'Biometric login is enabled on this device.' : 'Skip typing your PIN on this device next time.'}
+              </p>
+              <button
+                type="button"
+                onClick={handleToggleBiometrics}
+                className={`w-full font-bold py-3 rounded-xl transition-all shadow-lg ${
+                  biometricEnrolled ? 'bg-dangerBg text-danger border border-danger/30' : 'bg-accent hover:bg-accentHover text-white'
+                }`}
+              >
+                {biometricEnrolled ? 'Disable Biometric Login' : '🔓 Enable Face ID / Touch ID'}
+              </button>
+            </div>
+          )}
         </div>
 
         <div className="bg-dangerBg backdrop-blur-xl p-8 rounded-3xl border border-danger/30 shadow-xl flex flex-col">

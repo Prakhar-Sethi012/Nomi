@@ -3,6 +3,7 @@ import { AnimatePresence, motion } from 'motion/react';
 import { api } from '../services/api';
 import Pressable from './ui/Pressable';
 import { useAppMotion } from '../hooks/useAppMotion';
+import { isBiometricSupported, hasBiometricCredential, loginWithBiometric } from '../utils/webauthn';
 
 function AuthScreen({ onLoginSuccess }) {
   const m = useAppMotion();
@@ -43,6 +44,31 @@ function AuthScreen({ onLoginSuccess }) {
       }
     } catch (err) {
       setError(err.message || "Authentication failed.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // The actual "did the right person unlock this" check is the OS-level
+  // biometric prompt itself — no signature gets sent anywhere for a backend
+  // to verify (see utils/webauthn.js). On success this just replays the JWT
+  // that was already issued the last time this device logged in normally.
+  const handleBiometricLogin = async () => {
+    setError('');
+    setSuccessMsg('');
+    setIsLoading(true);
+    try {
+      const result = await loginWithBiometric();
+      if (!result) {
+        setError('No biometric login set up on this device yet. Log in with your PIN first.');
+        return;
+      }
+      localStorage.setItem('token', result.token);
+      const profile = await api.getProfile();
+      onLoginSuccess(profile);
+    } catch (err) {
+      localStorage.removeItem('token');
+      setError(err.message || 'Biometric login failed.');
     } finally {
       setIsLoading(false);
     }
@@ -174,6 +200,18 @@ function AuthScreen({ onLoginSuccess }) {
               <Pressable disabled={isLoading} type="submit" haptic="tap" className="w-full bg-accent hover:bg-accentHover text-white font-black py-4 rounded-lg mt-2 transition-colors disabled:opacity-50">
                 {isLoading ? "AUTHENTICATING..." : (authMode === 'login' ? "LOGIN / DECRYPT" : "INITIALIZE PROFILE")}
               </Pressable>
+
+              {authMode === 'login' && isBiometricSupported() && hasBiometricCredential() && (
+                <Pressable
+                  type="button"
+                  disabled={isLoading}
+                  onClick={handleBiometricLogin}
+                  haptic="tap"
+                  className="w-full bg-background border border-border hover:border-accent text-textPrimary font-bold py-3.5 rounded-lg transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  🔓 Login with Face ID / Touch ID
+                </Pressable>
+              )}
             </motion.div>
           )}
           </AnimatePresence>
