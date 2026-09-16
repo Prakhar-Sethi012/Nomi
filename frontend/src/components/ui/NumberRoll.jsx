@@ -9,13 +9,16 @@ import { useAppMotion } from '../../hooks/useAppMotion';
 // percentages.
 function NumberRoll({ value, decimals = 0, prefix = '', suffix = '', grouped = false, className = '' }) {
   const m = useAppMotion();
-  const mv = useMotionValue(value);
+  // Starts at 0 (not `value`) so the very first mount counts up too, not
+  // just later updates — the motion value and its target were previously
+  // the same number on mount, so `animate` had nothing to animate.
+  const mv = useMotionValue(0);
 
   const format = (v) => (grouped
     ? v.toLocaleString('en-IN', { minimumFractionDigits: decimals, maximumFractionDigits: decimals })
     : v.toFixed(decimals));
 
-  const [display, setDisplay] = useState(() => format(value));
+  const [display, setDisplay] = useState(() => format(0));
 
   useEffect(() => {
     const controls = animate(mv, value, m.reduced ? { duration: 0 } : m.base);
