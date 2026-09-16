@@ -32,7 +32,13 @@ function BottomSheet({ isOpen, onClose, title, children, layoutId }) {
     panelRef.current?.querySelector('input, textarea, select')?.focus();
 
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [isOpen, onClose]);
+    // `onClose` is deliberately not a dependency here — callers pass it as a
+    // fresh inline arrow function on every render (e.g. onClose={() =>
+    // setShowModal(false)}), so including it made this effect (and its
+    // querySelector(...).focus() call) re-run on every keystroke inside the
+    // sheet, yanking focus back to whichever field happens to be first.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen]);
 
   const handleDragEnd = (_event, info) => {
     if (info.offset.y > 100 || info.velocity.y > 500) onClose();

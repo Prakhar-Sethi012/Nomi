@@ -49,7 +49,11 @@ function PinConfirmModal({ isOpen, onClose, onConfirm, actionText = "Delete Item
 
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [isOpen, onClose]);
+    // Same reasoning as BottomSheet.jsx: `onClose` is a fresh inline
+    // function on every parent render, so keeping it as a dependency here
+    // made this effect re-run on every keystroke in the parent form.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
