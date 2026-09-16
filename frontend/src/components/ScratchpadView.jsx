@@ -5,6 +5,7 @@ import { api } from '../services/api';
 import PinConfirmModal from './PinConfirmModal'; // 🔥 IMPORT MODAL
 import Skeleton from './ui/Skeleton';
 import DoodleCanvas from './ui/DoodleCanvas';
+import DoodleToolbar from './ui/DoodleToolbar';
 import ScratchModeChoice from './ScratchModeChoice';
 import { useAppMotion } from '../hooks/useAppMotion';
 import { fadeUp, scaleIn, staggerParent } from '../motion/variants';
@@ -110,6 +111,8 @@ function ScratchpadView({ userId }) {
   const doodleCanvasRef = useRef(null);
   const [showDoodleConfirm, setShowDoodleConfirm] = useState(false);
   const [isPanMode, setIsPanMode] = useState(false);
+  const [brushColor, setBrushColor] = useState('#60a5fa');
+  const [brushSize, setBrushSize] = useState(3);
 
   // 🔥 NEW STATE FOR DOODLE MODAL
   const [wipeDoodleAuth, setWipeDoodleAuth] = useState(false);
@@ -299,7 +302,8 @@ function ScratchpadView({ userId }) {
         </div>
       </div>
       <div className="flex-1 relative overflow-hidden bg-background">
-        <DoodleCanvas ref={doodleCanvasRef} doodleKey={doodleKey} isPanMode={isPanMode} />
+        <DoodleCanvas ref={doodleCanvasRef} doodleKey={doodleKey} isPanMode={isPanMode} color={brushColor} size={brushSize} />
+        <DoodleToolbar color={brushColor} onColorChange={setBrushColor} size={brushSize} onSizeChange={setBrushSize} />
       </div>
     </motion.div>
   );
