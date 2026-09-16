@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { WeatherAnimationOverlay } from './ui/WeatherAnimations';
 import { getPersonalizedMessage } from '../utils/weatherMessages';
 
@@ -135,6 +135,13 @@ function WeatherWidget() {
   // refresh) so we can key the animation overlay on it and force Framer
   // Motion to replay from scratch instead of just sitting at its end state.
   const [refreshKey, setRefreshKey] = useState(0);
+  // Bumped at the start of every fetchWeather() call; only the response that
+  // still matches the CURRENT value when it lands gets applied to state.
+  // The auto-refresh interval and a manual refresh click can otherwise
+  // overlap (or geolocation/reverse-geocode can just be slow), and without
+  // this an earlier-started-but-slower request could resolve after a
+  // later, faster one and clobber fresher data with stale data.
+  const fetchIdRef = useRef(0);
 
   // Below this much rain/snow in the current 15-minute sample, treat it as
   // noise rather than actual weather. 0.3mm/15min (~1.2mm/hr) is the point
@@ -178,6 +185,7 @@ function WeatherWidget() {
   };
 
   const fetchWeather = async () => {
+    const requestId = ++fetchIdRef.current;
     setIsRefreshing(true);
     try {
       let coords = FALLBACK_COORDS;
@@ -198,6 +206,10 @@ function WeatherWidget() {
         ? (await reverseGeocode(coords.latitude, coords.longitude)) || `${coords.latitude.toFixed(2)}°, ${coords.longitude.toFixed(2)}°`
         : FALLBACK_LABEL;
 
+      // A newer fetchWeather() call has started since this one began —
+      // let that one (not this stale result) be what lands in state.
+      if (fetchIdRef.current !== requestId) return;
+
       setWeatherData({
         temp: Math.round(data.current.temperature_2m),
         feelsLike: Math.round(data.current.apparent_temperature),
@@ -207,14 +219,17 @@ function WeatherWidget() {
         theme: getWeatherTheme(data.current)
       });
     } catch (error) {
+      if (fetchIdRef.current !== requestId) return;
       console.error("Failed to fetch live weather", error);
       setWeatherData({
         temp: '--', feelsLike: '--', humidity: '--%', location: 'Offline', timeUpdated: 'Error',
         theme: getWeatherTheme(undefined)
       });
     } finally {
-      setIsRefreshing(false);
-      setRefreshKey((k) => k + 1);
+      if (fetchIdRef.current === requestId) {
+        setIsRefreshing(false);
+        setRefreshKey((k) => k + 1);
+      }
     }
   };
 
