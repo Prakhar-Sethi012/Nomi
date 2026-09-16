@@ -36,16 +36,27 @@ function SlotMachineText({ text, className = '', staggerDelay = 0.045 }) {
   }
 
   return (
-    <span className={`inline-flex ${className}`} aria-label={text}>
-      <span aria-hidden="true" className="inline-flex">
+    <span className={`inline-flex gap-0 ${className}`} aria-label={text}>
+      <span aria-hidden="true" className="inline-flex gap-0">
         {characters.map((char, i) => {
           const reel = reels[i];
-          if (!reel) return <span key={i}>&nbsp;</span>;
+          if (!reel) {
+            // A real space, kept flush with its neighbors (no reel, nothing
+            // to animate) so word breaks survive without blowing the layout
+            // apart the way an untreated " " inside a flex row can.
+            return <span key={i} className="inline-block">&nbsp;</span>;
+          }
           return (
-            <span key={i} className="inline-block overflow-hidden" style={{ height: '1em', lineHeight: '1em' }}>
+            <span key={i} className="relative inline-block overflow-hidden" style={{ height: '1em', lineHeight: '1em' }}>
+              {/* Invisible sizer: pins this slot's width to the FINAL
+                  character alone. Without it the box auto-sizes to the
+                  widest of the ~6 stacked reel glyphs — a random wide
+                  letter like "W" sitting behind the real (narrow) "r" — so
+                  narrow letters were left with a random leftover gap after
+                  them. That's what caused "Pr ak h ar" instead of "Prakhar". */}
+              <span style={{ visibility: 'hidden' }}>{char}</span>
               <motion.span
-                className="flex flex-col items-start"
-                style={{ lineHeight: '1em' }}
+                className="absolute inset-0 flex flex-col items-center"
                 initial={{ y: 0 }}
                 animate={{ y: `-${REEL_SIZE}em` }}
                 transition={{ duration: 0.55, delay: i * staggerDelay, ease: [0.16, 1, 0.3, 1] }}
