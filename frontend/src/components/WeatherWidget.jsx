@@ -69,6 +69,22 @@ const getRandomQuote = (type) => {
   return quotes[Math.floor(Math.random() * quotes.length)];
 };
 
+// Weather conditions no longer carry their own hardcoded palette (a fixed
+// amber/blue/purple regardless of theme) — each maps to one of the app's own
+// themed tokens instead, so the card automatically repaints itself whenever
+// the user switches theme.
+const TONE_TEXT = {
+  accent: 'text-accent',
+  secondary: 'text-textSecondary',
+  danger: 'text-danger',
+};
+
+const TONE_VAR = {
+  accent: 'var(--color-accent)',
+  secondary: 'var(--color-text-secondary)',
+  danger: 'var(--color-danger)',
+};
+
 function WeatherWidget() {
   const [weatherData, setWeatherData] = useState(null);
   const [isRefreshing, setIsRefreshing] = useState(true);
@@ -78,22 +94,22 @@ function WeatherWidget() {
   const [refreshKey, setRefreshKey] = useState(0);
 
   const getWeatherTheme = (code) => {
-    if (code === undefined) return { icon: '⏳', text: 'Loading', message: 'Looking out the window...', bg: 'from-slate-800 to-slate-900', accent: 'text-slate-400' };
+    if (code === undefined) return { icon: '⏳', text: 'Loading', message: 'Looking out the window...', tone: 'secondary' };
 
     if (code === 0)
-      return { icon: '☀️', text: 'Clear Sky', message: getRandomQuote('clear'), bg: 'from-amber-500/10 to-orange-900/40 border-orange-500/20', accent: 'text-orange-400' };
+      return { icon: '☀️', text: 'Clear Sky', message: getRandomQuote('clear'), tone: 'accent' };
     if (code >= 1 && code <= 3)
-      return { icon: '⛅', text: 'Partly Cloudy', message: getRandomQuote('cloudy'), bg: 'from-blue-400/10 to-slate-800/60 border-blue-400/20', accent: 'text-blue-300' };
+      return { icon: '⛅', text: 'Partly Cloudy', message: getRandomQuote('cloudy'), tone: 'secondary' };
     if (code >= 45 && code <= 48)
-      return { icon: '🌫️', text: 'Foggy', message: getRandomQuote('foggy'), bg: 'from-slate-400/10 to-slate-800/60 border-slate-400/20', accent: 'text-slate-300' };
+      return { icon: '🌫️', text: 'Foggy', message: getRandomQuote('foggy'), tone: 'secondary' };
     if (code >= 51 && code <= 67)
-      return { icon: '🌧️', text: 'Raining', message: getRandomQuote('raining'), bg: 'from-blue-600/20 to-slate-900/80 border-blue-500/30', accent: 'text-blue-400' };
+      return { icon: '🌧️', text: 'Raining', message: getRandomQuote('raining'), tone: 'accent' };
     if (code >= 71 && code <= 77)
-      return { icon: '❄️', text: 'Snowing', message: getRandomQuote('snowing'), bg: 'from-indigo-200/10 to-slate-800/60 border-indigo-200/20', accent: 'text-indigo-200' };
+      return { icon: '❄️', text: 'Snowing', message: getRandomQuote('snowing'), tone: 'accent' };
     if (code >= 95)
-      return { icon: '⛈️', text: 'Thunderstorm', message: getRandomQuote('thunder'), bg: 'from-purple-600/20 to-slate-900/80 border-purple-500/30', accent: 'text-purple-400' };
+      return { icon: '⛈️', text: 'Thunderstorm', message: getRandomQuote('thunder'), tone: 'danger' };
 
-    return { icon: '☁️', text: 'Cloudy', message: getRandomQuote('default'), bg: 'from-slate-700/20 to-slate-900/60 border-slate-600/30', accent: 'text-slate-300' };
+    return { icon: '☁️', text: 'Cloudy', message: getRandomQuote('default'), tone: 'secondary' };
   };
 
   const fetchWeather = async () => {
@@ -131,10 +147,11 @@ function WeatherWidget() {
   }, []);
 
   const currentTheme = weatherData?.theme || getWeatherTheme(undefined);
+  const toneClass = TONE_TEXT[currentTheme.tone] || TONE_TEXT.secondary;
   const animationType = getAnimationType(currentTheme.text);
 
   return (
-    <div className={`relative overflow-hidden px-5 py-3 rounded-xl border bg-gradient-to-br shadow-lg flex items-center justify-between gap-5 transition-all duration-700 ease-in-out ${currentTheme.bg} min-w-[280px]`}>
+    <div className="relative overflow-hidden px-5 py-3 rounded-xl border border-border bg-surface shadow-lg flex items-center justify-between gap-5 transition-all duration-700 ease-in-out min-w-[280px]">
 
       <div className="absolute right-0 top-1/2 -translate-y-1/2 text-[90px] opacity-10 pointer-events-none select-none blur-[2px] translate-x-4">
         {currentTheme.icon}
@@ -153,7 +170,7 @@ function WeatherWidget() {
             </span>
             <span className="text-sm font-bold text-white/50 ml-0.5 mt-0.5">°C</span>
           </div>
-          <p className={`text-[11px] font-bold mt-1 uppercase tracking-wide ${currentTheme.accent}`}>
+          <p className={`text-[11px] font-bold mt-1 uppercase tracking-wide ${toneClass}`}>
             {currentTheme.text}
           </p>
           <p className="text-[9px] text-white/60 mt-0.5 max-w-[140px] leading-tight italic">
