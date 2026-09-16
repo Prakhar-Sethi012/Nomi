@@ -176,11 +176,12 @@ function TasksWidget({ setProfile }) {
     const isOverdue = new Date(task.due_date).setHours(0,0,0,0) < new Date().setHours(0,0,0,0);
     const isRecurring = task.frequency && task.frequency !== 'Once';
     const completing = completingTasks[task.id];
+    const important = isImportant(task);
 
     return (
       <div className={`group relative overflow-hidden rounded-lg border transition-colors duration-500 ${
         completing ? 'border-success' : isOverdue ? 'border-danger/60' : 'border-border hover:border-accent'
-      }`}>
+      } ${important && !completing ? 'ring-1 ring-amber-400/70 shadow-[0_0_12px_rgba(251,191,36,0.25)]' : ''}`}>
         <SwipeRow
           disabled={!!completing}
           onDelete={() => handleSwipeDelete(task.id)}
@@ -207,6 +208,7 @@ function TasksWidget({ setProfile }) {
                 </Pressable>
                 <div>
                   <p className={`font-medium text-sm leading-tight transition-all ${completing ? 'text-textSecondary line-through' : isOverdue ? 'text-danger' : 'text-textPrimary'}`}>
+                    {important && !completing && <span className="mr-1" title="Important">⭐</span>}
                     {isRecurring && <span className="text-accent mr-1" title={`Repeats ${task.frequency}`}>↻</span>}
                     {task.title}
                     {isOverdue && !completing && <span className="ml-2 text-[9px] bg-dangerBg text-danger px-1.5 py-0.5 rounded uppercase tracking-wider font-bold">Overdue</span>}
