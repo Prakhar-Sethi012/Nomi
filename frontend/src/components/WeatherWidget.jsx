@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { WeatherAnimationOverlay } from './ui/WeatherAnimations';
+import { getPersonalizedMessage } from '../utils/weatherMessages';
 
 // Maps the widget's already-computed theme label to which localized
 // animation should play over the card — kept separate from getWeatherTheme
@@ -68,6 +69,11 @@ const getRandomQuote = (type) => {
   const quotes = WEATHER_QUOTES[type] || WEATHER_QUOTES.default;
   return quotes[Math.floor(Math.random() * quotes.length)];
 };
+
+// Tries a personalized, temp-and-condition-specific line first (see
+// utils/weatherMessages.js); only falls back to the generic developer-humor
+// quote pool when nothing there matches.
+const pickMessage = (type, temp) => getPersonalizedMessage(type, temp) || getRandomQuote(type);
 
 // Used only when the browser can't/won't provide a real location (permission
 // denied, no geolocation support, timed out) — VIT Vellore campus.
@@ -142,32 +148,33 @@ function WeatherWidget() {
     if (!current) return { icon: '⏳', text: 'Loading', message: 'Looking out the window...', tone: 'secondary' };
 
     const code = current.weather_code;
+    const temp = current.temperature_2m;
     const rainMm = (current.rain ?? 0) + (current.showers ?? 0);
     const snowCm = current.snowfall ?? 0;
 
     if (code === 0)
-      return { icon: '☀️', text: 'Clear Sky', message: getRandomQuote('clear'), tone: 'accent' };
+      return { icon: '☀️', text: 'Clear Sky', message: pickMessage('clear', temp), tone: 'accent' };
     if (code >= 45 && code <= 48)
-      return { icon: '🌫️', text: 'Foggy', message: getRandomQuote('foggy'), tone: 'secondary' };
+      return { icon: '🌫️', text: 'Foggy', message: pickMessage('foggy', temp), tone: 'secondary' };
 
     // 51-67 is drizzle/rain/freezing-rain, 80-82 is rain showers — but the
     // code alone is a noisy signal for "is it actually raining right now".
     // Cross-check against the real measured amount before calling it Raining.
     const isRainCode = (code >= 51 && code <= 67) || (code >= 80 && code <= 82);
     if (isRainCode && rainMm >= RAIN_MM_THRESHOLD)
-      return { icon: '🌧️', text: 'Raining', message: getRandomQuote('raining'), tone: 'accent' };
+      return { icon: '🌧️', text: 'Raining', message: pickMessage('raining', temp), tone: 'accent' };
 
     const isSnowCode = (code >= 71 && code <= 77) || code === 85 || code === 86;
     if (isSnowCode && snowCm >= SNOW_CM_THRESHOLD)
-      return { icon: '❄️', text: 'Snowing', message: getRandomQuote('snowing'), tone: 'accent' };
+      return { icon: '❄️', text: 'Snowing', message: pickMessage('snowing', temp), tone: 'accent' };
 
     if (code >= 95)
-      return { icon: '⛈️', text: 'Thunderstorm', message: getRandomQuote('thunder'), tone: 'danger' };
+      return { icon: '⛈️', text: 'Thunderstorm', message: pickMessage('thunder', temp), tone: 'danger' };
 
     if (code >= 1 && code <= 3)
-      return { icon: '⛅', text: 'Partly Cloudy', message: getRandomQuote('cloudy'), tone: 'secondary' };
+      return { icon: '⛅', text: 'Partly Cloudy', message: pickMessage('cloudy', temp), tone: 'secondary' };
 
-    return { icon: '☁️', text: 'Cloudy', message: getRandomQuote('default'), tone: 'secondary' };
+    return { icon: '☁️', text: 'Cloudy', message: pickMessage('default', temp), tone: 'secondary' };
   };
 
   const fetchWeather = async () => {
