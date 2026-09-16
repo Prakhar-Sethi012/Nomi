@@ -176,15 +176,24 @@ function WeatherWidget() {
 
     const isSnowCode = (code >= 71 && code <= 77) || code === 85 || code === 86;
     if (isSnowCode && snowCm >= SNOW_CM_THRESHOLD)
-      return { icon: '❄️', text: 'Snowing', message: pickMessage('snowing', temp), tone: 'accent' };
+      // Snow isn't covered by the new engine's brackets (not really a Vellore
+      // thing) — it naturally falls through to the older personalization /
+      // generic pool via pickMessage's own fallback chain.
+      return { icon: '❄️', text: 'Snowing', message: pickMessage('snowing', temp, code), tone: 'accent' };
 
     if (code >= 95)
-      return { icon: '⛈️', text: 'Thunderstorm', message: pickMessage('thunder', temp), tone: 'danger' };
+      return { icon: '⛈️', text: 'Thunderstorm', message: pickMessage('thunder', temp, code), tone: 'danger' };
 
     if (code >= 1 && code <= 3)
-      return { icon: '⛅', text: 'Partly Cloudy', message: pickMessage('cloudy', temp), tone: 'secondary' };
+      return { icon: '⛅', text: 'Partly Cloudy', message: pickMessage('cloudy', temp, code), tone: 'secondary' };
 
-    return { icon: '☁️', text: 'Cloudy', message: pickMessage('default', temp), tone: 'secondary' };
+    // Reached when a rain/snow *code* was present but its amount fell below
+    // the threshold above — the widget has already decided the effective
+    // condition is plain "Cloudy", so the quote engine needs a genuinely
+    // cloudy code (3), not the original rain/snow one, or its own
+    // override check would re-trigger and contradict the label on screen
+    // (a "Cloudy" icon next to a "the sky is crying" rain quote).
+    return { icon: '☁️', text: 'Cloudy', message: pickMessage('default', temp, 3), tone: 'secondary' };
   };
 
   const fetchWeather = async () => {
