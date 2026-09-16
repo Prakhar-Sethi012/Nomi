@@ -10,6 +10,7 @@ import { api } from '../services/api';
 import NextClassWidget from './NextClassWidget';
 import NumberRoll from './ui/NumberRoll';
 import PullToRefresh from './ui/PullToRefresh';
+import SlotMachineText from './ui/SlotMachineText';
 
 function Dashboard({ profile, setProfile, setActiveTab }) {
   const [isEditingCgpa, setIsEditingCgpa] = useState(false);
@@ -79,7 +80,9 @@ function Dashboard({ profile, setProfile, setActiveTab }) {
         
         {/* COLUMN 1 (LEFT) */}
         <div className="flex-1 w-full">
-          <h1 className="text-2xl font-bold text-textPrimary mb-1">Welcome back, {profile?.name?.split(' ')[0]}</h1>
+          <h1 className="text-2xl font-bold text-textPrimary mb-1 flex flex-wrap items-baseline gap-x-2">
+            Welcome back, <SlotMachineText key={profile?.name} text={profile?.name?.split(' ')[0] || ''} />
+          </h1>
           <div className="flex items-center gap-2 mb-3">
             <span className="text-accent text-sm font-medium">{dateString}</span>
             <span className="text-textSecondary text-sm hidden sm:inline">• VIT Command Center</span>
