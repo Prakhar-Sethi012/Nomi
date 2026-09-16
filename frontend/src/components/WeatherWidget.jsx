@@ -148,6 +148,7 @@ function WeatherWidget() {
 
   const currentTheme = weatherData?.theme || getWeatherTheme(undefined);
   const toneClass = TONE_TEXT[currentTheme.tone] || TONE_TEXT.secondary;
+  const toneVar = TONE_VAR[currentTheme.tone] || TONE_VAR.secondary;
   const animationType = getAnimationType(currentTheme.text);
 
   return (
@@ -157,7 +158,7 @@ function WeatherWidget() {
         {currentTheme.icon}
       </div>
 
-      <WeatherAnimationOverlay type={animationType} refreshKey={refreshKey} />
+      <WeatherAnimationOverlay type={animationType} refreshKey={refreshKey} color={toneVar} />
 
       <div className="flex items-center gap-3 relative z-10">
         <div className="text-4xl filter drop-shadow-md">

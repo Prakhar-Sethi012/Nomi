@@ -4,14 +4,20 @@ const DROP_COUNT = 7;
 
 // A handful of raindrops falling top to bottom, staggered so they don't all
 // land in sync, looping forever for as long as the widget stays rainy.
-export function RainOverlay() {
+// `color` is the current theme's tone (e.g. var(--color-accent)) so the
+// drops read as "this app's ink", not a fixed cyan regardless of theme.
+export function RainOverlay({ color }) {
   return (
     <>
       {Array.from({ length: DROP_COUNT }).map((_, i) => (
         <motion.div
           key={i}
-          className="absolute top-0 w-[3px] h-6 rounded-full bg-gradient-to-b from-cyan-200/0 via-cyan-100 to-white shadow-[0_0_6px_rgba(165,243,252,0.9)]"
-          style={{ left: `${(i / DROP_COUNT) * 90 + 5}%` }}
+          className="absolute top-0 w-[3px] h-6 rounded-full"
+          style={{
+            left: `${(i / DROP_COUNT) * 90 + 5}%`,
+            background: `linear-gradient(to bottom, color-mix(in srgb, ${color} 0%, transparent), ${color}, color-mix(in srgb, ${color} 30%, white))`,
+            boxShadow: `0 0 6px color-mix(in srgb, ${color} 80%, transparent)`,
+          }}
           initial={{ y: '-20%', opacity: 0 }}
           animate={{ y: '140%', opacity: [0, 1, 1, 0] }}
           transition={{
@@ -35,15 +41,23 @@ const CLOUDS = [
 
 // Three bold, blurred blobs drifting left-to-right at different heights and
 // speeds so it reads as "clouds" rather than one shape sliding by, looping
-// forever for as long as the widget stays cloudy.
-export function CloudOverlay() {
+// forever for as long as the widget stays cloudy. Tinted with the theme tone
+// (mixed into white) so clouds still read as light/airy in every theme while
+// carrying that theme's hue.
+export function CloudOverlay({ color }) {
   return (
     <>
       {CLOUDS.map((cloud, i) => (
         <motion.div
           key={i}
-          className="absolute rounded-full bg-white blur-md shadow-[0_0_20px_rgba(255,255,255,0.6)]"
-          style={{ top: cloud.top, width: cloud.size, height: cloud.size * 0.55 }}
+          className="absolute rounded-full blur-md"
+          style={{
+            top: cloud.top,
+            width: cloud.size,
+            height: cloud.size * 0.55,
+            background: `color-mix(in srgb, ${color} 30%, white)`,
+            boxShadow: `0 0 20px color-mix(in srgb, ${color} 35%, white)`,
+          }}
           initial={{ x: '-30%', opacity: 0 }}
           animate={{ x: '130%', opacity: [0, 1, 1, 0] }}
           transition={{
@@ -63,7 +77,10 @@ const RAY_COUNT = 8;
 
 // A sun that pops in, then glows and pulses forever with rays radiating out
 // from its center — reads as "brightening up" rather than a static icon.
-export function SunOverlay() {
+// Core/rays are built from the theme tone rather than a fixed yellow, so a
+// "sunny" reading still shifts palette across themes (e.g. Nordic's frost
+// blue instead of amber).
+export function SunOverlay({ color }) {
   return (
     <div className="w-full h-full flex items-center justify-end pr-8">
       <motion.div
@@ -73,17 +90,28 @@ export function SunOverlay() {
         transition={{ duration: 0.6, ease: 'easeOut' }}
       >
         <motion.div
-          className="absolute inset-0 rounded-full bg-yellow-300 shadow-[0_0_45px_18px_rgba(253,224,71,0.8)]"
-          style={{ filter: 'blur(22px)' }}
+          className="absolute inset-0 rounded-full"
+          style={{
+            background: color,
+            filter: 'blur(22px)',
+            boxShadow: `0 0 45px 18px color-mix(in srgb, ${color} 70%, transparent)`,
+          }}
           animate={{ opacity: [0.75, 1, 0.75], scale: [1, 1.25, 1] }}
           transition={{ duration: 1.4, repeat: Infinity, repeatType: 'loop', ease: 'easeInOut' }}
         />
-        <div className="absolute inset-[6px] rounded-full bg-amber-400" />
+        <div
+          className="absolute inset-[6px] rounded-full"
+          style={{ background: `color-mix(in srgb, ${color} 85%, black)` }}
+        />
         {Array.from({ length: RAY_COUNT }).map((_, i) => (
           <motion.div
             key={i}
-            className="absolute top-1/2 left-1/2 w-1.5 h-8 bg-yellow-200 rounded-full origin-bottom shadow-[0_0_8px_rgba(254,240,138,0.9)]"
-            style={{ transform: `rotate(${i * 45}deg) translateY(-38px)` }}
+            className="absolute top-1/2 left-1/2 w-1.5 h-8 rounded-full origin-bottom"
+            style={{
+              transform: `rotate(${i * 45}deg) translateY(-38px)`,
+              background: `color-mix(in srgb, ${color} 80%, white)`,
+              boxShadow: `0 0 8px color-mix(in srgb, ${color} 70%, transparent)`,
+            }}
             initial={{ opacity: 0 }}
             animate={{ opacity: [0, 1, 0] }}
             transition={{ duration: 1.4, repeat: Infinity, repeatType: 'loop', delay: i * 0.08, ease: 'easeInOut' }}
@@ -98,8 +126,9 @@ export function SunOverlay() {
 // the right overlay and keys it so a manual refresh replays it from scratch.
 // The overlay itself loops forever for as long as `type` stays set — it only
 // leaves (with a graceful fade) when the weather type changes to one with no
-// animation, or the widget unmounts.
-export function WeatherAnimationOverlay({ type, refreshKey }) {
+// animation, or the widget unmounts. `color` is threaded down to whichever
+// overlay renders so every animation accent tracks the active theme.
+export function WeatherAnimationOverlay({ type, refreshKey, color }) {
   return (
     <AnimatePresence>
       {type && (
@@ -108,9 +137,9 @@ export function WeatherAnimationOverlay({ type, refreshKey }) {
           className="absolute inset-0 overflow-hidden pointer-events-none"
           exit={{ opacity: 0, transition: { duration: 0.5 } }}
         >
-          {type === 'rainy' && <RainOverlay />}
-          {type === 'cloudy' && <CloudOverlay />}
-          {type === 'sunny' && <SunOverlay />}
+          {type === 'rainy' && <RainOverlay color={color} />}
+          {type === 'cloudy' && <CloudOverlay color={color} />}
+          {type === 'sunny' && <SunOverlay color={color} />}
         </motion.div>
       )}
     </AnimatePresence>
