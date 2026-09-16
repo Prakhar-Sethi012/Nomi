@@ -178,10 +178,24 @@ function TasksWidget({ setProfile }) {
     const completing = completingTasks[task.id];
     const important = isImportant(task);
 
+    // Importance takes the border-color slot (ahead of overdue) since a
+    // glowing box-shadow was the actual cause of two separate problems: it's
+    // not clipped to the card the way a background is, so its blur bled
+    // upward into the "N Tasks" badge sitting just above the pile, and
+    // stacked with the border, the tag chip, and the star it made the whole
+    // card feel loud. A single theme-derived border color reads as clearly
+    // as the same amber ring did, without spilling outside its own box or
+    // hardcoding a color that ignores the active theme.
+    const borderClass = completing
+      ? 'border-success'
+      : important
+        ? 'border-accent'
+        : isOverdue
+          ? 'border-danger/60'
+          : 'border-border hover:border-accent';
+
     return (
-      <div className={`group relative overflow-hidden rounded-lg border transition-colors duration-500 ${
-        completing ? 'border-success' : isOverdue ? 'border-danger/60' : 'border-border hover:border-accent'
-      } ${important && !completing ? 'ring-1 ring-amber-400/70 shadow-[0_0_12px_rgba(251,191,36,0.25)]' : ''}`}>
+      <div className={`group relative overflow-hidden rounded-lg border transition-colors duration-500 ${borderClass}`}>
         <SwipeRow
           disabled={!!completing}
           onDelete={() => handleSwipeDelete(task.id)}
