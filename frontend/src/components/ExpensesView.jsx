@@ -347,7 +347,16 @@ function ExpensesView({ profile, setProfile }) {
                     strokeWidth="10"
                     strokeLinecap="round"
                     pathLength={1}
-                    style={{ pathOffset: seg.start / 100 }}
+                    // `pathOffset` (Motion's declarative prop for this) only writes
+                    // a literal, non-functional `pathOffset="..."` attribute for a
+                    // plain motion.circle in this Motion version — it never becomes
+                    // a real `stroke-dashoffset`, so every segment drew starting
+                    // from the same point and overlapped instead of stacking
+                    // sequentially around the ring. Setting the real CSS property
+                    // directly (in the same 0-1 units `pathLength={1}` normalizes
+                    // dasharray to) sidesteps that and actually rotates each
+                    // segment's start to where the previous one ended.
+                    style={{ strokeDashoffset: -(seg.start / 100) }}
                     initial={{ pathLength: 0 }}
                     animate={{ pathLength: seg.percent / 100 }}
                     transition={{ ...m.slow, delay: i * 0.08 }}
