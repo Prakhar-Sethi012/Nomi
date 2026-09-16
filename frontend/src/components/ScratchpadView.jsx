@@ -284,13 +284,6 @@ function ScratchpadView({ userId }) {
       <div className="p-3 border-b border-border bg-background flex justify-between items-center h-12 shrink-0">
         <span className="text-xs text-textSecondary font-bold uppercase tracking-wider">Infinite Canvas</span>
         <div className="flex items-center gap-2">
-          <button
-            onClick={() => setIsPanMode(p => !p)}
-            className={`text-[10px] font-bold px-2 py-1 rounded transition-colors uppercase tracking-wider ${isPanMode ? 'bg-accent text-white' : 'bg-surfaceHover hover:bg-border text-textPrimary'}`}
-            title="Toggle pan mode"
-          >
-            ✋ Pan
-          </button>
           {showDoodleConfirm ? (
             <div className="flex gap-2 items-center animate-fade-in">
               <span className="text-[10px] text-danger font-bold mr-1">Are you sure?</span>
@@ -308,6 +301,7 @@ function ScratchpadView({ userId }) {
           color={brushColor} onColorChange={setBrushColor}
           size={brushSize} onSizeChange={setBrushSize}
           texture={brushTexture} onTextureChange={setBrushTexture}
+          isPanMode={isPanMode} onTogglePan={() => setIsPanMode(p => !p)}
         />
       </div>
     </motion.div>
