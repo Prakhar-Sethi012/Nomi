@@ -113,6 +113,7 @@ function ScratchpadView({ userId }) {
   const [isPanMode, setIsPanMode] = useState(false);
   const [brushColor, setBrushColor] = useState('#60a5fa');
   const [brushSize, setBrushSize] = useState(3);
+  const [brushTexture, setBrushTexture] = useState('pen');
 
   // 🔥 NEW STATE FOR DOODLE MODAL
   const [wipeDoodleAuth, setWipeDoodleAuth] = useState(false);
@@ -302,8 +303,12 @@ function ScratchpadView({ userId }) {
         </div>
       </div>
       <div className="flex-1 relative overflow-hidden bg-background">
-        <DoodleCanvas ref={doodleCanvasRef} doodleKey={doodleKey} isPanMode={isPanMode} color={brushColor} size={brushSize} />
-        <DoodleToolbar color={brushColor} onColorChange={setBrushColor} size={brushSize} onSizeChange={setBrushSize} />
+        <DoodleCanvas ref={doodleCanvasRef} doodleKey={doodleKey} isPanMode={isPanMode} color={brushColor} size={brushSize} texture={brushTexture} />
+        <DoodleToolbar
+          color={brushColor} onColorChange={setBrushColor}
+          size={brushSize} onSizeChange={setBrushSize}
+          texture={brushTexture} onTextureChange={setBrushTexture}
+        />
       </div>
     </motion.div>
   );

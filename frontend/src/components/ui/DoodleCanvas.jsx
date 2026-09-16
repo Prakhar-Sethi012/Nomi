@@ -3,13 +3,32 @@ import { forwardRef, useEffect, useImperativeHandle, useRef } from 'react';
 const BG = '#1e293b';
 const DEFAULT_COLOR = '#60a5fa';
 const DEFAULT_SIZE = 3;
+const DEFAULT_TEXTURE = 'pen';
+
+// Per-texture context settings applied before every stroke segment is
+// stroked. Marker is a flat, lower opacity (so overlapping strokes darken,
+// like real ink); pencil fakes graphite grain with a soft shadow in the
+// stroke's own color instead of a crisp line.
+const applyTexture = (ctx, texture) => {
+  if (texture === 'marker') {
+    ctx.globalAlpha = 0.4;
+    ctx.shadowBlur = 0;
+  } else if (texture === 'pencil') {
+    ctx.globalAlpha = 0.85;
+    ctx.shadowBlur = 4;
+    ctx.shadowColor = ctx.strokeStyle;
+  } else {
+    ctx.globalAlpha = 1;
+    ctx.shadowBlur = 0;
+  }
+};
 
 // Strokes are stored as vector point data in "world space" instead of a
 // single raster snapshot — the old dataURL-per-frame approach couldn't
 // support panning, since panning would just reveal blank canvas outside
 // whatever was originally painted. Storing points means any resize, pan, or
 // texture change can just redraw the same data from scratch.
-const DoodleCanvas = forwardRef(function DoodleCanvas({ doodleKey, color = DEFAULT_COLOR, size = DEFAULT_SIZE, isPanMode = false }, ref) {
+const DoodleCanvas = forwardRef(function DoodleCanvas({ doodleKey, color = DEFAULT_COLOR, size = DEFAULT_SIZE, texture = DEFAULT_TEXTURE, isPanMode = false }, ref) {
   const containerRef = useRef(null);
   const canvasRef = useRef(null);
   const strokesRef = useRef([]);
@@ -17,7 +36,7 @@ const DoodleCanvas = forwardRef(function DoodleCanvas({ doodleKey, color = DEFAU
   const isDrawingRef = useRef(false);
   const dprRef = useRef(window.devicePixelRatio || 1);
   const sizeRef = useRef({ width: 0, height: 0 });
-  const toolRef = useRef({ color, size });
+  const toolRef = useRef({ color, size, texture });
   // The camera: every stored point is in "world space", and this is the
   // world-space coordinate currently sitting at the canvas's top-left corner.
   const panRef = useRef({ x: 0, y: 0 });
@@ -26,8 +45,8 @@ const DoodleCanvas = forwardRef(function DoodleCanvas({ doodleKey, color = DEFAU
   const lastPointerRef = useRef({ x: 0, y: 0 });
 
   useEffect(() => {
-    toolRef.current = { color, size };
-  }, [color, size]);
+    toolRef.current = { color, size, texture };
+  }, [color, size, texture]);
 
   useEffect(() => {
     isPanModeRef.current = isPanMode;
@@ -46,6 +65,7 @@ const DoodleCanvas = forwardRef(function DoodleCanvas({ doodleKey, color = DEFAU
     ctx.save();
     ctx.strokeStyle = stroke.color;
     ctx.lineWidth = stroke.size;
+    applyTexture(ctx, stroke.texture);
     ctx.beginPath();
     ctx.moveTo(stroke.points[0].x, stroke.points[0].y);
     for (let i = 1; i < stroke.points.length; i++) ctx.lineTo(stroke.points[i].x, stroke.points[i].y);
@@ -144,7 +164,12 @@ const DoodleCanvas = forwardRef(function DoodleCanvas({ doodleKey, color = DEFAU
       return;
     }
     const { x, y } = posFromEvent(e);
-    currentStrokeRef.current = { color: toolRef.current.color, size: toolRef.current.size, points: [{ x, y }] };
+    currentStrokeRef.current = {
+      color: toolRef.current.color,
+      size: toolRef.current.size,
+      texture: toolRef.current.texture,
+      points: [{ x, y }],
+    };
     isDrawingRef.current = true;
   };
 
@@ -170,6 +195,7 @@ const DoodleCanvas = forwardRef(function DoodleCanvas({ doodleKey, color = DEFAU
     ctx.lineWidth = stroke.size;
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
+    applyTexture(ctx, stroke.texture);
     ctx.beginPath();
     ctx.moveTo(prev.x, prev.y);
     ctx.lineTo(x, y);

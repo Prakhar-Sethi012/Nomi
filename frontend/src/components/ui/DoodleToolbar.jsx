@@ -1,4 +1,11 @@
 import Pressable from './Pressable';
+import SegmentedControl from './SegmentedControl';
+
+const TEXTURES = [
+  { value: 'pen', label: '🖊️' },
+  { value: 'marker', label: '🖍️' },
+  { value: 'pencil', label: '✏️' },
+];
 
 const SIZES = [
   { value: 2, label: 'S' },
@@ -14,7 +21,7 @@ const CURATED_PALETTE = ['#ef4444', '#f97316', '#eab308', '#22c55e', '#3b82f6', 
 // Focus Mode's fullscreen portal. The first two swatches are resolved from
 // the live theme (not stored as the literal "var(--color-accent)" string)
 // since canvas 2D's strokeStyle can't reliably parse CSS custom properties.
-function DoodleToolbar({ color, onColorChange, size, onSizeChange }) {
+function DoodleToolbar({ color, onColorChange, size, onSizeChange, texture, onTextureChange }) {
   const themeAccent = getComputedStyle(document.documentElement).getPropertyValue('--color-accent').trim() || '#f59e0b';
   const themeInk = getComputedStyle(document.documentElement).getPropertyValue('--color-text-primary').trim() || '#ffffff';
   const palette = [themeAccent, themeInk, ...CURATED_PALETTE];
@@ -54,6 +61,10 @@ function DoodleToolbar({ color, onColorChange, size, onSizeChange }) {
           </Pressable>
         ))}
       </div>
+
+      <div className="w-px h-8 bg-border" />
+
+      <SegmentedControl options={TEXTURES} value={texture} onChange={onTextureChange} layoutId="doodle-texture" />
     </div>
   );
 }
