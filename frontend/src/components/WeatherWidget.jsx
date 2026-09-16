@@ -152,7 +152,10 @@ function WeatherWidget() {
   const animationType = getAnimationType(currentTheme.text);
 
   return (
-    <div className="relative overflow-hidden px-5 py-3 rounded-xl border border-border bg-surface shadow-lg flex items-center justify-between gap-5 transition-all duration-700 ease-in-out min-w-[280px]">
+    <div
+      className="relative overflow-hidden px-5 py-3 rounded-xl border border-border shadow-lg flex items-center justify-between gap-5 transition-all duration-700 ease-in-out min-w-[280px]"
+      style={{ background: `linear-gradient(135deg, color-mix(in srgb, ${toneVar} 14%, var(--color-surface)) 0%, var(--color-surface) 65%)` }}
+    >
 
       <div className="absolute right-0 top-1/2 -translate-y-1/2 text-[90px] opacity-10 pointer-events-none select-none blur-[2px] translate-x-4">
         {currentTheme.icon}
