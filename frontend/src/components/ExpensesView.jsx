@@ -208,12 +208,24 @@ function ExpensesView({ profile, setProfile }) {
 
   // Segment data for the SVG donut below — conic-gradient can't be animated,
   // so each category becomes its own arc drawn on pathLength instead.
+  // `percent`/`start` (share of total spend) drive the legend bars below;
+  // `arcFraction`/`arcStart` (share of the monthly *budget*) drive the ring
+  // itself, so the ring only reads as "full" once the limit is actually hit
+  // — with no limit set there's no progress to track, so it falls back to
+  // the same total-spend basis and behaves like a plain breakdown.
   let cumulativePercent = 0;
+  let cumulativeArc = 0;
   const donutSegments = Object.entries(categoryTotals).map(([tag, amount]) => {
     const percent = monthTotal > 0 ? (amount / monthTotal) * 100 : 0;
     const start = cumulativePercent;
     cumulativePercent += percent;
-    return { tag, amount, percent, start, color: categoryColors[tag] };
+
+    const rawArcFraction = monthlyLimit > 0 ? amount / monthlyLimit : percent / 100;
+    const arcStart = Math.min(cumulativeArc, 1);
+    const arcFraction = Math.max(0, Math.min(rawArcFraction, 1 - arcStart));
+    cumulativeArc += rawArcFraction;
+
+    return { tag, amount, percent, start, arcStart, arcFraction, color: categoryColors[tag] };
   });
 
   const displayedExpenses = selectedCategory ? monthlyExpenses.filter(exp => exp.tags[0] === selectedCategory) : monthlyExpenses;
@@ -356,9 +368,9 @@ function ExpensesView({ profile, setProfile }) {
                     // directly (in the same 0-1 units `pathLength={1}` normalizes
                     // dasharray to) sidesteps that and actually rotates each
                     // segment's start to where the previous one ended.
-                    style={{ strokeDashoffset: -(seg.start / 100) }}
+                    style={{ strokeDashoffset: -seg.arcStart }}
                     initial={{ pathLength: 0 }}
-                    animate={{ pathLength: seg.percent / 100 }}
+                    animate={{ pathLength: seg.arcFraction }}
                     transition={{ ...m.slow, delay: i * 0.08 }}
                   />
                 ))}
