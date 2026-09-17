@@ -169,11 +169,17 @@ function RadialNav({ activeTab, onSelect, onLogout }) {
         )}
       </AnimatePresence>
 
+      {/* pointer-events-none here — this row spans the full screen width
+          (inset-x-0) so it can center the FAB/wheel, but as a later sibling
+          at the same z-index as App.jsx's pinned Home button, its own empty
+          space was winning hit-testing over Home and silently swallowing
+          the tap. Only the actual FAB-sized box below needs to be
+          clickable, so pointer-events is re-enabled there specifically. */}
       <div
-        className="md:hidden fixed bottom-4 inset-x-0 z-30 flex items-center justify-center"
+        className="md:hidden fixed bottom-4 inset-x-0 z-30 flex items-center justify-center pointer-events-none"
         style={{ marginBottom: 'env(safe-area-inset-bottom)' }}
       >
-        <div className="relative" style={{ width: FAB_SIZE, height: FAB_SIZE }}>
+        <div className="relative pointer-events-auto" style={{ width: FAB_SIZE, height: FAB_SIZE }}>
 
           {/* Guide ring: a static "track" the icons visually slide along.
               Deliberately doesn't rotate with the wheel — a fixed rail with
