@@ -14,12 +14,14 @@ import SocialRadar from './components/SocialRadar';
 import CloseFriendsView from './components/CloseFriendsView';
 import RadialNav from './components/nav/RadialNav';
 import PageTransition from './components/ui/PageTransition';
+import ConfirmModal from './components/ui/ConfirmModal';
 
 function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [profile, setProfile] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(!!localStorage.getItem('token'));
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
   // =========================================
   // 1. AUTHENTICATE & FETCH PROFILE
@@ -69,11 +71,17 @@ function App() {
   // =========================================
   // 3. LOGOUT HANDLER
   // =========================================
-  const handleLogout = () => {
+  // `handleLogout` (passed to every logout trigger — the desktop nav button,
+  // the radial wheel's Logout item, ProfileView) only opens the confirm
+  // dialog now; `executeLogout` is the actual, one-way session teardown,
+  // gated behind it so a stray tap can't end the session with no way back.
+  const executeLogout = () => {
     localStorage.removeItem('token');
     setIsAuthenticated(false);
     setProfile(null);
   };
+
+  const handleLogout = () => setShowLogoutConfirm(true);
 
   // =========================================
   // RENDER BLOCKS
@@ -155,6 +163,22 @@ function App() {
         👤
       </button>
 
+      {/* Pinned Home shortcut (mobile only) — same treatment as the Profile
+          pin above (a plain fixed corner button, not part of RadialNav's
+          circular geometry at all), just anchored to the opposite bottom
+          corner instead of top-right. */}
+      <button
+        onClick={() => setActiveTab('dashboard')}
+        aria-label="Home"
+        title="Home"
+        className={`md:hidden fixed z-30 w-11 h-11 rounded-full shadow-lg border flex items-center justify-center text-lg transition-colors ${
+          activeTab === 'dashboard' ? 'bg-accent border-accentHover text-white' : 'bg-surface border-border text-textPrimary'
+        }`}
+        style={{ bottom: 'calc(env(safe-area-inset-bottom) + 12px)', left: '16px' }}
+      >
+        🏠
+      </button>
+
       <div className="w-full max-w-6xl flex justify-center pb-[calc(6rem+env(safe-area-inset-bottom))] md:pb-0">
         <PageTransition tabKey={activeTab}>
           {activeTab === 'dashboard' && <Dashboard profile={profile} setProfile={setProfile} setActiveTab={setActiveTab} />}
@@ -170,6 +194,16 @@ function App() {
       </div>
 
       <RadialNav activeTab={activeTab} onSelect={setActiveTab} onLogout={handleLogout} />
+
+      <ConfirmModal
+        isOpen={showLogoutConfirm}
+        onClose={() => setShowLogoutConfirm(false)}
+        onConfirm={() => { setShowLogoutConfirm(false); executeLogout(); }}
+        title="Log out?"
+        message="You'll need your registration number and PIN to sign back in."
+        confirmLabel="Log Out"
+        danger
+      />
     </div>
   );
 }

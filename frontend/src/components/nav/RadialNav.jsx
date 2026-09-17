@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence, useMotionValue, useTransform, animate } from 'motion/react';
-import { useRadialLayout, polarToCartesian } from '../../utils/radialLayout';
+import { useRadialLayout } from '../../utils/radialLayout';
 import { useRotaryDrag } from '../../hooks/useRotaryDrag';
 import { useAppMotion } from '../../hooks/useAppMotion';
 import { haptics } from '../../utils/haptics';
@@ -29,10 +29,11 @@ const LABEL_CENTER = LABEL_PAD + ICON_RADIUS;
 // inward toward the icon" with no manual per-character rotation at all.
 const LABEL_CURVE_D = `M ${LABEL_CENTER - LABEL_ARC_R} ${LABEL_CENTER} A ${LABEL_ARC_R} ${LABEL_ARC_R} 0 0 0 ${LABEL_CENTER + LABEL_ARC_R} ${LABEL_CENTER}`;
 
-// Dashboard, Timetable, and Profile are pinned outside the wheel (see
-// PinnedNavButton below and App.jsx's top-right Profile pin) since they're
-// the three destinations reached often enough that a two-step "open wheel,
-// find icon" flow was too much friction — everything else still lives here.
+// Dashboard and Profile are pinned entirely outside the wheel, as plain
+// fixed-position corner buttons (see App.jsx) — reached often enough that a
+// two-step "open wheel, find icon" flow was too much friction. Timetable
+// used to get the same treatment but rides the wheel now, same as
+// everything else here.
 const NAV_ITEMS = [
   { id: 'expenses', label: 'Finance', icon: '💰' },
   { id: 'radar', label: 'Radar', icon: '📡' },
@@ -40,11 +41,9 @@ const NAV_ITEMS = [
   { id: 'strategy', label: 'Strategy', icon: '🔮' },
   { id: 'links', label: 'Directory', icon: '🔗' },
   { id: 'closeFriends', label: 'Close Friends', icon: '💾' },
+  { id: 'timetable', label: 'Timetable', icon: '🗓️' },
   { id: 'logout', label: 'Logout', icon: '🚪', isDanger: true },
 ];
-
-const HOME_ITEM = { id: 'dashboard', label: 'Home', icon: '🏠' };
-const TIMETABLE_ITEM = { id: 'timetable', label: 'Timetable', icon: '🗓️' };
 
 // One arc item. A separate component (not an inline callback inside a
 // .map()) so its useTransform/useMotionValue calls sit at the top level of
@@ -122,51 +121,11 @@ function RadialNavItem({ item, index, rotation, layout, isOpen, isActive, m, onN
   );
 }
 
-// A permanently-visible flanking icon (Home / Timetable) — unlike the wheel
-// items, these never animate open/closed and don't care about `rotation` at
-// all, so they're plain elements rather than another useTransform consumer.
-function PinnedNavButton({ item, isActive, onClick }) {
-  return (
-    <motion.button
-      type="button"
-      onClick={onClick}
-      whileTap={{ scale: 0.92 }}
-      aria-label={item.label}
-      title={item.label}
-      className={`w-12 h-12 rounded-full flex items-center justify-center text-xl shadow-lg border transition-colors ${
-        isActive ? 'bg-accent border-accentHover text-white' : 'bg-surface border-border text-textPrimary'
-      }`}
-    >
-      {item.icon}
-    </motion.button>
-  );
-}
-
-// Places a PinnedNavButton at a fixed angle on the SAME circle the wheel
-// items and the dashed guide ring both use — Home at 180° (far left) and
-// Timetable at 0° (far right), the ring's own two endpoints — instead of a
-// flex-box sibling spaced by a fixed gap. That's what makes them read as the
-// two ends of one continuous arc instead of just "buttons near the FAB":
-// they now sit exactly as far out as the wheel's own edge items ever reach.
-function AnchoredPinnedButton({ item, angle, isActive, onClick }) {
-  const { x, y } = polarToCartesian(angle, RADIUS);
-  return (
-    <div
-      className="absolute left-1/2 top-1/2"
-      style={{ width: ITEM_SIZE, height: ITEM_SIZE, marginLeft: x - ITEM_SIZE / 2, marginTop: y - ITEM_SIZE / 2 }}
-    >
-      <PinnedNavButton item={item} isActive={isActive} onClick={onClick} />
-    </div>
-  );
-}
-
-// Replaces BottomTabBar + MoreSheet with Home/Timetable pinned at the two
-// ends of the arc, flanking a central FAB that expands into a semi-circular
-// dial for everything else: drag left/right to rotate through the remaining
-// destinations (Profile is
-// pinned too, but at the top of the screen — see App.jsx — since it isn't
-// part of this bottom cluster), tap a visible icon to navigate. Mobile only,
-// same `md:hidden` split as the bar it replaces.
+// Replaces BottomTabBar + MoreSheet with a central FAB that expands into a
+// semi-circular dial: drag left/right to rotate through the destinations,
+// tap a visible icon to navigate. Home and Profile are pinned separately, as
+// plain fixed-position corner buttons outside this wheel entirely — see
+// App.jsx. Mobile only, same `md:hidden` split as the bar it replaces.
 function RadialNav({ activeTab, onSelect, onLogout }) {
   const [isOpen, setIsOpen] = useState(false);
   const m = useAppMotion();
@@ -192,12 +151,6 @@ function RadialNav({ activeTab, onSelect, onLogout }) {
     setIsOpen(false);
     if (item.id === 'logout') onLogout();
     else onSelect(item.id);
-  };
-
-  const handlePinnedSelect = (tabId) => {
-    haptics.selection();
-    setIsOpen(false);
-    onSelect(tabId);
   };
 
   return (
@@ -297,19 +250,6 @@ function RadialNav({ activeTab, onSelect, onLogout }) {
               onNavigate={handleNavigate}
             />
           ))}
-
-          <AnchoredPinnedButton
-            item={HOME_ITEM}
-            angle={180}
-            isActive={activeTab === 'dashboard'}
-            onClick={() => handlePinnedSelect('dashboard')}
-          />
-          <AnchoredPinnedButton
-            item={TIMETABLE_ITEM}
-            angle={0}
-            isActive={activeTab === 'timetable'}
-            onClick={() => handlePinnedSelect('timetable')}
-          />
 
           <motion.button
             type="button"
