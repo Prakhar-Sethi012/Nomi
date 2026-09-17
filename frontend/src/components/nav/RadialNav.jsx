@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence, useMotionValue, useTransform, animate } from 'motion/react';
-import { useRadialLayout } from '../../utils/radialLayout';
+import { useRadialLayout, polarToCartesian } from '../../utils/radialLayout';
 import { useRotaryDrag } from '../../hooks/useRotaryDrag';
 import { useAppMotion } from '../../hooks/useAppMotion';
 import { haptics } from '../../utils/haptics';
@@ -142,9 +142,28 @@ function PinnedNavButton({ item, isActive, onClick }) {
   );
 }
 
-// Replaces BottomTabBar + MoreSheet with Home/Timetable pinned either side of
-// a central FAB that expands into a semi-circular dial for everything else:
-// drag left/right to rotate through the remaining destinations (Profile is
+// Places a PinnedNavButton at a fixed angle on the SAME circle the wheel
+// items and the dashed guide ring both use — Home at 180° (far left) and
+// Timetable at 0° (far right), the ring's own two endpoints — instead of a
+// flex-box sibling spaced by a fixed gap. That's what makes them read as the
+// two ends of one continuous arc instead of just "buttons near the FAB":
+// they now sit exactly as far out as the wheel's own edge items ever reach.
+function AnchoredPinnedButton({ item, angle, isActive, onClick }) {
+  const { x, y } = polarToCartesian(angle, RADIUS);
+  return (
+    <div
+      className="absolute left-1/2 top-1/2"
+      style={{ width: ITEM_SIZE, height: ITEM_SIZE, marginLeft: x - ITEM_SIZE / 2, marginTop: y - ITEM_SIZE / 2 }}
+    >
+      <PinnedNavButton item={item} isActive={isActive} onClick={onClick} />
+    </div>
+  );
+}
+
+// Replaces BottomTabBar + MoreSheet with Home/Timetable pinned at the two
+// ends of the arc, flanking a central FAB that expands into a semi-circular
+// dial for everything else: drag left/right to rotate through the remaining
+// destinations (Profile is
 // pinned too, but at the top of the screen — see App.jsx — since it isn't
 // part of this bottom cluster), tap a visible icon to navigate. Mobile only,
 // same `md:hidden` split as the bar it replaces.
@@ -198,11 +217,9 @@ function RadialNav({ activeTab, onSelect, onLogout }) {
       </AnimatePresence>
 
       <div
-        className="md:hidden fixed bottom-4 inset-x-0 z-30 flex items-center justify-center gap-5"
+        className="md:hidden fixed bottom-4 inset-x-0 z-30 flex items-center justify-center"
         style={{ marginBottom: 'env(safe-area-inset-bottom)' }}
       >
-        <PinnedNavButton item={HOME_ITEM} isActive={activeTab === 'dashboard'} onClick={() => handlePinnedSelect('dashboard')} />
-
         <div className="relative" style={{ width: FAB_SIZE, height: FAB_SIZE }}>
 
           {/* Guide ring: a static "track" the icons visually slide along.
@@ -281,6 +298,19 @@ function RadialNav({ activeTab, onSelect, onLogout }) {
             />
           ))}
 
+          <AnchoredPinnedButton
+            item={HOME_ITEM}
+            angle={180}
+            isActive={activeTab === 'dashboard'}
+            onClick={() => handlePinnedSelect('dashboard')}
+          />
+          <AnchoredPinnedButton
+            item={TIMETABLE_ITEM}
+            angle={0}
+            isActive={activeTab === 'timetable'}
+            onClick={() => handlePinnedSelect('timetable')}
+          />
+
           <motion.button
             type="button"
             onClick={toggleOpen}
@@ -293,8 +323,6 @@ function RadialNav({ activeTab, onSelect, onLogout }) {
             +
           </motion.button>
         </div>
-
-        <PinnedNavButton item={TIMETABLE_ITEM} isActive={activeTab === 'timetable'} onClick={() => handlePinnedSelect('timetable')} />
       </div>
     </>
   );
