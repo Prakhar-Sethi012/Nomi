@@ -155,8 +155,8 @@ function App() {
         onClick={() => setActiveTab('profile')}
         aria-label="Profile"
         title="Profile"
-        className={`md:hidden fixed z-30 w-11 h-11 rounded-full shadow-lg border flex items-center justify-center text-lg transition-colors ${
-          activeTab === 'profile' ? 'bg-accent border-accentHover text-white' : 'bg-surface border-border text-textPrimary'
+        className={`md:hidden fixed z-30 w-11 h-11 rounded-full shadow-lg border-2 flex items-center justify-center text-lg transition-colors ${
+          activeTab === 'profile' ? 'bg-accent border-accentHover text-white' : 'bg-background border-accent text-textPrimary'
         }`}
         style={{ top: 'calc(env(safe-area-inset-top) + 12px)', right: '16px' }}
       >
@@ -171,8 +171,8 @@ function App() {
         onClick={() => setActiveTab('dashboard')}
         aria-label="Home"
         title="Home"
-        className={`md:hidden fixed z-30 w-11 h-11 rounded-full shadow-lg border flex items-center justify-center text-lg transition-colors ${
-          activeTab === 'dashboard' ? 'bg-accent border-accentHover text-white' : 'bg-surface border-border text-textPrimary'
+        className={`md:hidden fixed z-30 w-11 h-11 rounded-full shadow-lg border-2 flex items-center justify-center text-lg transition-colors ${
+          activeTab === 'dashboard' ? 'bg-accent border-accentHover text-white' : 'bg-background border-accent text-textPrimary'
         }`}
         style={{ bottom: 'calc(env(safe-area-inset-bottom) + 12px)', left: '16px' }}
       >

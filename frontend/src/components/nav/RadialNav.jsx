@@ -106,12 +106,12 @@ function RadialNavItem({ item, index, rotation, layout, isOpen, isActive, m, onN
           onClick={() => onNavigate(item)}
           aria-label={item.label}
           title={item.label}
-          className={`absolute inset-0 rounded-full flex items-center justify-center text-xl shadow-lg border transition-colors ${
+          className={`absolute inset-0 rounded-full flex items-center justify-center text-xl shadow-lg border-2 transition-colors ${
             item.isDanger
-              ? 'bg-dangerBg border-danger/40 text-danger'
+              ? 'bg-background border-danger text-danger'
               : isActive
                 ? 'bg-accent border-accentHover text-white'
-                : 'bg-surface border-border text-textPrimary'
+                : 'bg-background border-accent text-textPrimary'
           }`}
         >
           {item.icon}
@@ -258,7 +258,7 @@ function RadialNav({ activeTab, onSelect, onLogout }) {
             animate={{ rotate: isOpen ? 45 : 0 }}
             transition={m.snappy}
             whileTap={{ scale: 0.92 }}
-            className="absolute inset-0 rounded-full bg-accent text-white text-3xl font-bold shadow-2xl border-2 border-white/20 flex items-center justify-center z-10"
+            className="absolute inset-0 rounded-full bg-background text-textPrimary text-3xl font-bold shadow-2xl border-2 border-accent flex items-center justify-center z-10"
           >
             +
           </motion.button>
