@@ -172,8 +172,13 @@ body {
 
 /* Global horizontal-scroll guard: a single off-screen element (a wide card,
    an absolutely-positioned pill drifting past its container on a narrow
-   phone) shouldn't let the whole page pan sideways. Belt-and-suspenders
-   with the same class on App's root div. */
-html, body {
+   phone) shouldn't let the whole page pan sideways. Only ever on `body`,
+   never `html` — some mobile WebKit versions treat the root <html> element
+   as the real scroll container, and constraining any axis on it (without an
+   explicit overflow-y) silently kills native vertical momentum scrolling
+   for the whole page. `overflow-y: auto` is spelled out here too so it's
+   never left to that implicit/browser-dependent default. */
+body {
   overflow-x: hidden;
+  overflow-y: auto;
 }

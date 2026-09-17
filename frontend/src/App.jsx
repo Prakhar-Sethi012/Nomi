@@ -120,7 +120,7 @@ function App() {
   }
 
   return (
-    <div className="min-h-screen bg-background transition-colors duration-300 flex flex-col items-center pt-6 px-4 font-sans overflow-x-hidden">
+    <div className="min-h-screen bg-background transition-colors duration-300 flex flex-col items-center pt-6 px-4 font-sans overflow-x-hidden overflow-y-auto">
 
       <nav className="hidden md:flex w-full max-w-6xl justify-between items-center mb-6 bg-surface p-1.5 rounded-lg border border-border shadow-lg z-10 sticky top-4 transition-colors duration-300">
 
