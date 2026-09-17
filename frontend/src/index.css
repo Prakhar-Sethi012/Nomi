@@ -169,3 +169,11 @@ body {
      from fighting the custom PullToRefresh drag gesture. */
   overscroll-behavior-y: contain;
 }
+
+/* Global horizontal-scroll guard: a single off-screen element (a wide card,
+   an absolutely-positioned pill drifting past its container on a narrow
+   phone) shouldn't let the whole page pan sideways. Belt-and-suspenders
+   with the same class on App's root div. */
+html, body {
+  overflow-x: hidden;
+}

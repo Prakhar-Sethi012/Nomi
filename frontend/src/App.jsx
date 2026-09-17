@@ -120,7 +120,7 @@ function App() {
   }
 
   return (
-    <div className="min-h-screen bg-background transition-colors duration-300 flex flex-col items-center pt-6 px-4 font-sans">
+    <div className="min-h-screen bg-background transition-colors duration-300 flex flex-col items-center pt-6 px-4 font-sans overflow-x-hidden">
 
       <nav className="hidden md:flex w-full max-w-6xl justify-between items-center mb-6 bg-surface p-1.5 rounded-lg border border-border shadow-lg z-10 sticky top-4 transition-colors duration-300">
 
@@ -179,7 +179,7 @@ function App() {
         🏠
       </button>
 
-      <div className="w-full max-w-6xl flex justify-center pb-[calc(6rem+env(safe-area-inset-bottom))] md:pb-0">
+      <div className="w-full max-w-6xl flex justify-center pb-[calc(120px+env(safe-area-inset-bottom))] md:pb-0">
         <PageTransition tabKey={activeTab}>
           {activeTab === 'dashboard' && <Dashboard profile={profile} setProfile={setProfile} setActiveTab={setActiveTab} />}
           {activeTab === 'scratchpad' && <ScratchpadView userId={profile.id} />}
