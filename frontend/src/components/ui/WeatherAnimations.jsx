@@ -75,11 +75,21 @@ export function CloudOverlay({ color }) {
 
 const RAY_COUNT = 8;
 
-// A sun that pops in, then glows and pulses forever with rays radiating out
-// from its center — reads as "brightening up" rather than a static icon.
-// Core/rays are built from the theme tone rather than a fixed yellow, so a
-// "sunny" reading still shifts palette across themes (e.g. Nordic's frost
-// blue instead of amber).
+// A few tiny glowing motes drifting slowly around the sun — pure atmosphere,
+// no meaning, just enough motion to feel alive and a little magical.
+const DUST_MOTES = [
+  { top: '10%', left: '15%', size: 6, duration: 9, delay: 0 },
+  { top: '70%', left: '75%', size: 5, duration: 11, delay: 2.2 },
+  { top: '30%', left: '80%', size: 4, duration: 10, delay: 4.5 },
+];
+
+// A soft, "pookie" sun: a slow breathing glow instead of a hard pulse, rays
+// that drift around it once a minute rather than flicker, and a few dust
+// motes for that calm/magical feel. Everything here is on an 8-10s+ cycle —
+// deliberately too slow to read as "energetic", which is what made the old
+// 1.4s pulse + flickering rays feel harsh instead of relaxing. Core/glow are
+// still built from the theme tone (mixed toward white, not black) so this
+// stays a pastel-soft reading in every theme, not just the default amber one.
 export function SunOverlay({ color }) {
   return (
     <div className="w-full h-full flex items-center justify-end pr-8">
@@ -89,34 +99,66 @@ export function SunOverlay({ color }) {
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.6, ease: 'easeOut' }}
       >
-        <motion.div
-          className="absolute inset-0 rounded-full"
-          style={{
-            background: color,
-            filter: 'blur(22px)',
-            boxShadow: `0 0 45px 18px color-mix(in srgb, ${color} 70%, transparent)`,
-          }}
-          animate={{ opacity: [0.75, 1, 0.75], scale: [1, 1.25, 1] }}
-          transition={{ duration: 1.4, repeat: Infinity, repeatType: 'loop', ease: 'easeInOut' }}
-        />
-        <div
-          className="absolute inset-[6px] rounded-full"
-          style={{ background: `color-mix(in srgb, ${color} 85%, black)` }}
-        />
-        {Array.from({ length: RAY_COUNT }).map((_, i) => (
+        {/* Magic dust */}
+        {DUST_MOTES.map((mote, i) => (
           <motion.div
             key={i}
-            className="absolute top-1/2 left-1/2 w-1.5 h-8 rounded-full origin-bottom"
+            className="absolute rounded-full blur-[1px]"
             style={{
-              transform: `rotate(${i * 45}deg) translateY(-38px)`,
-              background: `color-mix(in srgb, ${color} 80%, white)`,
-              boxShadow: `0 0 8px color-mix(in srgb, ${color} 70%, transparent)`,
+              top: mote.top,
+              left: mote.left,
+              width: mote.size,
+              height: mote.size,
+              background: `color-mix(in srgb, ${color} 50%, white)`,
             }}
             initial={{ opacity: 0 }}
-            animate={{ opacity: [0, 1, 0] }}
-            transition={{ duration: 1.4, repeat: Infinity, repeatType: 'loop', delay: i * 0.08, ease: 'easeInOut' }}
+            animate={{ opacity: [0, 0.6, 0], y: [-4, -16, -4] }}
+            transition={{ duration: mote.duration, repeat: Infinity, repeatType: 'loop', delay: mote.delay, ease: 'easeInOut' }}
           />
         ))}
+
+        {/* Outer glow — soft pastel, low opacity, deep blur, slowly breathing */}
+        <motion.div
+          className="absolute inset-0 rounded-full blur-3xl opacity-40"
+          style={{ background: `color-mix(in srgb, ${color} 55%, white)` }}
+          animate={{ scale: [1, 1.05, 1] }}
+          transition={{ duration: 9, repeat: Infinity, repeatType: 'loop', ease: 'easeInOut' }}
+        />
+        {/* Inner glow — same breath, slightly offset so it never feels mechanical */}
+        <motion.div
+          className="absolute inset-2 rounded-full blur-2xl opacity-50"
+          style={{ background: `color-mix(in srgb, ${color} 45%, white)` }}
+          animate={{ scale: [1, 1.05, 1] }}
+          transition={{ duration: 9, repeat: Infinity, repeatType: 'loop', ease: 'easeInOut', delay: 0.4 }}
+        />
+
+        {/* Solid core — breathes in sync with the glow, mixed toward white
+            (not black) so it reads soft/cute rather than a stark eclipse. */}
+        <motion.div
+          className="absolute inset-[14px] rounded-full"
+          style={{ background: `color-mix(in srgb, ${color} 75%, white)` }}
+          animate={{ scale: [1, 1.05, 1] }}
+          transition={{ duration: 9, repeat: Infinity, repeatType: 'loop', ease: 'easeInOut' }}
+        />
+
+        {/* Rays — one slow-turning group instead of each ray flickering on
+            its own, so it reads as a gentle turn rather than a sparkle. */}
+        <motion.div
+          className="absolute inset-0"
+          animate={{ rotate: 360 }}
+          transition={{ duration: 36, repeat: Infinity, repeatType: 'loop', ease: 'linear' }}
+        >
+          {Array.from({ length: RAY_COUNT }).map((_, i) => (
+            <div
+              key={i}
+              className="absolute top-1/2 left-1/2 w-1 h-6 rounded-full origin-bottom opacity-30"
+              style={{
+                transform: `rotate(${i * 45}deg) translateY(-34px)`,
+                background: `color-mix(in srgb, ${color} 60%, white)`,
+              }}
+            />
+          ))}
+        </motion.div>
       </motion.div>
     </div>
   );
