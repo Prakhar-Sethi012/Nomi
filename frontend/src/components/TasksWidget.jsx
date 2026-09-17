@@ -221,16 +221,16 @@ function TasksWidget({ setProfile }) {
             )}
 
             <div className="flex justify-between items-start mb-2 pr-6">
-              <div className="flex items-start gap-3">
+              <div className="flex items-start gap-3 min-w-0 flex-1">
                 <Pressable onClick={() => toggleComplete(task.id)} haptic={completing ? undefined : 'tap'} className={`mt-0.5 shrink-0 w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors ${completing ? 'bg-success border-success' : 'border-border hover:border-success'}`}>
                   {completing && <span className="text-white text-xs">✓</span>}
                 </Pressable>
-                <div>
-                  <p className={`font-medium text-sm leading-tight transition-all ${completing ? 'text-textSecondary line-through' : isOverdue ? 'text-danger' : 'text-textPrimary'}`}>
-                    {important && !completing && <span className="mr-1" title="Important">⭐</span>}
-                    {isRecurring && <span className="text-accent mr-1" title={`Repeats ${task.frequency}`}>↻</span>}
-                    {task.title}
-                    {isOverdue && !completing && <span className="ml-2 text-[9px] bg-dangerBg text-danger px-1.5 py-0.5 rounded uppercase tracking-wider font-bold">Overdue</span>}
+                <div className="min-w-0 flex-1">
+                  <p className={`font-medium text-sm leading-tight transition-all flex items-center gap-1 ${completing ? 'text-textSecondary line-through' : isOverdue ? 'text-danger' : 'text-textPrimary'}`}>
+                    {important && !completing && <span className="shrink-0" title="Important">⭐</span>}
+                    {isRecurring && <span className="text-accent shrink-0" title={`Repeats ${task.frequency}`}>↻</span>}
+                    <span className="truncate">{task.title}</span>
+                    {isOverdue && !completing && <span className="shrink-0 text-[9px] bg-dangerBg text-danger px-1.5 py-0.5 rounded uppercase tracking-wider font-bold">Overdue</span>}
                   </p>
                   {completing && (
                     <div className="flex items-center gap-1.5 mt-1">

@@ -360,9 +360,9 @@ function SocialRadar({ profile, setProfile }) {
                 <h3 className="text-textPrimary font-bold mb-3 text-sm uppercase tracking-wider">Create a Circle</h3>
                 <form onSubmit={handleCreateCircle} className="flex flex-col gap-3 mt-auto">
                   <input type="text" placeholder="Circle Name (e.g. Hostel Squad)" required value={newCircleName} onChange={e => setNewCircleName(e.target.value)} className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm text-textPrimary outline-none focus:border-accent" />
-                  <div className="flex gap-2">
-                    <input type="text" placeholder="Custom Passcode (Optional)" maxLength="10" value={customToken} onChange={e => setCustomToken(e.target.value.toUpperCase().replace(/\s/g, ''))} className="flex-1 bg-background border border-border rounded-lg px-3 py-2 text-sm text-textPrimary outline-none focus:border-accent uppercase tracking-widest font-mono" />
-                    <button type="submit" className="bg-accent hover:bg-accentHover text-white font-bold px-4 py-2 rounded-lg text-sm transition-colors">Create</button>
+                  <div className="flex flex-col sm:flex-row gap-2">
+                    <input type="text" placeholder="Custom Passcode (Optional)" maxLength="10" value={customToken} onChange={e => setCustomToken(e.target.value.toUpperCase().replace(/\s/g, ''))} className="w-full sm:flex-1 min-w-0 bg-background border border-border rounded-lg px-3 py-2 text-sm text-textPrimary outline-none focus:border-accent uppercase tracking-widest font-mono" />
+                    <button type="submit" className="shrink-0 w-full sm:w-auto bg-accent hover:bg-accentHover text-white font-bold px-4 py-2 rounded-lg text-sm transition-colors">Create</button>
                   </div>
                 </form>
               </div>

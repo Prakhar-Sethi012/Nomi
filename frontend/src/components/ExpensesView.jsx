@@ -449,18 +449,18 @@ function ExpensesView({ profile, setProfile }) {
                           <li key={exp.id} className="relative overflow-hidden rounded-3xl border border-border hover:border-emerald-500/20 hover:-translate-y-1 transition-all shadow-sm hover:shadow-xl">
                             <SwipeRow onDelete={() => setDeleteTargetId(exp.id)}>
                               <div className="group bg-surface/50 hover:bg-surfaceHover p-5 flex justify-between items-center cursor-default transition-colors">
-                                <div className="flex gap-4 items-center">
-                                  <div className="w-12 h-12 rounded-2xl flex items-center justify-center text-xl shadow-inner border border-border" style={{ backgroundColor: categoryColors[exp.tags[0] || 'other'] + '20', color: categoryColors[exp.tags[0] || 'other'] }}>
+                                <div className="flex gap-4 items-center min-w-0 flex-1">
+                                  <div className="w-12 h-12 rounded-2xl flex items-center justify-center text-xl shadow-inner border border-border shrink-0" style={{ backgroundColor: categoryColors[exp.tags[0] || 'other'] + '20', color: categoryColors[exp.tags[0] || 'other'] }}>
                                     {iconMap[exp.tags[0]] || '🧾'}
                                   </div>
-                                  <div>
-                                    <p className="font-bold text-textPrimary text-base">{exp.reason}</p>
-                                    <p className="text-[10px] text-textSecondary uppercase tracking-widest mt-1">{exp.tags[0]}</p>
+                                  <div className="min-w-0 flex-1">
+                                    <p className="font-bold text-textPrimary text-base truncate">{exp.reason}</p>
+                                    <p className="text-[10px] text-textSecondary uppercase tracking-widest mt-1 truncate">{exp.tags[0]}</p>
                                   </div>
                                 </div>
-                                <div className="flex items-center gap-4">
-                                  <span className="text-danger font-black text-xl lg:text-2xl">-₹{exp.amount.toLocaleString('en-IN')}</span>
-                                  <Pressable onClick={() => setDeleteTargetId(exp.id)} className="text-textSecondary hover:bg-dangerBg hover:text-danger w-8 h-8 rounded-xl flex items-center justify-center transition-all opacity-100 md:opacity-0 md:group-hover:opacity-100" title="Delete Record">✕</Pressable>
+                                <div className="flex items-center gap-4 shrink-0">
+                                  <span className="text-danger font-black text-xl lg:text-2xl whitespace-nowrap">-₹{exp.amount.toLocaleString('en-IN')}</span>
+                                  <Pressable onClick={() => setDeleteTargetId(exp.id)} className="text-textSecondary hover:bg-dangerBg hover:text-danger w-8 h-8 rounded-xl flex items-center justify-center transition-all opacity-100 md:opacity-0 md:group-hover:opacity-100 shrink-0" title="Delete Record">✕</Pressable>
                                 </div>
                               </div>
                             </SwipeRow>
