@@ -6,10 +6,7 @@ import { useAppMotion } from '../../hooks/useAppMotion';
 // out from behind each other; a tap anywhere on the pile spreads them into
 // a normal list. Built generic (items + renderItem) so Phase 16 can reuse it
 // for meetup requests without duplicating the stack/expand mechanics.
-// `itemLabel` (singular, e.g. "Task") is optional — pass it to show a small
-// "N Tasks" counter above the collapsed pile; omit it for the old behavior
-// (no total-count badge, just the +N-hidden corner badge below).
-function NotificationStack({ items, renderItem, keyExtractor, peekCount = 3, itemLabel }) {
+function NotificationStack({ items, renderItem, keyExtractor, peekCount = 3 }) {
   const [isExpanded, setIsExpanded] = useState(false);
   const m = useAppMotion();
 
@@ -21,12 +18,6 @@ function NotificationStack({ items, renderItem, keyExtractor, peekCount = 3, ite
 
     return (
       <div className="relative">
-        {itemLabel && (
-          <div className="mb-2 inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-textSecondary bg-surfaceHover border border-border px-2.5 py-1 rounded-full">
-            <span className="w-1.5 h-1.5 rounded-full bg-accent" />
-            {items.length} {itemLabel}{items.length !== 1 ? 's' : ''}
-          </div>
-        )}
         {visible.map((item, i) => (
           <motion.div
             key={keyExtractor(item)}
