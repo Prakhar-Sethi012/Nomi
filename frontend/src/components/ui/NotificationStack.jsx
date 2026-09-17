@@ -59,7 +59,12 @@ function NotificationStack({ items, renderItem, keyExtractor, peekCount = 3 }) {
                 animate={
                   isExpanded
                     ? { scale: 1, y: 0, opacity: 1 }
-                    : { scale: 1 - stackDepth * 0.05, y: stackDepth * 8, opacity: hiddenWhileCollapsed ? 0 : 1 - stackDepth * 0.2 }
+                    // Visible peek cards stay fully opaque — fading them let
+                    // the sliver of a card peeking out from behind read as a
+                    // transparency glitch instead of a solid card edge. Only
+                    // cards stacked past peekCount (never actually shown)
+                    // drop to 0.
+                    : { scale: 1 - stackDepth * 0.05, y: stackDepth * 8, opacity: hiddenWhileCollapsed ? 0 : 1 }
                 }
                 exit={{ opacity: 0, scale: 0.9 }}
               >

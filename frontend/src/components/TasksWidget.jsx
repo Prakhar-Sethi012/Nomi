@@ -195,7 +195,12 @@ function TasksWidget({ setProfile }) {
           : 'border-border hover:border-accent';
 
     return (
-      <div className={`group relative overflow-hidden rounded-lg border transition-colors duration-500 ${borderClass}`}>
+      // bg-surface here is a deliberate, explicit opaque backstop — without
+      // it this outer frame has no fill of its own (only the inner div two
+      // levels down, inside SwipeRow, actually paints a background), so
+      // stacked in the collapsed pile, a card with no background of its own
+      // reads as a transparency glitch rather than a solid card edge.
+      <div className={`group relative overflow-hidden rounded-lg border bg-surface transition-colors duration-500 ${borderClass}`}>
         <SwipeRow
           disabled={!!completing}
           onDelete={() => handleSwipeDelete(task.id)}
