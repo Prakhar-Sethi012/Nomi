@@ -193,13 +193,13 @@ function TimetableView() {
   return (
     <div className="w-full max-w-7xl pb-10 mx-auto animate-fade-in flex flex-col h-auto md:h-[85dvh]">
 
-      <header className="bg-surface p-6 rounded-xl border border-border mb-6 shadow-lg flex flex-col md:flex-row md:justify-between items-start md:items-center gap-4 shrink-0 transition-colors duration-300">
-        <div>
-          <h1 className="text-2xl font-bold text-textPrimary mb-1 flex items-center gap-2">🗓️ Timetable Matrix</h1>
-          <p className="text-textSecondary text-sm">FFCS Auto-mapping Engine active.</p>
+      <header className="bg-surface p-6 rounded-xl border border-border mb-6 shadow-lg flex flex-col items-start gap-4 md:flex-row md:items-center md:justify-between shrink-0 transition-colors duration-300">
+        <div className="w-full min-w-0 md:w-auto">
+          <h1 className="text-2xl font-bold text-textPrimary mb-1 flex items-center gap-2 leading-tight">🗓️ Timetable Matrix</h1>
+          <p className="text-textSecondary text-sm leading-tight">FFCS Auto-mapping Engine active.</p>
         </div>
 
-        <div className="flex flex-wrap gap-4 items-center">
+        <div className="w-full min-w-0 md:w-auto flex flex-wrap gap-4 items-center">
           <SegmentedControl
             value={viewMode}
             onChange={setViewMode}

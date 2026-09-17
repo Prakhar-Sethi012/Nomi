@@ -279,7 +279,7 @@ function ExpensesView({ profile, setProfile }) {
       <PullToRefresh onRefresh={fetchFinanceData}>
       <div className="w-full max-w-6xl pb-24 relative z-10 animate-fade-in mx-auto mt-8">
         <div className="relative overflow-hidden rounded-[32px] p-10 mb-8 bg-gradient-to-r from-emerald-600/20 via-background to-blue-600/20 border border-border shadow-2xl">
-          <div className="absolute top-6 right-6 md:top-8 md:right-8 flex items-center gap-3 bg-background/50 backdrop-blur-md px-3 py-1.5 rounded-full border border-border z-10">
+          <div className="relative w-fit mb-6 md:mb-0 md:absolute md:top-8 md:right-8 flex items-center gap-3 bg-background/50 backdrop-blur-md px-3 py-1.5 rounded-full border border-border z-10">
             <Pressable onClick={handlePrevMonth} haptic="selection" className="w-8 h-8 rounded-full hover:bg-surfaceHover text-textSecondary font-bold transition-colors">←</Pressable>
             <span className="text-xs font-bold text-textPrimary uppercase tracking-widest min-w-[100px] text-center">{viewDate.toLocaleString('default', { month: 'short', year: 'numeric' })}</span>
             <Pressable onClick={handleNextMonth} disabled={isCurrentMonth} haptic="selection" className={`w-8 h-8 rounded-full font-bold transition-colors ${isCurrentMonth ? 'opacity-20 cursor-not-allowed' : 'hover:bg-surfaceHover text-textSecondary'}`}>→</Pressable>
@@ -295,7 +295,7 @@ function ExpensesView({ profile, setProfile }) {
             exit="exit"
             transition={m.base}
           >
-          <p className="text-textSecondary uppercase tracking-[0.3em] text-xs font-bold relative z-10">Expense Dashboard</p>
+          <p className="text-textSecondary uppercase tracking-[0.3em] text-xs font-bold relative z-10 leading-tight">Expense Dashboard</p>
           <h1 className="text-5xl md:text-6xl font-black text-textPrimary mt-4 drop-shadow-md relative z-10"><NumberRoll value={monthTotal} prefix="₹" grouped /></h1>
           <p className="text-emerald-400/80 font-mono text-[10px] uppercase tracking-wider mt-2 relative z-10">{numberToWords(Math.floor(monthTotal))} Rupees</p>
 
@@ -410,15 +410,15 @@ function ExpensesView({ profile, setProfile }) {
           </div>
 
           <div className="lg:col-span-7 bg-surface/40 backdrop-blur-xl p-8 rounded-[32px] border border-border shadow-xl flex flex-col h-full min-h-[500px]">
-            <div className="flex flex-col md:flex-row md:justify-between items-start md:items-center gap-4 mb-6">
-              <div className="flex flex-wrap items-center gap-4">
-                <h3 className="text-xs font-bold text-textSecondary uppercase tracking-[0.2em]">{selectedCategory ? `${selectedCategory} Activity` : 'Recent Transactions'}</h3>
+            <div className="flex flex-col items-start gap-4 md:flex-row md:items-center md:justify-between mb-6">
+              <div className="w-full min-w-0 md:w-auto flex flex-wrap items-center gap-4">
+                <h3 className="text-xs font-bold text-textSecondary uppercase tracking-[0.2em] leading-tight">{selectedCategory ? `${selectedCategory} Activity` : 'Recent Transactions'}</h3>
                 {selectedCategory && (
                   <Pressable onClick={() => setSelectedCategory(null)} haptic="tap" className="shrink-0 text-[10px] bg-surfaceHover hover:bg-border text-textPrimary px-3 py-1.5 rounded-full transition-colors uppercase tracking-wider font-bold">Clear Filter ✕</Pressable>
                 )}
               </div>
 
-              <div className="flex flex-wrap items-center gap-2">
+              <div className="w-full min-w-0 md:w-auto flex flex-wrap items-center gap-2">
                 <Pressable onClick={() => handleExport('month')} haptic="tap" className="shrink-0 text-[10px] bg-surfaceHover hover:bg-emerald-600 hover:text-white text-textSecondary border border-border hover:border-emerald-500 px-3 py-1.5 rounded transition-all font-bold tracking-widest uppercase">
                   ⬇ Month .txt
                 </Pressable>

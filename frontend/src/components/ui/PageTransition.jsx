@@ -35,6 +35,7 @@ function PageTransition({ tabKey, children }) {
         animate="visible"
         exit="exit"
         transition={m.base}
+        className="w-full min-w-0"
       >
         <ScrollMemory tabKey={tabKey} positions={scrollPositions} />
         {children}
