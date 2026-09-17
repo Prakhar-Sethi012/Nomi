@@ -176,8 +176,7 @@ function RadialNav({ activeTab, onSelect, onLogout }) {
           the tap. Only the actual FAB-sized box below needs to be
           clickable, so pointer-events is re-enabled there specifically. */}
       <div
-        className="md:hidden fixed bottom-4 inset-x-0 z-30 flex items-center justify-center pointer-events-none"
-        style={{ marginBottom: 'env(safe-area-inset-bottom)' }}
+        className="md:hidden fixed bottom-[calc(1.5rem+env(safe-area-inset-bottom))] inset-x-0 z-30 flex items-center justify-center pointer-events-none"
       >
         <div className="relative pointer-events-auto" style={{ width: FAB_SIZE, height: FAB_SIZE }}>
 

@@ -155,10 +155,9 @@ function App() {
         onClick={() => setActiveTab('profile')}
         aria-label="Profile"
         title="Profile"
-        className={`md:hidden fixed z-30 w-11 h-11 rounded-full shadow-lg border-2 flex items-center justify-center text-lg transition-colors ${
+        className={`md:hidden fixed z-30 w-11 h-11 rounded-full shadow-lg border-2 flex items-center justify-center text-lg transition-colors top-[calc(1rem+env(safe-area-inset-top))] right-4 ${
           activeTab === 'profile' ? 'bg-accent border-accentHover text-white' : 'bg-background border-accent text-textPrimary'
         }`}
-        style={{ top: 'calc(env(safe-area-inset-top) + 12px)', right: '16px' }}
       >
         👤
       </button>
@@ -171,10 +170,9 @@ function App() {
         onClick={() => setActiveTab('dashboard')}
         aria-label="Home"
         title="Home"
-        className={`md:hidden fixed z-30 w-11 h-11 rounded-full shadow-lg border-2 flex items-center justify-center text-lg transition-colors ${
+        className={`md:hidden fixed z-30 w-11 h-11 rounded-full shadow-lg border-2 flex items-center justify-center text-lg transition-colors bottom-[calc(1.5rem+env(safe-area-inset-bottom))] left-4 ${
           activeTab === 'dashboard' ? 'bg-accent border-accentHover text-white' : 'bg-background border-accent text-textPrimary'
         }`}
-        style={{ bottom: 'calc(env(safe-area-inset-bottom) + 12px)', left: '16px' }}
       >
         🏠
       </button>
