@@ -47,16 +47,16 @@ function LinksView({ userId }) {
   return (
     <div className="w-full max-w-4xl pb-10 mx-auto animate-fade-in">
       {/* Header */}
-      <header className="bg-slate-800 p-6 rounded-xl border border-slate-700 mb-6 shadow-lg flex justify-between items-center">
+      <header className="bg-surface p-6 rounded-xl border border-border mb-6 shadow-lg flex justify-between items-center transition-colors duration-300">
         <div>
-          <h1 className="text-2xl font-bold text-white mb-1">Command Directory</h1>
-          <p className="text-slate-400 text-sm">Centralized hub for all external networks, profiles, and resources.</p>
+          <h1 className="text-2xl font-bold text-textPrimary mb-1">Command Directory</h1>
+          <p className="text-textSecondary text-sm">Centralized hub for all external networks, profiles, and resources.</p>
         </div>
-        
+
         {!showForm && (
-          <button 
+          <button
             onClick={() => setShowForm(true)}
-            className="bg-blue-600 hover:bg-blue-500 text-white text-sm font-bold py-2 px-4 rounded transition-colors"
+            className="bg-accent hover:bg-accentHover text-white text-sm font-bold py-2 px-4 rounded transition-colors"
           >
             + Add Link
           </button>
@@ -65,57 +65,57 @@ function LinksView({ userId }) {
 
       {/* The Creation Form */}
       {showForm && (
-        <form onSubmit={handleSubmit} className="bg-slate-800 p-6 rounded-xl border border-slate-700 mb-6 shadow-lg grid grid-cols-1 md:grid-cols-2 gap-4">
-          <input type="text" placeholder="Platform Name (e.g., LeetCode)" required value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} className="w-full p-2 bg-slate-700 rounded text-sm text-white border border-slate-600 focus:border-blue-500 outline-none" />
-          <input type="url" placeholder="Full URL (https://...)" required value={formData.url} onChange={(e) => setFormData({...formData, url: e.target.value})} className="w-full p-2 bg-slate-700 rounded text-sm text-white border border-slate-600 focus:border-blue-500 outline-none" />
-          <input type="text" placeholder="Brief Description" required value={formData.desc} onChange={(e) => setFormData({...formData, desc: e.target.value})} className="w-full p-2 bg-slate-700 rounded text-sm text-white border border-slate-600 focus:border-blue-500 outline-none" />
+        <form onSubmit={handleSubmit} className="bg-surface p-6 rounded-xl border border-border mb-6 shadow-lg grid grid-cols-1 md:grid-cols-2 gap-4 transition-colors duration-300">
+          <input type="text" placeholder="Platform Name (e.g., LeetCode)" required value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} className="w-full p-2 bg-background rounded text-sm text-textPrimary border border-border focus:border-accent outline-none" />
+          <input type="url" placeholder="Full URL (https://...)" required value={formData.url} onChange={(e) => setFormData({...formData, url: e.target.value})} className="w-full p-2 bg-background rounded text-sm text-textPrimary border border-border focus:border-accent outline-none" />
+          <input type="text" placeholder="Brief Description" required value={formData.desc} onChange={(e) => setFormData({...formData, desc: e.target.value})} className="w-full p-2 bg-background rounded text-sm text-textPrimary border border-border focus:border-accent outline-none" />
           <div className="flex gap-2">
-            <input type="text" placeholder="Icon Emoji (e.g., 👨‍💻)" required maxLength="2" value={formData.icon} onChange={(e) => setFormData({...formData, icon: e.target.value})} className="w-20 p-2 bg-slate-700 rounded text-sm text-white border border-slate-600 focus:border-blue-500 outline-none text-center" />
-            <button type="button" onClick={() => setShowForm(false)} className="flex-1 bg-slate-600 hover:bg-slate-500 text-white text-sm py-2 rounded transition-colors">Cancel</button>
-            <button type="submit" className="flex-1 bg-blue-600 hover:bg-blue-500 text-white text-sm py-2 rounded font-bold transition-colors">Save Link</button>
+            <input type="text" placeholder="Icon Emoji (e.g., 👨‍💻)" required maxLength="2" value={formData.icon} onChange={(e) => setFormData({...formData, icon: e.target.value})} className="w-20 p-2 bg-background rounded text-sm text-textPrimary border border-border focus:border-accent outline-none text-center" />
+            <button type="button" onClick={() => setShowForm(false)} className="flex-1 bg-surfaceHover hover:bg-border text-textPrimary text-sm py-2 rounded transition-colors">Cancel</button>
+            <button type="submit" className="flex-1 bg-accent hover:bg-accentHover text-white text-sm py-2 rounded font-bold transition-colors">Save Link</button>
           </div>
         </form>
       )}
 
       {/* Links Grid */}
       {links.length === 0 && !showForm ? (
-        <div className="py-12 flex flex-col items-center justify-center text-slate-500 border-2 border-dashed border-slate-700 rounded-xl">
+        <div className="py-12 flex flex-col items-center justify-center text-textSecondary border-2 border-dashed border-border rounded-xl">
           <p>Your directory is empty.</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
           {links.map((link) => (
-            <a 
-              key={link.id} 
-              href={link.url} 
-              target="_blank" 
+            <a
+              key={link.id}
+              href={link.url}
+              target="_blank"
               rel="noopener noreferrer"
-              className="relative bg-slate-800 p-5 rounded-xl border border-slate-700 hover:border-slate-400 transition-all duration-300 flex items-start gap-4 group shadow-lg hover:-translate-y-1 block"
+              className="relative bg-surface p-5 rounded-xl border border-border hover:border-accent transition-all duration-300 flex items-start gap-4 group shadow-lg hover:-translate-y-1 block"
             >
               <div className="text-3xl grayscale group-hover:grayscale-0 transition-all duration-300 drop-shadow-md">
                 {link.icon}
               </div>
-              
+
               <div className="flex-1 pr-6">
-                <h3 className="font-bold text-slate-200 group-hover:text-white transition-colors">{link.name}</h3>
-                <p className="text-xs text-slate-400 mt-1 leading-tight">{link.desc}</p>
-                <p className="text-[10px] text-blue-400 mt-3 font-mono opacity-0 group-hover:opacity-100 transition-opacity">LAUNCH ↗</p>
+                <h3 className="font-bold text-textPrimary transition-colors">{link.name}</h3>
+                <p className="text-xs text-textSecondary mt-1 leading-tight">{link.desc}</p>
+                <p className="text-[10px] text-accent mt-3 font-mono opacity-0 group-hover:opacity-100 transition-opacity">LAUNCH ↗</p>
               </div>
 
               {/* ACTION BUTTONS (Copy & Delete) */}
               <div className="absolute top-3 right-3 flex flex-col gap-2 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
-                
+
                 {/* Copy Button */}
                 <CopyButton
                   value={link.url}
                   title="Copy Link"
-                  className="bg-slate-700 hover:bg-slate-600 text-slate-300 p-1.5 rounded-md border border-slate-600 transition-colors flex items-center justify-center"
+                  className="bg-surfaceHover hover:bg-border text-textSecondary p-1.5 rounded-md border border-border transition-colors flex items-center justify-center"
                 />
 
                 {/* Delete Button */}
                 <button
                   onClick={(e) => handleDeleteClick(e, link.id)}
-                  className="bg-slate-700 hover:bg-red-900/80 text-slate-400 hover:text-red-400 p-1.5 rounded-md border border-slate-600 hover:border-red-500/50 transition-colors"
+                  className="bg-surfaceHover hover:bg-dangerBg text-textSecondary hover:text-danger p-1.5 rounded-md border border-border hover:border-danger/50 transition-colors"
                   title="Delete Link"
                 >
                   <span className="text-xs">🗑️</span>
