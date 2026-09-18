@@ -80,14 +80,14 @@ function DashboardAttendance() {
   return (
     <div className="bg-surface p-5 rounded-xl border border-border shadow-lg flex flex-col h-auto md:h-full md:max-h-[400px]">
 
-      <div className="flex justify-between items-end mb-4 shrink-0 border-b border-border pb-3">
-        <div>
-          <h2 className="text-lg font-bold text-textPrimary flex items-center gap-2">
+      <div className="flex flex-col items-start gap-2 md:flex-row md:items-center md:justify-between mb-4 shrink-0 border-b border-border pb-3">
+        <div className="min-w-0">
+          <h2 className="text-lg font-bold text-textPrimary flex items-center gap-2 leading-tight">
             ✅ Quick Log
           </h2>
-          <p className="text-xs text-textSecondary mt-1">Record today's attendance.</p>
+          <p className="text-xs text-textSecondary mt-1 leading-tight">Record today's attendance.</p>
         </div>
-        <span className="text-[10px] text-accent uppercase tracking-widest font-bold">Synced w/ Timetable</span>
+        <span className="text-[10px] text-accent uppercase tracking-widest font-bold shrink-0">Synced w/ Timetable</span>
       </div>
 
       <div className="flex-1 md:min-h-0 overflow-visible md:overflow-y-auto custom-scrollbar pr-2 flex flex-col gap-3">
