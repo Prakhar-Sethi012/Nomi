@@ -150,7 +150,6 @@ function Dashboard({ profile, setProfile, setActiveTab }) {
             <div className="text-lg sm:text-2xl font-black text-orange-500 flex items-center justify-end gap-1 drop-shadow-md">
               <span className="animate-pulse">🔥</span> Day <NumberRoll value={profile?.current_streak || 0} />
             </div>
-            <p className="text-textSecondary text-[9px] sm:text-xs mt-0.5 uppercase tracking-widest font-bold whitespace-nowrap">Current Streak</p>
           </div>
         </div>
 

@@ -25,7 +25,7 @@ function DailyQuote() {
         "{todaysQuote.text}"
       </p>
 
-      <span className="ml-6 text-[9px] text-textSecondary font-bold uppercase tracking-widest whitespace-nowrap">
+      <span className="w-full text-right text-[9px] text-textSecondary font-bold uppercase tracking-widest whitespace-nowrap">
         — {todaysQuote.author}
       </span>
     </div>
