@@ -275,11 +275,24 @@ function WeatherWidget() {
 
       <WeatherAnimationOverlay type={animationType} refreshKey={refreshKey} color={toneVar} />
 
+      {/* Refresh — pinned to its own corner so it never gets pushed around
+          by the quote/footer growing or shrinking beneath it. */}
+      <button
+        onClick={fetchWeather}
+        disabled={isRefreshing}
+        className="absolute top-4 right-4 z-20 text-textSecondary hover:text-textPrimary bg-background/50 hover:bg-surfaceHover border border-border p-2 rounded-lg backdrop-blur-md transition-all disabled:opacity-50 shadow-inner"
+      >
+        <svg className={`w-3.5 h-3.5 ${isRefreshing ? 'animate-spin text-accent' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+        </svg>
+      </button>
+
       {/* Icon + temp anchor the top-left; condition + quote stack directly
           below and now get the card's full remaining width (flex-1,
           no more max-w column) so the quote wraps to ~2 lines instead of
-          the 4-5 it used to take squeezed into a 140px column. */}
-      <div className="flex items-start gap-3 relative z-10">
+          the 4-5 it used to take squeezed into a 140px column. pr-10
+          keeps it clear of the pinned refresh button above. */}
+      <div className="flex items-start gap-3 relative z-10 pr-10">
         <div className="text-4xl filter drop-shadow-md shrink-0">
           {currentTheme.icon}
         </div>
@@ -299,26 +312,17 @@ function WeatherWidget() {
         </div>
       </div>
 
-      <div className="flex items-center gap-4 relative z-10">
-        <div className="flex flex-col gap-1 text-right">
-          <p className="text-[10px] font-bold text-textPrimary flex items-center justify-end gap-1">
-            <span className="opacity-50">📍</span> {weatherData?.location || 'Detecting'}
-          </p>
-          <div className="flex gap-2 text-[9px] uppercase tracking-wider font-bold text-textSecondary justify-end mt-0.5">
-            <span>Hum: <strong className="text-textPrimary">{weatherData?.humidity || '--'}</strong></span>
-            <span>Feel: <strong className="text-textPrimary">{weatherData?.feelsLike ? `${weatherData.feelsLike}°` : '--'}</strong></span>
-          </div>
-        </div>
-
-        <button
-          onClick={fetchWeather}
-          disabled={isRefreshing}
-          className="text-textSecondary hover:text-textPrimary bg-background/50 hover:bg-surfaceHover border border-border p-2 rounded-lg backdrop-blur-md transition-all disabled:opacity-50 shrink-0 shadow-inner"
-        >
-          <svg className={`w-3.5 h-3.5 ${isRefreshing ? 'animate-spin text-accent' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-          </svg>
-        </button>
+      {/* Meta-stats — one dot-separated line, anchored bottom-right via
+          self-end (mt-auto only matters if the card ever gets taller than
+          its own content, e.g. a stretched grid cell, but is harmless
+          otherwise). */}
+      <div className="flex items-center flex-wrap gap-1.5 text-[9px] uppercase tracking-wider font-bold text-textSecondary relative z-10 self-end mt-auto">
+        <span className="opacity-50">📍</span>
+        <span className="text-textPrimary normal-case">{weatherData?.location || 'Detecting'}</span>
+        <span className="opacity-30">•</span>
+        <span>HUM: <strong className="text-textPrimary">{weatherData?.humidity || '--'}</strong></span>
+        <span className="opacity-30">•</span>
+        <span>FEEL: <strong className="text-textPrimary">{weatherData?.feelsLike ? `${weatherData.feelsLike}°` : '--'}</strong></span>
       </div>
 
     </div>
