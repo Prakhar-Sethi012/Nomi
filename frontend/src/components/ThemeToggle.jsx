@@ -37,7 +37,7 @@ function ThemeToggle() {
   return (
     <button 
       onClick={cycleTheme}
-      className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-surface border border-border hover:bg-surfaceHover transition-colors shadow-sm cursor-pointer"
+      className="flex items-center gap-1 px-2 sm:px-3 py-1.5 rounded-lg bg-surface border border-border hover:bg-surfaceHover transition-colors shadow-sm cursor-pointer shrink-0"
       title="Toggle Theme"
     >
       <span>{activeTheme.icon}</span>

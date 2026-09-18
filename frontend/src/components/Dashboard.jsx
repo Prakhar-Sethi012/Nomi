@@ -127,12 +127,14 @@ function Dashboard({ profile, setProfile, setActiveTab }) {
 
         {/* COLUMN 3 (RIGHT) — Ghost, Theme, and Streak all share one
             non-wrapping row now, so the streak badge no longer eats a full
-            row of its own on mobile. */}
-        <div className="flex-1 w-full flex flex-row justify-between md:justify-end shrink-0 gap-2 sm:gap-4 items-center">
+            row of its own on mobile. Tighter padding/gaps + min-w-0 on the
+            streak badge so the row actually fits a 375px screen instead of
+            bleeding off the right edge. */}
+        <div className="w-full flex flex-row justify-between md:justify-end items-center gap-1 sm:gap-2 flex-1 shrink-0">
 
           <button
             onClick={handleGhostModeToggle}
-            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition-all duration-300 shadow-sm shrink-0 ${
+            className={`flex items-center gap-1 px-2 sm:px-3 py-1.5 rounded-lg text-xs font-bold transition-all duration-300 shadow-sm shrink-0 ${
               profile?.is_ghost
                 ? 'bg-danger text-white shadow-[0_0_10px_rgba(239,68,68,0.3)]'
                 : 'bg-background border border-border text-textSecondary hover:text-textPrimary hover:bg-surfaceHover'
@@ -144,11 +146,11 @@ function Dashboard({ profile, setProfile, setActiveTab }) {
 
           <ThemeToggle />
 
-          <div className="text-right border-l border-border pl-3 shrink-0">
-            <div className="text-lg sm:text-2xl font-black text-orange-500 flex items-center justify-end gap-1.5 drop-shadow-md">
+          <div className="text-right border-l border-border pl-2 min-w-0">
+            <div className="text-lg sm:text-2xl font-black text-orange-500 flex items-center justify-end gap-1 drop-shadow-md">
               <span className="animate-pulse">🔥</span> Day <NumberRoll value={profile?.current_streak || 0} />
             </div>
-            <p className="text-textSecondary text-[9px] sm:text-xs mt-0.5 uppercase tracking-widest font-bold">Current Streak</p>
+            <p className="text-textSecondary text-[9px] sm:text-xs mt-0.5 uppercase tracking-widest font-bold whitespace-nowrap">Current Streak</p>
           </div>
         </div>
 
