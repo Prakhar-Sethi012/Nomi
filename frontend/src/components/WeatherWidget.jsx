@@ -265,7 +265,7 @@ function WeatherWidget() {
 
   return (
     <div
-      className="relative overflow-hidden px-5 py-3 rounded-xl border border-border shadow-lg flex items-center justify-between gap-5 transition-all duration-700 ease-in-out min-w-[280px]"
+      className="relative overflow-hidden px-5 py-3 rounded-xl border border-border shadow-lg flex flex-col gap-3 transition-all duration-700 ease-in-out min-w-[280px]"
       style={{ background: `linear-gradient(135deg, color-mix(in srgb, ${toneVar} 14%, var(--color-surface)) 0%, var(--color-surface) 65%)` }}
     >
 
@@ -275,11 +275,15 @@ function WeatherWidget() {
 
       <WeatherAnimationOverlay type={animationType} refreshKey={refreshKey} color={toneVar} />
 
-      <div className="flex items-center gap-3 relative z-10">
-        <div className="text-4xl filter drop-shadow-md">
+      {/* Icon + temp anchor the top-left; condition + quote stack directly
+          below and now get the card's full remaining width (flex-1,
+          no more max-w column) so the quote wraps to ~2 lines instead of
+          the 4-5 it used to take squeezed into a 140px column. */}
+      <div className="flex items-start gap-3 relative z-10">
+        <div className="text-4xl filter drop-shadow-md shrink-0">
           {currentTheme.icon}
         </div>
-        <div className="flex flex-col">
+        <div className="flex flex-col flex-1 min-w-0">
           <div className="flex text-textPrimary items-start leading-none">
             <span className="text-3xl font-black tracking-tighter">
               {weatherData?.temp ?? '--'}
@@ -289,13 +293,11 @@ function WeatherWidget() {
           <p className={`text-[11px] font-bold mt-1 uppercase tracking-wide ${toneClass}`}>
             {currentTheme.text}
           </p>
-          <p className="text-[9px] text-textSecondary mt-0.5 max-w-[140px] leading-tight italic opacity-80">
+          <p className="text-[9px] text-textSecondary mt-0.5 leading-tight italic opacity-80">
             "{currentTheme.message}"
           </p>
         </div>
       </div>
-
-      <div className="w-px h-10 bg-border relative z-10 hidden sm:block"></div>
 
       <div className="flex items-center gap-4 relative z-10">
         <div className="flex flex-col gap-1 text-right">
