@@ -83,20 +83,21 @@ function PortfolioWidget() {
 
   return (
     <div className="mt-6 bg-surface p-6 rounded-xl border border-border shadow-lg">
-      <div className="flex flex-row justify-between items-start w-full gap-2 mb-6">
-        <div className="flex-1 min-w-0 flex flex-col">
-          <h2 className="text-lg sm:text-xl font-bold text-textPrimary truncate">Project Showcase</h2>
-          <p className="text-xs text-textSecondary mt-1">Track and display your engineering portfolio</p>
+      <div className="flex flex-col w-full gap-1 mb-6">
+        <h2 className="text-lg sm:text-xl font-bold text-textPrimary">Project Showcase</h2>
+
+        <div className="flex flex-row justify-between items-start w-full gap-2">
+          <p className="flex-1 min-w-0 text-sm text-textSecondary">Track and display your engineering portfolio</p>
+          {!showForm && (
+            <Pressable
+              onClick={() => setShowForm(true)}
+              haptic="tap"
+              className="text-xs bg-accent hover:bg-accentHover text-white px-3 py-1.5 rounded font-bold transition-colors shrink-0"
+            >
+              + Add Project
+            </Pressable>
+          )}
         </div>
-        {!showForm && (
-          <Pressable
-            onClick={() => setShowForm(true)}
-            haptic="tap"
-            className="text-xs bg-accent hover:bg-accentHover text-white px-3 py-1.5 rounded font-bold transition-colors shrink-0"
-          >
-            + Add Project
-          </Pressable>
-        )}
       </div>
 
       {showForm ? (
