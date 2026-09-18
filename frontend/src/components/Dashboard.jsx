@@ -125,14 +125,16 @@ function Dashboard({ profile, setProfile, setActiveTab }) {
           <WeatherWidget />
         </div>
 
-        {/* COLUMN 3 (RIGHT) */}
-        <div className="flex-1 w-full flex flex-wrap justify-start md:justify-end shrink-0 gap-4 items-center">
-          
-          <button 
+        {/* COLUMN 3 (RIGHT) — Ghost, Theme, and Streak all share one
+            non-wrapping row now, so the streak badge no longer eats a full
+            row of its own on mobile. */}
+        <div className="flex-1 w-full flex flex-row justify-between md:justify-end shrink-0 gap-2 sm:gap-4 items-center">
+
+          <button
             onClick={handleGhostModeToggle}
-            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition-all duration-300 shadow-sm ${
-              profile?.is_ghost 
-                ? 'bg-danger text-white shadow-[0_0_10px_rgba(239,68,68,0.3)]' 
+            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition-all duration-300 shadow-sm shrink-0 ${
+              profile?.is_ghost
+                ? 'bg-danger text-white shadow-[0_0_10px_rgba(239,68,68,0.3)]'
                 : 'bg-background border border-border text-textSecondary hover:text-textPrimary hover:bg-surfaceHover'
             }`}
             title={profile?.is_ghost ? "Your timetable is hidden from friends" : "Your timetable is visible to friends"}
@@ -142,11 +144,11 @@ function Dashboard({ profile, setProfile, setActiveTab }) {
 
           <ThemeToggle />
 
-          <div className="text-left md:text-right border-l border-border pl-4">
-            <div className="text-3xl font-black text-orange-500 flex items-center md:justify-end gap-2 drop-shadow-md">
+          <div className="text-right border-l border-border pl-3 shrink-0">
+            <div className="text-lg sm:text-2xl font-black text-orange-500 flex items-center justify-end gap-1.5 drop-shadow-md">
               <span className="animate-pulse">🔥</span> Day <NumberRoll value={profile?.current_streak || 0} />
             </div>
-            <p className="text-textSecondary text-sm mt-1 uppercase tracking-widest font-bold">Current Streak</p>
+            <p className="text-textSecondary text-[9px] sm:text-xs mt-0.5 uppercase tracking-widest font-bold">Current Streak</p>
           </div>
         </div>
 
