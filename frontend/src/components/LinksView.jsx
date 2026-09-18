@@ -91,7 +91,7 @@ function LinksView({ userId }) {
               href={link.url}
               target="_blank"
               rel="noopener noreferrer"
-              className="relative bg-surface p-5 rounded-xl border border-border hover:border-accent transition-all duration-300 flex items-start gap-4 group shadow-lg hover:-translate-y-1 block"
+              className="relative bg-surface hover:bg-surfaceHover p-5 rounded-xl border border-border hover:border-accent transition-all duration-300 flex items-start gap-4 group shadow-lg hover:-translate-y-1 block"
             >
               <div className="text-3xl grayscale group-hover:grayscale-0 transition-all duration-300 drop-shadow-md">
                 {link.icon}
