@@ -17,15 +17,15 @@ function DailyQuote() {
   const todaysQuote = quotes[quoteIndex];
 
   return (
-    <div className="bg-surface/60 backdrop-blur-md border border-border rounded-xl py-3 px-5 mb-6 flex items-center justify-between gap-4 shadow-sm relative overflow-hidden group">
+    <div className="bg-surface/60 backdrop-blur-md border border-border rounded-xl py-2 px-4 mb-4 flex items-center justify-between gap-3 shadow-sm relative overflow-hidden group">
       {/* Decorative gradient glow */}
       <div className="absolute left-0 top-0 w-1 h-full bg-gradient-to-b from-indigo-500 to-purple-500 rounded-l-xl"></div>
 
-      <p className="text-textSecondary text-sm font-medium italic pl-2 leading-relaxed">
+      <p className="text-textSecondary text-sm font-medium italic pl-2 leading-tight">
         "{todaysQuote.text}"
       </p>
 
-      <span className="text-[10px] text-textSecondary font-bold uppercase tracking-widest shrink-0 whitespace-nowrap">
+      <span className="text-[9px] text-textSecondary font-bold uppercase tracking-widest shrink-0 whitespace-nowrap">
         — {todaysQuote.author}
       </span>
     </div>
