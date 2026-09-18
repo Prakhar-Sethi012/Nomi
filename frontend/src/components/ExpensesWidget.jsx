@@ -42,7 +42,7 @@ function ExpensesWidget({ profile, setActiveTab }) {
   
   if (isLoading) {
     return (
-      <div className="bg-surface p-5 rounded-xl border border-border shadow-lg flex flex-col justify-between h-[400px]">
+      <div className="bg-surface p-4 rounded-xl border border-border shadow-lg flex flex-col justify-between h-auto md:h-[400px]">
         <div>
           <Skeleton className="h-6 w-40 mb-6" />
           <div className="flex flex-col items-center gap-2 mb-8">
@@ -63,18 +63,18 @@ function ExpensesWidget({ profile, setActiveTab }) {
   }
 
   return (
-    <div className="bg-surface p-5 rounded-xl border border-border shadow-lg flex flex-col justify-between h-[400px] relative overflow-hidden">
+    <div className="bg-surface p-4 rounded-xl border border-border shadow-lg flex flex-col justify-between gap-4 h-auto md:h-[400px] relative overflow-hidden">
       <div className="absolute -right-4 -bottom-4 text-[100px] opacity-5 pointer-events-none text-emerald-500">₹</div>
 
       <div>
-        <h2 className="text-xl font-bold text-textPrimary mb-6">Monthly Burn Rate</h2>
+        <h2 className="text-xl font-bold text-textPrimary mb-3">Monthly Burn Rate</h2>
 
-        <div className="flex flex-col items-center justify-center mb-8">
+        <div className="flex flex-col items-center justify-center mb-4">
           <p className="text-[10px] uppercase font-bold text-textSecondary tracking-widest mb-1">Total Spent</p>
           <p className="text-5xl font-black text-textPrimary"><NumberRoll value={totalSpent} prefix="₹" /></p>
         </div>
 
-        <div className="bg-background p-4 rounded-lg border border-border shadow-inner">
+        <div className="bg-background p-3 rounded-lg border border-border shadow-inner">
           <div className="flex justify-between text-xs mb-2">
             <span className="text-textSecondary">Limit: ₹{monthlyLimit}</span>
             <span className={amountLeft >= 0 ? "text-emerald-400 font-bold" : "text-danger font-bold animate-pulse"}>
@@ -91,7 +91,7 @@ function ExpensesWidget({ profile, setActiveTab }) {
 
       <button
         onClick={() => setActiveTab && setActiveTab('expenses')}
-        className="w-full bg-surfaceHover hover:bg-border text-textPrimary font-bold py-3 rounded-lg transition-colors border border-border flex justify-center items-center gap-2"
+        className="w-full bg-surfaceHover hover:bg-border text-textPrimary font-bold py-2.5 rounded-lg transition-colors border border-border flex justify-center items-center gap-2"
       >
         Manage Finances →
       </button>
