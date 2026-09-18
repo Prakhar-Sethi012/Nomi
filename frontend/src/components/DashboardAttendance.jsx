@@ -7,6 +7,11 @@ import Skeleton from './ui/Skeleton';
 import { useAppMotion } from '../hooks/useAppMotion';
 import { scaleIn } from '../motion/variants';
 
+// How many cards visually peek out of the collapsed stack — same default
+// as NotificationStack's own peekCount, so this reads consistently with
+// the Task Stack elsewhere in the app.
+const STACK_PEEK_COUNT = 3;
+
 function AttendanceRing({ percent, conducted }) {
   const m = useAppMotion();
   const color = conducted === 0 ? 'text-textSecondary' : percent >= 75 ? 'text-success' : 'text-danger';
@@ -173,9 +178,13 @@ function DashboardAttendance() {
         <span className="text-[10px] text-accent uppercase tracking-widest font-bold shrink-0">Synced w/ Timetable</span>
       </div>
 
-      {/* Collapsed shows just the first class (tap to see the rest); the
-          proper overlapping-card stack visual lands in a follow-up pass —
-          this is just the state/toggle plumbing for it. */}
+      {/* Collapsed, classes physically stack like the Task Stack: only the
+          first card sits in normal flow (it's what gives the pile its
+          height), the rest are absolutely positioned on top of it with a
+          growing y-offset/shrinking scale, cascading out from behind. Tap
+          anywhere on the pile to unfold it into a normal flex-col list —
+          same card, same `layout` prop, same key, the whole way through, so
+          the transition is one continuous FLIP rather than a swap. */}
       <div
         onClick={() => { if (!isExpanded && subjects.length > 1) setIsExpanded(true); }}
         className={`flex-1 md:min-h-0 overflow-visible md:overflow-y-auto custom-scrollbar pr-2 flex flex-col gap-3 ${
@@ -195,9 +204,35 @@ function DashboardAttendance() {
         {subjects.length === 0 ? (
           <p className="text-xs text-textSecondary text-center mt-10">Go to the Timetable tab to add your classes first.</p>
         ) : (
-          (isExpanded ? subjects : subjects.slice(0, 1)).map(sub => (
-            <div key={sub.id}>{renderSubjectCard(sub)}</div>
-          ))
+          <motion.div layout transition={m.gentle} className={isExpanded ? 'relative flex flex-col gap-3' : 'relative'}>
+            <AnimatePresence initial={false}>
+              {subjects.map((sub, index) => {
+                const stackDepth = Math.min(index, STACK_PEEK_COUNT - 1);
+                const hiddenWhileCollapsed = !isExpanded && index >= STACK_PEEK_COUNT;
+
+                return (
+                  <motion.div
+                    key={sub.id}
+                    layout
+                    transition={m.gentle}
+                    className={!isExpanded && index > 0 ? 'absolute inset-x-0 top-0' : 'relative'}
+                    style={!isExpanded ? { zIndex: subjects.length - index } : undefined}
+                    animate={
+                      isExpanded
+                        ? { scale: 1, y: 0, opacity: 1 }
+                        // Visible peek cards stay fully opaque — same fix as
+                        // the Task Stack: fading them reads as a
+                        // transparency glitch instead of a solid card edge.
+                        : { scale: 1 - stackDepth * 0.05, y: stackDepth * 12, opacity: hiddenWhileCollapsed ? 0 : 1 }
+                    }
+                    exit={{ opacity: 0, scale: 0.9 }}
+                  >
+                    {renderSubjectCard(sub)}
+                  </motion.div>
+                );
+              })}
+            </AnimatePresence>
+          </motion.div>
         )}
       </div>
     </div>
