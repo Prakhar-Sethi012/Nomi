@@ -86,12 +86,8 @@ function AttendanceStrategyView() {
   if (isLoading) {
     return (
       <div className="w-full max-w-6xl pb-10 mx-auto flex flex-col h-auto md:h-[85dvh]">
-        <div className="bg-indigo-600 p-6 rounded-xl border border-indigo-500 mb-6 shadow-[0_0_15px_rgba(79,70,229,0.15)] flex justify-between items-start">
-          <div className="flex flex-col gap-2">
-            <Skeleton className="h-6 w-48 bg-white/20" />
-            <Skeleton className="h-3 w-72 bg-white/20" />
-          </div>
-          <Skeleton className="h-6 w-28 rounded bg-white/20" />
+        <div className="bg-surface p-6 rounded-xl border border-border mb-6 shadow-lg">
+          <Skeleton className="h-6 w-48" />
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
           {[0, 1, 2].map((i) => (
@@ -112,20 +108,10 @@ function AttendanceStrategyView() {
   return (
     <div className="w-full max-w-6xl pb-10 mx-auto animate-fade-in flex flex-col h-auto md:h-[85dvh]">
 
-      <header className="bg-indigo-600 p-6 rounded-xl border border-indigo-500 mb-6 shadow-[0_0_15px_rgba(79,70,229,0.15)]">
-        <div className="flex justify-between items-start">
-          <div>
-            <h1 className="text-2xl font-bold text-white mb-1 flex items-center gap-2">
-              🔮 The Strategy Room
-            </h1>
-            <p className="text-indigo-100 text-sm">
-              Simulation Mode Active. Data here will not affect your real database.
-            </p>
-          </div>
-          <span className="bg-white/20 text-white text-[10px] uppercase tracking-widest font-bold px-3 py-1.5 rounded border border-white/30">
-            Sandbox Isolated
-          </span>
-        </div>
+      <header className="bg-surface p-6 rounded-xl border border-border mb-6 shadow-lg transition-colors duration-300">
+        <h1 className="text-2xl font-bold text-textPrimary flex items-center gap-2">
+          🔮 Strategize
+        </h1>
       </header>
 
       {simulatedSubjects.length === 0 ? (
