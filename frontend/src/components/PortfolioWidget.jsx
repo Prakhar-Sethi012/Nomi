@@ -83,16 +83,16 @@ function PortfolioWidget() {
 
   return (
     <div className="mt-6 bg-surface p-6 rounded-xl border border-border shadow-lg">
-      <div className="flex flex-row justify-between items-start w-full gap-3 mb-6">
-        <div className="flex flex-col min-w-0">
-          <h2 className="text-lg font-bold text-textPrimary whitespace-nowrap">Project Showcase</h2>
+      <div className="flex flex-row justify-between items-start w-full gap-2 mb-6">
+        <div className="flex-1 min-w-0 flex flex-col">
+          <h2 className="text-lg sm:text-xl font-bold text-textPrimary truncate">Project Showcase</h2>
           <p className="text-xs text-textSecondary mt-1">Track and display your engineering portfolio</p>
         </div>
         {!showForm && (
           <Pressable
             onClick={() => setShowForm(true)}
             haptic="tap"
-            className="text-sm bg-accent hover:bg-accentHover text-white px-3 py-1.5 rounded font-bold transition-colors shrink-0"
+            className="text-xs bg-accent hover:bg-accentHover text-white px-3 py-1.5 rounded font-bold transition-colors shrink-0"
           >
             + Add Project
           </Pressable>
