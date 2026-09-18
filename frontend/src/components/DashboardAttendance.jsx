@@ -27,6 +27,7 @@ function AttendanceRing({ percent, conducted }) {
 function DashboardAttendance() {
   const [subjects, setSubjects] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isExpanded, setIsExpanded] = useState(false);
   const m = useAppMotion();
 
   const fetchSubjects = async () => {
@@ -57,6 +58,83 @@ function DashboardAttendance() {
     }
   };
 
+  // Extracted so the collapsed (sliced) and expanded (full) renders in the
+  // return below can both call the exact same card markup.
+  const renderSubjectCard = (sub) => {
+    // Safely default to 0 to prevent NaN crashes
+    const attended = sub.attended_classes || 0;
+    const conducted = sub.conducted_classes || 0;
+    const total = sub.total_classes || 60; // Fallback just in case
+    const currentPct = conducted === 0 ? 0 : (attended / conducted) * 100;
+
+    // 🔥 NEW: Check if max classes reached
+    const isMaxed = conducted >= total;
+
+    return (
+      <div className="bg-background p-3 rounded-lg border border-border flex flex-col gap-2">
+
+        <div className="flex justify-between items-start">
+          <div className="flex items-center gap-3">
+            <AttendanceRing percent={currentPct} conducted={conducted} />
+            <div>
+              <h3 className="text-sm font-bold text-textPrimary leading-tight">{sub.name}</h3>
+              <p className="text-[10px] font-mono text-textSecondary mt-0.5">
+                {sub.room_number || 'Room TBA'} • <NumberRoll value={conducted} />/<NumberRoll value={total} /> Classes
+              </p>
+            </div>
+          </div>
+          <span className={`text-xs font-black ${currentPct >= 75 ? 'text-success' : conducted > 0 ? 'text-danger' : 'text-textSecondary'}`}>
+            {conducted > 0 ? <NumberRoll value={currentPct} decimals={1} suffix="%" /> : 'N/A'}
+          </span>
+        </div>
+
+        <div className="flex gap-2 mt-1 relative">
+          <AnimatePresence mode="wait" initial={false}>
+            {isMaxed ? (
+              <motion.div
+                key="maxed"
+                variants={scaleIn}
+                initial="hidden"
+                animate="visible"
+                exit="exit"
+                transition={m.fast}
+                className="flex-1 bg-surfaceHover border border-border text-textSecondary text-[10px] uppercase tracking-wider font-bold py-1.5 rounded text-center opacity-70 cursor-not-allowed"
+              >
+                Max Classes Reached
+              </motion.div>
+            ) : (
+              <motion.div
+                key="active"
+                variants={scaleIn}
+                initial="hidden"
+                animate="visible"
+                exit="exit"
+                transition={m.fast}
+                className="flex-1 flex gap-2"
+              >
+                <Pressable
+                  onClick={() => logAttendance(sub.id, false)}
+                  haptic="warning"
+                  className="flex-1 bg-surface hover:bg-dangerBg border border-border hover:border-danger/50 text-textSecondary hover:text-danger text-xs font-bold py-1.5 rounded transition-all"
+                >
+                  - Absent
+                </Pressable>
+                <Pressable
+                  onClick={() => logAttendance(sub.id, true)}
+                  haptic="success"
+                  className="flex-1 bg-surface hover:bg-success/20 border border-border hover:border-success/50 text-textSecondary hover:text-success text-xs font-bold py-1.5 rounded transition-all"
+                >
+                  + Present
+                </Pressable>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+
+      </div>
+    );
+  };
+
   if (isLoading) {
     return (
       <div className="bg-surface p-5 rounded-xl border border-border shadow-lg flex flex-col h-auto md:h-full md:max-h-[400px] gap-3">
@@ -84,90 +162,42 @@ function DashboardAttendance() {
         <div className="min-w-0">
           <h2 className="text-lg font-bold text-textPrimary flex items-center gap-2 leading-tight">
             ✅ Quick Log
+            {subjects.length > 0 && (
+              <span className="text-[10px] bg-accent text-white px-2 py-0.5 rounded-full font-bold normal-case tracking-normal">
+                {subjects.length} {subjects.length === 1 ? 'Class' : 'Classes'}
+              </span>
+            )}
           </h2>
           <p className="text-xs text-textSecondary mt-1 leading-tight">Record today's attendance.</p>
         </div>
         <span className="text-[10px] text-accent uppercase tracking-widest font-bold shrink-0">Synced w/ Timetable</span>
       </div>
 
-      <div className="flex-1 md:min-h-0 overflow-visible md:overflow-y-auto custom-scrollbar pr-2 flex flex-col gap-3">
+      {/* Collapsed shows just the first class (tap to see the rest); the
+          proper overlapping-card stack visual lands in a follow-up pass —
+          this is just the state/toggle plumbing for it. */}
+      <div
+        onClick={() => { if (!isExpanded && subjects.length > 1) setIsExpanded(true); }}
+        className={`flex-1 md:min-h-0 overflow-visible md:overflow-y-auto custom-scrollbar pr-2 flex flex-col gap-3 ${
+          !isExpanded && subjects.length > 1 ? 'cursor-pointer' : ''
+        }`}
+      >
+        {isExpanded && subjects.length > 1 && (
+          <button
+            type="button"
+            onClick={(e) => { e.stopPropagation(); setIsExpanded(false); }}
+            className="block ml-auto text-[10px] uppercase font-bold tracking-wider text-textSecondary hover:text-textPrimary"
+          >
+            Collapse ▲
+          </button>
+        )}
+
         {subjects.length === 0 ? (
           <p className="text-xs text-textSecondary text-center mt-10">Go to the Timetable tab to add your classes first.</p>
         ) : (
-          subjects.map(sub => {
-            // Safely default to 0 to prevent NaN crashes
-            const attended = sub.attended_classes || 0;
-            const conducted = sub.conducted_classes || 0;
-            const total = sub.total_classes || 60; // Fallback just in case
-            const currentPct = conducted === 0 ? 0 : (attended / conducted) * 100;
-
-            // 🔥 NEW: Check if max classes reached
-            const isMaxed = conducted >= total;
-
-            return (
-              <div key={sub.id} className="bg-background p-3 rounded-lg border border-border flex flex-col gap-2">
-
-                <div className="flex justify-between items-start">
-                  <div className="flex items-center gap-3">
-                    <AttendanceRing percent={currentPct} conducted={conducted} />
-                    <div>
-                      <h3 className="text-sm font-bold text-textPrimary leading-tight">{sub.name}</h3>
-                      <p className="text-[10px] font-mono text-textSecondary mt-0.5">
-                        {sub.room_number || 'Room TBA'} • <NumberRoll value={conducted} />/<NumberRoll value={total} /> Classes
-                      </p>
-                    </div>
-                  </div>
-                  <span className={`text-xs font-black ${currentPct >= 75 ? 'text-success' : conducted > 0 ? 'text-danger' : 'text-textSecondary'}`}>
-                    {conducted > 0 ? <NumberRoll value={currentPct} decimals={1} suffix="%" /> : 'N/A'}
-                  </span>
-                </div>
-
-                <div className="flex gap-2 mt-1 relative">
-                  <AnimatePresence mode="wait" initial={false}>
-                    {isMaxed ? (
-                      <motion.div
-                        key="maxed"
-                        variants={scaleIn}
-                        initial="hidden"
-                        animate="visible"
-                        exit="exit"
-                        transition={m.fast}
-                        className="flex-1 bg-surfaceHover border border-border text-textSecondary text-[10px] uppercase tracking-wider font-bold py-1.5 rounded text-center opacity-70 cursor-not-allowed"
-                      >
-                        Max Classes Reached
-                      </motion.div>
-                    ) : (
-                      <motion.div
-                        key="active"
-                        variants={scaleIn}
-                        initial="hidden"
-                        animate="visible"
-                        exit="exit"
-                        transition={m.fast}
-                        className="flex-1 flex gap-2"
-                      >
-                        <Pressable
-                          onClick={() => logAttendance(sub.id, false)}
-                          haptic="warning"
-                          className="flex-1 bg-surface hover:bg-dangerBg border border-border hover:border-danger/50 text-textSecondary hover:text-danger text-xs font-bold py-1.5 rounded transition-all"
-                        >
-                          - Absent
-                        </Pressable>
-                        <Pressable
-                          onClick={() => logAttendance(sub.id, true)}
-                          haptic="success"
-                          className="flex-1 bg-surface hover:bg-success/20 border border-border hover:border-success/50 text-textSecondary hover:text-success text-xs font-bold py-1.5 rounded transition-all"
-                        >
-                          + Present
-                        </Pressable>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </div>
-
-              </div>
-            );
-          })
+          (isExpanded ? subjects : subjects.slice(0, 1)).map(sub => (
+            <div key={sub.id}>{renderSubjectCard(sub)}</div>
+          ))
         )}
       </div>
     </div>
