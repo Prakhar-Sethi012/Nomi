@@ -47,20 +47,21 @@ function LinksView({ userId }) {
   return (
     <div className="w-full max-w-4xl pb-10 mx-auto animate-fade-in">
       {/* Header */}
-      <header className="bg-surface p-6 rounded-xl border border-border mb-6 shadow-lg flex justify-between items-center transition-colors duration-300">
-        <div>
-          <h1 className="text-2xl font-bold text-textPrimary mb-1">Command Directory</h1>
-          <p className="text-textSecondary text-sm">Centralized hub for all external networks, profiles, and resources.</p>
-        </div>
+      <header className="bg-surface p-6 rounded-xl border border-border mb-6 shadow-lg flex flex-col w-full gap-1 transition-colors duration-300">
+        <h1 className="text-2xl font-bold text-textPrimary">Command Directory</h1>
 
-        {!showForm && (
-          <button
-            onClick={() => setShowForm(true)}
-            className="bg-accent hover:bg-accentHover text-white text-sm font-bold py-2 px-4 rounded transition-colors"
-          >
-            + Add Link
-          </button>
-        )}
+        <div className="flex flex-row justify-between items-start w-full gap-2">
+          <p className="flex-1 min-w-0 text-sm text-textSecondary">Centralized hub for all external networks, profiles, and resources.</p>
+
+          {!showForm && (
+            <button
+              onClick={() => setShowForm(true)}
+              className="flex flex-row items-center justify-center shrink-0 bg-accent hover:bg-accentHover text-white text-xs font-bold px-3 py-1.5 rounded transition-colors"
+            >
+              + Add Link
+            </button>
+          )}
+        </div>
       </header>
 
       {/* The Creation Form */}
