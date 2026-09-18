@@ -161,11 +161,11 @@ function Dashboard({ profile, setProfile, setActiveTab }) {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start flex-1 min-h-0">
-        <div className="lg:col-span-4 w-full">
-          <DashboardAttendance />
-        </div>
         <div className="lg:col-span-5 w-full">
           <TasksWidget setProfile={setProfile} />
+        </div>
+        <div className="lg:col-span-4 w-full">
+          <DashboardAttendance />
         </div>
         <div className="lg:col-span-3 w-full">
           <ExpensesWidget profile={profile} setActiveTab={setActiveTab} />
