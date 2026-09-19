@@ -133,32 +133,55 @@ export function SunOverlay({ color }) {
         />
 
         {/* Solid core — breathes in sync with the glow, mixed toward white
-            (not black) so it reads soft/cute rather than a stark eclipse. */}
-        <motion.div
-          className="absolute inset-[14px] rounded-full"
-          style={{ background: `color-mix(in srgb, ${color} 75%, white)` }}
-          animate={{ scale: [1, 1.05, 1] }}
-          transition={{ duration: 9, repeat: Infinity, repeatType: 'loop', ease: 'easeInOut' }}
-        />
+            (not black) so it reads soft/cute rather than a stark eclipse.
+            The centering translate lives on a plain (non-motion) wrapper,
+            not on the motion.div itself: Framer Motion's `animate` takes
+            full ownership of an element's `transform` style once it's
+            managing one (here, `scale`), silently dropping any translate
+            set via Tailwind classes on that same element. Splitting the
+            static "where" from the animated "how" avoids that clash. */}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[52px] h-[52px]">
+          <motion.div
+            className="w-full h-full rounded-full"
+            style={{ background: `color-mix(in srgb, ${color} 75%, white)` }}
+            animate={{ scale: [1, 1.05, 1] }}
+            transition={{ duration: 9, repeat: Infinity, repeatType: 'loop', ease: 'easeInOut' }}
+          />
+        </div>
 
         {/* Rays — one slow-turning group instead of each ray flickering on
-            its own, so it reads as a gentle turn rather than a sparkle. */}
-        <motion.div
-          className="absolute inset-0"
-          animate={{ rotate: 360 }}
-          transition={{ duration: 36, repeat: Infinity, repeatType: 'loop', ease: 'linear' }}
-        >
-          {Array.from({ length: RAY_COUNT }).map((_, i) => (
-            <div
-              key={i}
-              className="absolute top-1/2 left-1/2 w-1 h-6 rounded-full origin-bottom opacity-30"
-              style={{
-                transform: `rotate(${i * 45}deg) translateY(-34px)`,
-                background: `color-mix(in srgb, ${color} 60%, white)`,
-              }}
-            />
-          ))}
-        </motion.div>
+            its own, so it reads as a gentle turn rather than a sparkle.
+            Same split as the core above: the plain outer div anchors the
+            group to the shared center point, the inner motion.div (sized
+            to fill it exactly) owns nothing but the `rotate` animation, so
+            Framer Motion has no competing transform to overwrite. */}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-20 h-20">
+          <motion.div
+            className="absolute inset-0 origin-center"
+            animate={{ rotate: 360 }}
+            transition={{ duration: 36, repeat: Infinity, repeatType: 'loop', ease: 'linear' }}
+          >
+            {Array.from({ length: RAY_COUNT }).map((_, i) => (
+              <div
+                key={i}
+                className="absolute top-1/2 left-1/2 w-1 h-6 rounded-full origin-bottom opacity-30"
+                style={{
+                  // translate(-50%, -100%) re-centers *this ray's own* pivot
+                  // (its bottom-center, matching origin-bottom) exactly onto
+                  // the shared center point before rotating — top-1/2/left-1/2
+                  // alone puts the ray's top-left corner there instead, which
+                  // pivots the rotation off-center by half the ray's own
+                  // width/height. That's what let the sunburst drift off the
+                  // core; every ray shared the same wrong pivot. This div is
+                  // plain (not motion.div), so the inline transform here is
+                  // the only thing touching it — no Framer Motion clash.
+                  transform: `translate(-50%, -100%) rotate(${i * 45}deg) translateY(-34px)`,
+                  background: `color-mix(in srgb, ${color} 60%, white)`,
+                }}
+              />
+            ))}
+          </motion.div>
+        </div>
       </motion.div>
     </div>
   );
