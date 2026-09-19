@@ -303,10 +303,10 @@ function WeatherWidget() {
             </span>
             <span className="text-sm font-bold text-textSecondary ml-0.5 mt-0.5">°C</span>
           </div>
-          <p className={`text-[11px] font-bold mt-1 uppercase tracking-wide ${toneClass}`}>
+          <p className={`text-[11px] font-bold mt-1 uppercase tracking-wide text-left ${toneClass}`}>
             {currentTheme.text}
           </p>
-          <p className="text-[9px] text-textSecondary mt-0.5 leading-tight italic opacity-80">
+          <p className="text-[9px] text-textSecondary mt-0.5 leading-tight italic opacity-80 text-left">
             "{currentTheme.message}"
           </p>
         </div>
