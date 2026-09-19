@@ -21,12 +21,13 @@ function AgendaRow({ item, isActive, scrollRoot }) {
   return (
     <div
       ref={rowRef}
-      className={`flex items-center gap-4 p-3 rounded-lg border transition-all duration-500 border-l-4 ${
+      style={{ WebkitTapHighlightColor: 'transparent' }}
+      className={`flex items-center gap-4 p-3 rounded-lg border transition-all duration-500 ${
         isActive
-          ? 'bg-success/10 border-success shadow-[0_0_15px_rgba(34,197,94,0.15)] scale-[1.02]'
+          ? 'border-l-2 bg-success/10 border-success shadow-[0_0_15px_rgba(34,197,94,0.15)] scale-[1.02]'
           : isCentered
             ? 'border-accent bg-background scale-[1.02]'
-            : 'border-border bg-background border-l-accent'
+            : 'border-border bg-background'
       }`}
     >
       <div className="w-24 shrink-0 text-center">
@@ -208,7 +209,7 @@ function TimetableView() {
               { value: 'agenda', label: 'Daily Agenda' },
             ]}
           />
-          <button onClick={() => setShowModal(true)} className="shrink-0 bg-accent hover:bg-accentHover text-white font-bold py-2 px-4 rounded shadow-lg transition-colors">
+          <button onClick={() => setShowModal(true)} className="shrink-0 flex flex-row items-center justify-center gap-2 bg-accent hover:bg-accentHover text-white font-bold py-2 px-4 rounded shadow-lg transition-colors">
             + Add Subject
           </button>
         </div>
@@ -260,7 +261,15 @@ function TimetableView() {
 
       {viewMode === 'grid' && (
         <div className="flex-1 md:min-h-0 bg-background rounded-xl border border-border overflow-x-auto md:overflow-auto custom-scrollbar shadow-inner transition-colors duration-300 snap-x snap-mandatory">
-          <table className="w-full text-left border-collapse min-w-[1000px]">
+          {/* border-separate (not border-collapse) — a sticky first column
+              inside a border-collapse table is a known browser rendering
+              trap: the sticky cell's borders don't collapse cleanly with
+              whatever column currently scrolls up against it, so a stray
+              double/missing border line appears at whatever column happens
+              to sit at the sticky boundary. Every cell only ever paints its
+              own bottom/right edge (never top/left), so border-spacing-0
+              still reads as one continuous grid, not doubled lines. */}
+          <table className="w-full text-left border-separate border-spacing-0 min-w-[1000px]">
             <thead>
               <tr>
                 <th className="p-3 bg-surface border-b border-r border-border text-xs font-bold text-textSecondary text-center sticky left-0 z-10 w-16 transition-colors">DAY</th>
