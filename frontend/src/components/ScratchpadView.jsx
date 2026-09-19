@@ -300,7 +300,13 @@ function ScratchpadView({ userId }) {
           )}
         </div>
       </div>
-      <div className="flex-1 relative overflow-hidden bg-background">
+      {/* min-h-[400px] is the actual fix here: on the standard (non-focus)
+          page, this div's ancestors chain through flex-1/h-auto containers
+          with no definite height on mobile, so flex-1 alone resolves to
+          zero — the canvas rendered but had nothing to fill. Focus Mode
+          never hit this because its portal sets an explicit 100dvh height
+          the whole way down. */}
+      <div className="flex-1 min-h-[400px] w-full relative overflow-hidden bg-background">
         <DoodleCanvas ref={doodleCanvasRef} doodleKey={doodleKey} isPanMode={isPanMode} color={brushColor} size={brushSize} texture={brushTexture} />
         <DoodleToolbar
           color={brushColor} onColorChange={setBrushColor}
