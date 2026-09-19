@@ -157,6 +157,17 @@ function ExpensesView({ profile, setProfile }) {
   });
   const monthTotal = monthlyExpenses.reduce((sum, item) => sum + item.amount, 0);
 
+  // How close this month's spend is to the budget, and which semantic
+  // color that distance should read as. Only accent/danger/success exist
+  // as real theme tokens in this app — there's no themed "warning" color,
+  // so amber is a deliberate one-off hardcoded exception, not an oversight.
+  const burnPercentage = monthlyLimit > 0 ? Math.min((monthTotal / monthlyLimit) * 100, 100) : 0;
+  const getProgressBarColor = (percentage) => {
+    if (percentage > 80) return 'bg-danger';
+    if (percentage > 50) return 'bg-amber-500';
+    return 'bg-success';
+  };
+
   const todayObj = new Date();
   const daysElapsed = isCurrentMonth ? (todayObj.getDate() || 1) : new Date(viewYear, viewMonth + 1, 0).getDate();
   const dailyAverage = monthTotal / daysElapsed;
