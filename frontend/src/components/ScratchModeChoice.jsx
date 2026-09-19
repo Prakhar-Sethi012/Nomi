@@ -47,7 +47,7 @@ function ScratchModeChoice({ onChoose }) {
           >
             <div className="absolute inset-0 bg-grid-pattern opacity-[0.15] pointer-events-none" />
             <motion.span
-              className="text-6xl drop-shadow-lg relative z-10"
+              className="text-4xl drop-shadow-lg relative z-10"
               whileHover={{ scale: 1.1, rotate: -4 }}
               transition={m.snappy}
             >

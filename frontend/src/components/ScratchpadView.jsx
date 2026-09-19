@@ -124,23 +124,28 @@ function ScratchpadView({ userId }) {
   };
 
   const outerHeader = (
-    <header className="bg-surface p-6 rounded-xl border border-border shadow-lg flex justify-between items-center shrink-0">
-      <div>
-        <h1 className="text-2xl font-bold text-textPrimary mb-1">
-          The Scratchpad
-          {mode && <span className="text-textSecondary font-normal text-lg"> · {mode === 'notes' ? 'Notes' : 'Doodle'}</span>}
-        </h1>
-        <p className="text-textSecondary text-sm">Notes sync to database. Doodles save locally.</p>
-      </div>
-      <div className="flex items-center gap-2">
+    <header className="bg-surface p-6 rounded-xl border border-border shadow-lg flex justify-between items-center shrink-0 gap-3">
+      <div className="flex items-center gap-3 min-w-0">
         {mode && (
-          <button
+          <motion.button
             onClick={() => setMode(null)}
-            className="bg-surfaceHover hover:bg-border text-textPrimary font-bold px-3 py-2 rounded-lg transition-colors text-sm"
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.95, x: -2 }}
+            className="bg-surfaceHover hover:bg-border text-textPrimary font-bold px-3 py-2 rounded-lg transition-colors text-sm shrink-0"
           >
-            ↺ Switch
-          </button>
+            ← Back
+          </motion.button>
         )}
+        <div className="min-w-0">
+          <h1 className="text-2xl font-bold text-textPrimary truncate">The Scratchpad</h1>
+          {mode ? (
+            <p className="text-textSecondary text-xs font-bold uppercase tracking-wider mt-0.5">• {mode === 'notes' ? 'Notes' : 'Doodle'}</p>
+          ) : (
+            <p className="text-textSecondary text-sm">Notes sync to database. Doodles save locally.</p>
+          )}
+        </div>
+      </div>
+      <div className="flex items-center gap-2 shrink-0">
         {mode && (
           <button
             onClick={() => setIsFullscreen(f => !f)}
@@ -160,7 +165,7 @@ function ScratchpadView({ userId }) {
       variants={fadeUp}
       initial="hidden"
       animate="visible"
-      exit={{ opacity: 0 }}
+      exit="exit"
       transition={m.base}
       className="flex-1 bg-surface rounded-xl border border-border shadow-lg flex flex-col overflow-hidden relative"
     >
@@ -277,7 +282,7 @@ function ScratchpadView({ userId }) {
       variants={fadeUp}
       initial="hidden"
       animate="visible"
-      exit={{ opacity: 0 }}
+      exit="exit"
       transition={m.base}
       className="flex-1 bg-surface rounded-xl border border-border shadow-lg flex flex-col overflow-hidden"
     >
