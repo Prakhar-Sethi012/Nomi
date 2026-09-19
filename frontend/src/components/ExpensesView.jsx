@@ -320,8 +320,8 @@ function ExpensesView({ profile, setProfile }) {
             {monthlyLimit > 0 && (
               <div className="h-3 w-full bg-background rounded-full overflow-hidden shadow-inner border border-border">
                 <div
-                  className={`h-full rounded-full transition-all duration-1000 ${monthTotal > monthlyLimit ? 'bg-danger' : 'bg-emerald-500'}`}
-                  style={{ width: `${Math.min((monthTotal / monthlyLimit) * 100, 100)}%` }}
+                  className={`h-full rounded-full transition-all duration-500 ease-in-out ${getProgressBarColor(burnPercentage)}`}
+                  style={{ width: `${burnPercentage}%` }}
                 />
               </div>
             )}
