@@ -448,20 +448,22 @@ function ExpensesView({ profile, setProfile }) {
                         {groupedExpenses[dateStr].map((exp) => (
                           <li key={exp.id} className="relative overflow-hidden rounded-lg border border-border hover:border-emerald-500/20 hover:-translate-y-1 transition-all shadow-sm hover:shadow-xl">
                             <SwipeRow onDelete={() => setDeleteTargetId(exp.id)}>
-                              <div className="group bg-surface/50 hover:bg-surfaceHover py-2 px-3 flex justify-between items-center cursor-default transition-colors">
-                                <div className="flex gap-4 items-center min-w-0 flex-1">
-                                  <div className="w-12 h-12 rounded-2xl flex items-center justify-center text-xl shadow-inner border border-border shrink-0" style={{ backgroundColor: categoryColors[exp.tags[0] || 'other'] + '20', color: categoryColors[exp.tags[0] || 'other'] }}>
-                                    {iconMap[exp.tags[0]] || '🧾'}
-                                  </div>
-                                  <div className="min-w-0 flex-1">
-                                    <p className="font-bold text-textPrimary text-base truncate">{exp.reason}</p>
-                                    <p className="text-[10px] text-textSecondary uppercase tracking-widest mt-1 truncate">{exp.tags[0]}</p>
-                                  </div>
+                              <div className="group relative bg-surface/50 hover:bg-surfaceHover py-2 px-3 flex items-center gap-3 cursor-default transition-colors">
+                                <div className="w-12 h-12 rounded-2xl flex items-center justify-center text-xl shadow-inner border border-border shrink-0" style={{ backgroundColor: categoryColors[exp.tags[0] || 'other'] + '20', color: categoryColors[exp.tags[0] || 'other'] }}>
+                                  {iconMap[exp.tags[0]] || '🧾'}
                                 </div>
-                                <div className="flex items-center gap-4 shrink-0">
-                                  <span className="text-danger font-black text-xl lg:text-2xl whitespace-nowrap">-₹{exp.amount.toLocaleString('en-IN')}</span>
-                                  <Pressable onClick={() => setDeleteTargetId(exp.id)} className="text-textSecondary hover:bg-dangerBg hover:text-danger w-8 h-8 rounded-xl flex items-center justify-center transition-all opacity-100 md:opacity-0 md:group-hover:opacity-100 shrink-0" title="Delete Record">✕</Pressable>
+
+                                {/* 3-line stack: title, then category, then the
+                                    amount right-aligned below both — the row
+                                    they used to share was what forced the
+                                    title into a single-line truncate. */}
+                                <div className="flex-1 flex flex-col min-w-0 w-full pr-7">
+                                  <p className="w-full text-left whitespace-normal break-words font-bold text-textPrimary text-sm">{exp.reason}</p>
+                                  <p className="w-full text-left whitespace-normal break-words text-xs text-textSecondary uppercase tracking-widest mt-0.5">{exp.tags[0]}</p>
+                                  <p className="w-full text-right text-xs mt-1 font-bold text-danger">-₹{exp.amount.toLocaleString('en-IN')}</p>
                                 </div>
+
+                                <Pressable onClick={() => setDeleteTargetId(exp.id)} className="absolute top-2 right-2 text-textSecondary hover:bg-dangerBg hover:text-danger w-7 h-7 rounded-lg flex items-center justify-center transition-all opacity-100 md:opacity-0 md:group-hover:opacity-100 shrink-0" title="Delete Record">✕</Pressable>
                               </div>
                             </SwipeRow>
                           </li>
