@@ -35,9 +35,15 @@ function DoodleToolbar({ color, onColorChange, size, onSizeChange, texture, onTe
       initial={{ opacity: 0, y: 24, scale: 0.9 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
       transition={m.pop}
-      className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 bg-surface/90 backdrop-blur-xl border border-border rounded-2xl shadow-2xl px-4 py-3"
+      // 8 color swatches + size buttons + texture control + pan button, all
+      // in one row, easily add up to 600px+ — wider than most phones. Without
+      // a width cap this floating panel (centered via left-1/2/-translate)
+      // just overflows equally off both edges with no way to scroll to
+      // whatever lands outside the viewport, taking the size buttons with it
+      // on mobile. max-w + overflow-x-auto keeps every control reachable.
+      className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 bg-surface/90 backdrop-blur-xl border border-border rounded-2xl shadow-2xl px-4 py-3 max-w-[calc(100vw-2rem)] overflow-x-auto custom-scrollbar"
     >
-      <motion.div variants={staggerParent(0.06)} initial="hidden" animate="visible" className="flex items-center gap-4">
+      <motion.div variants={staggerParent(0.06)} initial="hidden" animate="visible" className="flex items-center gap-4 w-max">
         <motion.div variants={fadeUp} className="flex items-center gap-1.5">
           {palette.map((swatch) => {
             const active = color === swatch;
