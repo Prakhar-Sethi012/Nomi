@@ -446,9 +446,9 @@ function ExpensesView({ profile, setProfile }) {
                       </div>
                       <ul className="space-y-3">
                         {groupedExpenses[dateStr].map((exp) => (
-                          <li key={exp.id} className="relative overflow-hidden rounded-3xl border border-border hover:border-emerald-500/20 hover:-translate-y-1 transition-all shadow-sm hover:shadow-xl">
+                          <li key={exp.id} className="relative overflow-hidden rounded-lg border border-border hover:border-emerald-500/20 hover:-translate-y-1 transition-all shadow-sm hover:shadow-xl">
                             <SwipeRow onDelete={() => setDeleteTargetId(exp.id)}>
-                              <div className="group bg-surface/50 hover:bg-surfaceHover p-5 flex justify-between items-center cursor-default transition-colors">
+                              <div className="group bg-surface/50 hover:bg-surfaceHover py-2 px-3 flex justify-between items-center cursor-default transition-colors">
                                 <div className="flex gap-4 items-center min-w-0 flex-1">
                                   <div className="w-12 h-12 rounded-2xl flex items-center justify-center text-xl shadow-inner border border-border shrink-0" style={{ backgroundColor: categoryColors[exp.tags[0] || 'other'] + '20', color: categoryColors[exp.tags[0] || 'other'] }}>
                                     {iconMap[exp.tags[0]] || '🧾'}
