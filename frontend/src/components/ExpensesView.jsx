@@ -168,6 +168,12 @@ function ExpensesView({ profile, setProfile }) {
     return 'bg-success';
   };
 
+  // How far past the limit the user actually is, in rupees — the bar itself
+  // is capped at 100% width so it never visually breaks past the container,
+  // but that cap also hides the real overage, hence a separate number for it.
+  const isOverBudget = monthlyLimit > 0 && monthTotal > monthlyLimit;
+  const amountExceeded = isOverBudget ? monthTotal - monthlyLimit : 0;
+
   const todayObj = new Date();
   const daysElapsed = isCurrentMonth ? (todayObj.getDate() || 1) : new Date(viewYear, viewMonth + 1, 0).getDate();
   const dailyAverage = monthTotal / daysElapsed;
