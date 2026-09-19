@@ -410,19 +410,19 @@ function ExpensesView({ profile, setProfile }) {
           </div>
 
           <div className="lg:col-span-7 bg-surface/40 backdrop-blur-xl p-8 rounded-[32px] border border-border shadow-xl flex flex-col h-full min-h-[500px]">
-            <div className="flex flex-col items-start gap-4 md:flex-row md:items-center md:justify-between mb-6">
-              <div className="w-full min-w-0 md:w-auto flex flex-wrap items-center gap-4">
+            <div className="flex flex-col w-full gap-2 mb-6">
+              <div className="flex flex-wrap items-center gap-4">
                 <h3 className="text-xs font-bold text-textSecondary uppercase tracking-[0.2em] leading-tight">{selectedCategory ? `${selectedCategory} Activity` : 'Recent Transactions'}</h3>
                 {selectedCategory && (
                   <Pressable onClick={() => setSelectedCategory(null)} haptic="tap" className="shrink-0 text-[10px] bg-surfaceHover hover:bg-border text-textPrimary px-3 py-1.5 rounded-full transition-colors uppercase tracking-wider font-bold">Clear Filter ✕</Pressable>
                 )}
               </div>
 
-              <div className="w-full min-w-0 md:w-auto flex flex-wrap items-center gap-2">
-                <Pressable onClick={() => handleExport('month')} haptic="tap" className="shrink-0 text-[10px] bg-surfaceHover hover:bg-emerald-600 hover:text-white text-textSecondary border border-border hover:border-emerald-500 px-3 py-1.5 rounded transition-all font-bold tracking-widest uppercase">
+              <div className="flex flex-row justify-end gap-2 w-full">
+                <Pressable onClick={() => handleExport('month')} haptic="tap" className="shrink-0 text-[10px] px-2 py-1 bg-surfaceHover hover:bg-emerald-600 hover:text-white text-textSecondary border border-border hover:border-emerald-500 rounded transition-all font-bold tracking-widest uppercase">
                   ⬇ Month .txt
                 </Pressable>
-                <Pressable onClick={() => handleExport('year')} haptic="tap" className="shrink-0 text-[10px] bg-surfaceHover hover:bg-emerald-600 hover:text-white text-textSecondary border border-border hover:border-emerald-500 px-3 py-1.5 rounded transition-all font-bold tracking-widest uppercase">
+                <Pressable onClick={() => handleExport('year')} haptic="tap" className="shrink-0 text-[10px] px-2 py-1 bg-surfaceHover hover:bg-emerald-600 hover:text-white text-textSecondary border border-border hover:border-emerald-500 rounded transition-all font-bold tracking-widest uppercase">
                   ⬇ Year .txt
                 </Pressable>
               </div>
