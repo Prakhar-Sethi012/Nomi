@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { motion } from 'motion/react';
 import CopyButton from './ui/CopyButton';
 import PinConfirmModal from './PinConfirmModal';
 
@@ -53,12 +54,14 @@ function LinksView({ userId }) {
         <p className="w-full text-sm text-textSecondary">Centralized hub for all external networks, profiles, and resources.</p>
 
         {!showForm && (
-          <button
+          <motion.button
             onClick={() => setShowForm(true)}
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.95 }}
             className="flex flex-row items-center justify-center self-end shrink-0 bg-accent hover:bg-accentHover text-white text-xs font-bold px-3 py-1.5 rounded transition-colors"
           >
             + Add Link
-          </button>
+          </motion.button>
         )}
       </header>
 

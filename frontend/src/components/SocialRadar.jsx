@@ -362,7 +362,7 @@ function SocialRadar({ profile, setProfile }) {
                   <input type="text" placeholder="Circle Name (e.g. Hostel Squad)" required value={newCircleName} onChange={e => setNewCircleName(e.target.value)} className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm text-textPrimary outline-none focus:border-accent" />
                   <div className="flex flex-col sm:flex-row gap-2">
                     <input type="text" placeholder="Custom Passcode (Optional)" maxLength="10" value={customToken} onChange={e => setCustomToken(e.target.value.toUpperCase().replace(/\s/g, ''))} className="w-full sm:flex-1 min-w-0 bg-background border border-border rounded-lg px-3 py-2 text-sm text-textPrimary outline-none focus:border-accent uppercase tracking-widest font-mono" />
-                    <button type="submit" className="shrink-0 w-full sm:w-auto bg-accent hover:bg-accentHover text-white font-bold px-4 py-2 rounded-lg text-sm transition-colors">Create</button>
+                    <motion.button type="submit" whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.95 }} className="shrink-0 w-full sm:w-auto bg-accent hover:bg-accentHover text-white font-bold px-4 py-2 rounded-lg text-sm transition-colors">Create</motion.button>
                   </div>
                 </form>
               </div>
