@@ -319,8 +319,18 @@ function ExpensesView({ profile, setProfile }) {
           <div className="mt-8 max-w-md relative z-10">
             <div className="flex justify-between items-end mb-2">
               <span className="text-[10px] text-textSecondary uppercase font-bold tracking-widest">Monthly Limit</span>
-              <Pressable onClick={handleUpdateLimit} haptic="tap" className="text-xs text-emerald-400 font-bold hover:text-emerald-300 transition-colors bg-background/50 px-2 py-1 rounded">
-                {monthlyLimit > 0 ? `₹${monthlyLimit.toLocaleString('en-IN')}` : 'Set Limit +'}
+              <Pressable
+                onClick={handleUpdateLimit}
+                haptic="tap"
+                className={`text-xs font-bold transition-colors bg-background/50 px-2 py-1 rounded ${
+                  isOverBudget ? 'text-danger' : 'text-emerald-400 hover:text-emerald-300'
+                }`}
+              >
+                {monthlyLimit === 0
+                  ? 'Set Limit +'
+                  : isOverBudget
+                    ? `Over budget by: ₹${amountExceeded.toLocaleString('en-IN')}`
+                    : `₹${monthlyLimit.toLocaleString('en-IN')}`}
               </Pressable>
             </div>
             {monthlyLimit > 0 && (
