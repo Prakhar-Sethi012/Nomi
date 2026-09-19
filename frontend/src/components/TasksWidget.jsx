@@ -172,7 +172,7 @@ function TasksWidget({ setProfile }) {
     }
   };
 
-  const renderTaskRow = (task) => {
+  const renderTaskRow = (task, isExpanded) => {
     const isOverdue = new Date(task.due_date).setHours(0,0,0,0) < new Date().setHours(0,0,0,0);
     const isRecurring = task.frequency && task.frequency !== 'Once';
     const completing = completingTasks[task.id];
@@ -200,7 +200,11 @@ function TasksWidget({ setProfile }) {
       // levels down, inside SwipeRow, actually paints a background), so
       // stacked in the collapsed pile, a card with no background of its own
       // reads as a transparency glitch rather than a solid card edge.
-      <div className={`group relative overflow-hidden rounded-lg border bg-surface transition-colors duration-500 ${borderClass}`}>
+      // overflow-hidden + the collapsed max-height clamp below keep every
+      // card in the pile the same height regardless of how many tags it
+      // has — without it, a card with 2-3 tags is taller than the top card
+      // and its bottom edge pokes out from underneath the stack.
+      <div className={`group relative overflow-hidden rounded-lg border bg-surface transition-colors duration-500 ${borderClass} ${!isExpanded ? 'max-h-[88px]' : 'h-auto'}`}>
         <SwipeRow
           disabled={!!completing}
           onDelete={() => handleSwipeDelete(task.id)}
