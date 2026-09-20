@@ -2,6 +2,11 @@ import { useEffect, useState } from 'react';
 import { useMotionValue, useMotionValueEvent, animate } from 'motion/react';
 import { useAppMotion } from '../../hooks/useAppMotion';
 
+// Its own transition, not `m.base` — the shared 0.18s tween other components
+// pull from useAppMotion is tuned for taps/toggles, too quick to read as a
+// deliberate "count up" on a headline stat like CGPA or the burn rate.
+const COUNT_UP = { duration: 1.5, ease: 'easeOut' };
+
 // A free stand-in for Motion+'s AnimateNumber: counts from the previous
 // value to the new one instead of snapping, wherever a stat changes.
 // `grouped` uses en-IN digit grouping (lakhs/crores) to match how currency
@@ -21,7 +26,7 @@ function NumberRoll({ value, decimals = 0, prefix = '', suffix = '', grouped = f
   const [display, setDisplay] = useState(() => format(0));
 
   useEffect(() => {
-    const controls = animate(mv, value, m.reduced ? { duration: 0 } : m.base);
+    const controls = animate(mv, value, m.reduced ? { duration: 0 } : COUNT_UP);
     return controls.stop;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [value]);
