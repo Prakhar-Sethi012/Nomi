@@ -1,16 +1,18 @@
 import React, { useState, useEffect } from 'react';
+import { motion } from 'motion/react';
 import TasksWidget from './TasksWidget';
 import ExpensesWidget from './ExpensesWidget';
 import PortfolioWidget from './PortfolioWidget';
 import WeatherWidget from './WeatherWidget';
 import DashboardAttendance from './DashboardAttendance';
-import DailyQuote from './DailyQuote'; 
+import DailyQuote from './DailyQuote';
 import ThemeToggle from './ThemeToggle';
-import { api } from '../services/api'; 
+import { api } from '../services/api';
 import NextClassWidget from './NextClassWidget';
 import NumberRoll from './ui/NumberRoll';
 import PullToRefresh from './ui/PullToRefresh';
 import SlotMachineText from './ui/SlotMachineText';
+import { staggerParent, fadeUp } from '../motion/variants';
 
 function Dashboard({ profile, setProfile, setActiveTab }) {
   const [isEditingCgpa, setIsEditingCgpa] = useState(false);
@@ -155,25 +157,39 @@ function Dashboard({ profile, setProfile, setActiveTab }) {
 
       </header>
 
-      {/* 2-Column layout for Quote and Next Class Widget */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-        <DailyQuote />
-        <NextClassWidget />
-      </div>
+      {/* Widgets reveal in a staggered grid on mount (login → dashboard, or any
+          tab switch back here) instead of popping in together. flex flex-col
+          flex-1 min-h-0 here is a transparent passthrough — it keeps this new
+          wrapper from breaking the flex-height chain the 12-col grid below
+          relies on (its own flex-1 min-h-0 needs a flex ancestor to mean anything). */}
+      <motion.div
+        variants={staggerParent(0.08)}
+        initial="hidden"
+        animate="visible"
+        className="flex flex-col flex-1 min-h-0"
+      >
+        {/* 2-Column layout for Quote and Next Class Widget */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+          <motion.div variants={fadeUp}><DailyQuote /></motion.div>
+          <motion.div variants={fadeUp}><NextClassWidget /></motion.div>
+        </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start flex-1 min-h-0">
-        <div className="lg:col-span-5 w-full">
-          <TasksWidget setProfile={setProfile} />
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start flex-1 min-h-0">
+          <motion.div variants={fadeUp} className="lg:col-span-5 w-full">
+            <TasksWidget setProfile={setProfile} />
+          </motion.div>
+          <motion.div variants={fadeUp} className="lg:col-span-4 w-full">
+            <DashboardAttendance />
+          </motion.div>
+          <motion.div variants={fadeUp} className="lg:col-span-3 w-full">
+            <ExpensesWidget profile={profile} setActiveTab={setActiveTab} />
+          </motion.div>
         </div>
-        <div className="lg:col-span-4 w-full">
-          <DashboardAttendance />
-        </div>
-        <div className="lg:col-span-3 w-full">
-          <ExpensesWidget profile={profile} setActiveTab={setActiveTab} />
-        </div>
-      </div>
-      
-      <PortfolioWidget />
+
+        <motion.div variants={fadeUp}>
+          <PortfolioWidget />
+        </motion.div>
+      </motion.div>
     </div>
     </PullToRefresh>
   );
