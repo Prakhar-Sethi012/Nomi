@@ -66,7 +66,10 @@ function NotificationStack({ items, renderItem, keyExtractor, peekCount = 3 }) {
                     // drop to 0.
                     : { scale: 1 - stackDepth * 0.05, y: stackDepth * 8, opacity: hiddenWhileCollapsed ? 0 : 1 }
                 }
-                exit={{ opacity: 0, scale: 0.9 }}
+                // height/marginBottom collapse (not just opacity/scale) so a
+                // removed row folds the gap shut instead of leaving a blank
+                // beat before the `layout` FLIP on the siblings below kicks in.
+                exit={{ opacity: 0, scale: 0.95, height: 0, marginBottom: 0, transition: { duration: 0.3 } }}
               >
                 {renderItem(item, isExpanded)}
               </motion.div>

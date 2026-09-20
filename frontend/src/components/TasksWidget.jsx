@@ -204,14 +204,14 @@ function TasksWidget({ setProfile }) {
       // card in the pile the same height regardless of how many tags it
       // has — without it, a card with 2-3 tags is taller than the top card
       // and its bottom edge pokes out from underneath the stack.
-      <div className={`group relative overflow-hidden rounded-lg border bg-surface transition-colors duration-500 ${borderClass} ${!isExpanded ? 'max-h-[88px]' : 'h-auto'}`}>
+      <div className={`group relative overflow-hidden rounded-lg border bg-surface transition-colors duration-300 ${borderClass} ${!isExpanded ? 'max-h-[88px]' : 'h-auto'}`}>
         <SwipeRow
           disabled={!!completing}
           onDelete={() => handleSwipeDelete(task.id)}
           onComplete={() => toggleComplete(task.id)}
         >
-          <div className={`relative p-3 transition-all duration-500 ${
-            completing ? 'opacity-40 scale-[0.98] bg-surfaceHover' : isOverdue ? 'bg-dangerBg' : 'bg-surfaceHover'
+          <div className={`relative p-3 transition-all duration-300 ${
+            completing ? 'opacity-50 scale-[0.98] bg-surfaceHover' : isOverdue ? 'bg-dangerBg' : 'bg-surfaceHover'
           }`}>
 
             {!completing && (
