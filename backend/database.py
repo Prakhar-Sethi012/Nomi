@@ -10,7 +10,11 @@ load_dotenv()
 SQLALCHEMY_DATABASE_URL = os.getenv("DATABASE_URL")
 
 # Create the SQLAlchemy engine
-engine = create_engine(SQLALCHEMY_DATABASE_URL)
+# pool_pre_ping tests each connection with a lightweight query before handing
+# it to a request — without it, a connection Postgres dropped (idle timeout,
+# restart, load balancer) surfaces as a hard 500 on whatever request happens
+# to grab it next, instead of transparently reconnecting.
+engine = create_engine(SQLALCHEMY_DATABASE_URL, pool_pre_ping=True)
 
 # Create a sessionmaker to talk to the database
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)

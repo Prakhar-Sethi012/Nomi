@@ -70,7 +70,7 @@ def create_circle(circle_data: schemas.CircleCreate, db: Session = Depends(get_d
     return {"id": new_circle.id, "name": new_circle.name, "join_token": new_circle.join_token}
 
 @router.get("/circles/search", response_model=List[schemas.CircleSearchResponse])
-def search_circles(q: str, db: Session = Depends(get_db)):
+def search_circles(q: str, db: Session = Depends(get_db), current_user: models.Profile = Depends(get_current_user)):
     if not q or len(q) < 2: return []
     return db.query(models.Circle).filter(models.Circle.name.ilike(f"%{q}%")).limit(10).all()
 

@@ -21,7 +21,11 @@ class AuthResponse(BaseModel):
     profile: schemas.ProfileResponse
 
 @router.post("/register", response_model=AuthResponse)
-def register_user(user: schemas.ProfileCreate, db: Session = Depends(get_db)):
+def register_user(user: schemas.ProfileCreate, request: Request, db: Session = Depends(get_db)):
+    # Same per-IP shape as login's rate limit — without this, registration
+    # was the one auth endpoint with no cap on automated abuse.
+    enforce_rate_limit(f"register:ip:{_client_ip(request)}", max_attempts=10, window_seconds=3600)
+
     existing_user = db.query(models.Profile).filter(models.Profile.reg_no == user.reg_no).first()
     if existing_user:
         raise HTTPException(status_code=400, detail="Registration number already registered")
