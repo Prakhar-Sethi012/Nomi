@@ -206,7 +206,7 @@ function ProfileView({ profile, setProfile, onLogout }) {
           <div className="mt-auto bg-background p-6 rounded-2xl border border-border">
             <h3 className="text-textPrimary font-bold mb-2">Self-Destruct Sequence</h3>
             <p className="text-xs text-textSecondary mb-4">Permanently delete your account, timetables, finances, and all associated data. This cannot be undone.</p>
-            <HoldToConfirm onConfirm={handleSelfDestruct} className="w-full bg-dangerBg text-danger border border-danger font-bold py-3 rounded-xl transition-colors shadow-[0_0_15px_rgba(220,38,38,0.2)]">
+            <HoldToConfirm onConfirm={handleSelfDestruct} className="w-full bg-dangerBg text-danger border border-danger font-bold text-sm py-3 rounded-xl transition-colors shadow-[0_0_15px_rgba(220,38,38,0.2)]">
               HOLD TO SELF-DESTRUCT
             </HoldToConfirm>
           </div>
