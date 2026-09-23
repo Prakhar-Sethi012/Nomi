@@ -87,7 +87,7 @@ function AuthScreen({ onLoginSuccess }) {
 
         <div className="text-center mb-8 relative z-10">
           <div className="text-5xl mb-4">{authMode === 'recovery' ? '🗝️' : '🚀'}</div>
-          <h1 className="text-3xl font-black text-textPrimary">Command Center</h1>
+          <h1 className="text-3xl font-black text-textPrimary">Nomi</h1>
           <p className="text-textSecondary mt-2 text-sm">
             {authMode === 'login' && "Authenticate to access your dashboard."}
             {authMode === 'register' && "Initialize your new campus terminal."}

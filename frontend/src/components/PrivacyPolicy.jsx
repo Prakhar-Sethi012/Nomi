@@ -7,16 +7,16 @@ function PrivacyPolicy() {
   return (
     <div className="min-h-screen bg-background transition-colors duration-300">
       <div className="w-full max-w-3xl mx-auto px-4 py-10">
-        <a href="/" className="text-sm font-bold text-accent hover:underline">← Back to Command Center</a>
+        <a href="/" className="text-sm font-bold text-accent hover:underline">← Back to Nomi</a>
 
         <header className="mt-6 mb-8">
           <h1 className="text-3xl font-black text-textPrimary">Privacy Policy</h1>
-          <p className="text-textSecondary text-sm mt-2">Command Center — VIT Student Dashboard</p>
+          <p className="text-textSecondary text-sm mt-2">Nomi — VIT Student Dashboard</p>
         </header>
 
         <div className="bg-surface border border-border rounded-2xl shadow-lg p-6 md:p-8 flex flex-col gap-6 text-textPrimary">
           <p className="text-sm text-textSecondary leading-relaxed">
-            Command Center is a personal dashboard built for VIT students to manage their timetable, attendance,
+            Nomi is a personal dashboard built for VIT students to manage their timetable, attendance,
             tasks, expenses, and campus social circles in one place. This page explains what data the app collects,
             why, and how it's handled.
           </p>
@@ -71,7 +71,7 @@ function PrivacyPolicy() {
           <section>
             <h2 className="text-lg font-bold text-textPrimary mb-2">Who This Is For</h2>
             <p className="text-sm text-textSecondary leading-relaxed">
-              Command Center is built for VIT students and isn't knowingly directed at or used by children under 13.
+              Nomi is built for VIT students and isn't knowingly directed at or used by children under 13.
             </p>
           </section>
 

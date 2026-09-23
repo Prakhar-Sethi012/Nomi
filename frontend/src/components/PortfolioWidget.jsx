@@ -116,7 +116,7 @@ function PortfolioWidget() {
             className="bg-background p-4 rounded-lg border border-border flex flex-col gap-3"
           >
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <input type="text" placeholder="Project Title (e.g., Command Center PWA)" required value={formData.title} onChange={(e) => setFormData({...formData, title: e.target.value})} className="w-full p-2 bg-surface rounded text-sm text-textPrimary border border-border focus:border-accent outline-none" />
+              <input type="text" placeholder="Project Title (e.g., Nomi PWA)" required value={formData.title} onChange={(e) => setFormData({...formData, title: e.target.value})} className="w-full p-2 bg-surface rounded text-sm text-textPrimary border border-border focus:border-accent outline-none" />
               <input type="url" placeholder="GitHub Link (https://...)" value={formData.github_link} onChange={(e) => setFormData({...formData, github_link: e.target.value})} className="w-full p-2 bg-surface rounded text-sm text-textPrimary border border-border focus:border-accent outline-none" />
             </div>
 

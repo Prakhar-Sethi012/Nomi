@@ -22,8 +22,8 @@ export default defineConfig({
         // Android treating the update as a different app instead of a
         // new version of this one.
         id: '/',
-        name: 'Command Center',
-        short_name: 'Command Center',
+        name: 'Nomi',
+        short_name: 'Nomi',
         description: 'Personal Student OS & Task Manager',
         start_url: '/',
         scope: '/',

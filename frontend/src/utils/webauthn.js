@@ -30,7 +30,7 @@ export async function registerBiometric({ regNo, token }) {
   const credential = await navigator.credentials.create({
     publicKey: {
       challenge: randomChallenge(),
-      rp: { name: 'Command Center' },
+      rp: { name: 'Nomi' },
       user: {
         id: new TextEncoder().encode(regNo),
         name: regNo,

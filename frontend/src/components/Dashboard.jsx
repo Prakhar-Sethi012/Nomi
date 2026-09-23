@@ -90,7 +90,7 @@ function Dashboard({ profile, setProfile, setActiveTab }) {
           </h1>
           <div className="flex items-center gap-2 mb-3">
             <span className="text-accent text-sm font-medium">{dateString}</span>
-            <span className="text-textSecondary text-sm hidden sm:inline">• VIT Command Center</span>
+            <span className="text-textSecondary text-sm hidden sm:inline">• Nomi</span>
           </div>
 
           <div className="flex items-center gap-3">
