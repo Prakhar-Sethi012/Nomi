@@ -131,9 +131,10 @@ function ScratchpadView({ userId }) {
             onClick={() => setMode(null)}
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.95, x: -2 }}
+            title="Back"
             className="bg-surfaceHover hover:bg-border text-textPrimary font-bold px-3 py-2 rounded-lg transition-colors text-sm shrink-0"
           >
-            ← Back
+            ←<span className="hidden sm:inline"> Back</span>
           </motion.button>
         )}
         <div className="min-w-0">
@@ -152,7 +153,11 @@ function ScratchpadView({ userId }) {
             className="bg-surfaceHover hover:bg-border text-textPrimary font-bold px-3 py-2 rounded-lg transition-colors"
             title={isFullscreen ? 'Exit Focus Mode (Esc)' : 'Enter Focus Mode'}
           >
-            {isFullscreen ? '⤡ Exit Focus' : '⛶ Focus Mode'}
+            {isFullscreen ? (
+              <>⤡<span className="hidden sm:inline"> Exit Focus</span></>
+            ) : (
+              <>⛶<span className="hidden sm:inline"> Focus Mode</span></>
+            )}
           </button>
         )}
       </div>
@@ -188,7 +193,7 @@ function ScratchpadView({ userId }) {
                 ))}
               </div>
             ) : notes.length === 0 ? (
-              <div className="text-center text-textSecondary mt-10 text-sm">No notes yet.</div>
+              <div className="text-center text-textSecondary mt-10 px-4 text-sm">No notes yet.</div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <AnimatePresence>
