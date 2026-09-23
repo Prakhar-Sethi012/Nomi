@@ -59,6 +59,7 @@ function SwipeRow({ onDelete, onComplete, children, disabled }) {
         onDrag={handleDrag}
         onDragEnd={handleDragEnd}
         transition={m.snappy}
+        style={{ touchAction: 'pan-y' }}
         className="relative"
       >
         {children}
