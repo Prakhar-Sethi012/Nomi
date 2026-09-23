@@ -111,6 +111,7 @@ function ScratchpadView({ userId }) {
   const doodleCanvasRef = useRef(null);
   const [showDoodleConfirm, setShowDoodleConfirm] = useState(false);
   const [isPanMode, setIsPanMode] = useState(false);
+  const [isEraser, setIsEraser] = useState(false);
   const [brushColor, setBrushColor] = useState('#60a5fa');
   const [brushSize, setBrushSize] = useState(3);
   const [brushTexture, setBrushTexture] = useState('pen');
@@ -312,11 +313,12 @@ function ScratchpadView({ userId }) {
           never hit this because its portal sets an explicit 100dvh height
           the whole way down. */}
       <div className="flex-1 min-h-[400px] w-full relative overflow-hidden bg-background">
-        <DoodleCanvas ref={doodleCanvasRef} doodleKey={doodleKey} isPanMode={isPanMode} color={brushColor} size={brushSize} texture={brushTexture} />
+        <DoodleCanvas ref={doodleCanvasRef} doodleKey={doodleKey} isPanMode={isPanMode} isEraser={isEraser} color={brushColor} size={brushSize} texture={brushTexture} />
         <DoodleToolbar
           color={brushColor} onColorChange={setBrushColor}
           size={brushSize} onSizeChange={setBrushSize}
           texture={brushTexture} onTextureChange={setBrushTexture}
+          isEraser={isEraser} onToggleEraser={() => setIsEraser(e => !e)}
           isPanMode={isPanMode} onTogglePan={() => setIsPanMode(p => !p)}
         />
       </div>

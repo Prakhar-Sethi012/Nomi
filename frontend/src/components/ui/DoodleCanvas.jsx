@@ -23,12 +23,32 @@ const applyTexture = (ctx, texture) => {
   }
 };
 
+// Applies whatever the current stroke needs before it's stroked — shared by
+// the live in-progress segment and the full-history replay in render(), so
+// the two can never drift apart. Eraser strokes are just brush strokes that
+// paint in the canvas's own background color rather than true
+// globalCompositeOperation: 'destination-out': the canvas fill is a
+// hardcoded slate, not transparent, so a real destination-out "hole" would
+// punch through to whatever theme color sits behind the canvas element
+// instead of matching it — painting over in BG sidesteps that entirely.
+const applyStrokeStyle = (ctx, stroke) => {
+  ctx.lineWidth = stroke.size;
+  if (stroke.tool === 'eraser') {
+    ctx.strokeStyle = BG;
+    ctx.globalAlpha = 1;
+    ctx.shadowBlur = 0;
+  } else {
+    ctx.strokeStyle = stroke.color;
+    applyTexture(ctx, stroke.texture);
+  }
+};
+
 // Strokes are stored as vector point data in "world space" instead of a
 // single raster snapshot — the old dataURL-per-frame approach couldn't
 // support panning, since panning would just reveal blank canvas outside
 // whatever was originally painted. Storing points means any resize, pan, or
 // texture change can just redraw the same data from scratch.
-const DoodleCanvas = forwardRef(function DoodleCanvas({ doodleKey, color = DEFAULT_COLOR, size = DEFAULT_SIZE, texture = DEFAULT_TEXTURE, isPanMode = false }, ref) {
+const DoodleCanvas = forwardRef(function DoodleCanvas({ doodleKey, color = DEFAULT_COLOR, size = DEFAULT_SIZE, texture = DEFAULT_TEXTURE, isEraser = false, isPanMode = false }, ref) {
   const containerRef = useRef(null);
   const canvasRef = useRef(null);
   const strokesRef = useRef([]);
@@ -36,7 +56,7 @@ const DoodleCanvas = forwardRef(function DoodleCanvas({ doodleKey, color = DEFAU
   const isDrawingRef = useRef(false);
   const dprRef = useRef(window.devicePixelRatio || 1);
   const sizeRef = useRef({ width: 0, height: 0 });
-  const toolRef = useRef({ color, size, texture });
+  const toolRef = useRef({ color, size, texture, isEraser });
   // The camera: every stored point is in "world space", and this is the
   // world-space coordinate currently sitting at the canvas's top-left corner.
   const panRef = useRef({ x: 0, y: 0 });
@@ -45,8 +65,8 @@ const DoodleCanvas = forwardRef(function DoodleCanvas({ doodleKey, color = DEFAU
   const lastPointerRef = useRef({ x: 0, y: 0 });
 
   useEffect(() => {
-    toolRef.current = { color, size, texture };
-  }, [color, size, texture]);
+    toolRef.current = { color, size, texture, isEraser };
+  }, [color, size, texture, isEraser]);
 
   useEffect(() => {
     isPanModeRef.current = isPanMode;
@@ -63,9 +83,7 @@ const DoodleCanvas = forwardRef(function DoodleCanvas({ doodleKey, color = DEFAU
   const drawStroke = (ctx, stroke) => {
     if (stroke.points.length < 2) return;
     ctx.save();
-    ctx.strokeStyle = stroke.color;
-    ctx.lineWidth = stroke.size;
-    applyTexture(ctx, stroke.texture);
+    applyStrokeStyle(ctx, stroke);
     ctx.beginPath();
     ctx.moveTo(stroke.points[0].x, stroke.points[0].y);
     for (let i = 1; i < stroke.points.length; i++) ctx.lineTo(stroke.points[i].x, stroke.points[i].y);
@@ -189,6 +207,7 @@ const DoodleCanvas = forwardRef(function DoodleCanvas({ doodleKey, color = DEFAU
       color: toolRef.current.color,
       size: toolRef.current.size,
       texture: toolRef.current.texture,
+      tool: toolRef.current.isEraser ? 'eraser' : 'brush',
       points: [{ x, y }],
     };
     isDrawingRef.current = true;
@@ -212,11 +231,9 @@ const DoodleCanvas = forwardRef(function DoodleCanvas({ doodleKey, color = DEFAU
 
     const ctx = canvasRef.current.getContext('2d');
     ctx.save();
-    ctx.strokeStyle = stroke.color;
-    ctx.lineWidth = stroke.size;
+    applyStrokeStyle(ctx, stroke);
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
-    applyTexture(ctx, stroke.texture);
     ctx.beginPath();
     ctx.moveTo(prev.x, prev.y);
     ctx.lineTo(x, y);
@@ -243,7 +260,7 @@ const DoodleCanvas = forwardRef(function DoodleCanvas({ doodleKey, color = DEFAU
         onPointerMove={draw}
         onPointerUp={stopDrawing}
         onPointerCancel={stopDrawing}
-        className={`w-full h-full block touch-none ${isPanMode ? 'cursor-grab active:cursor-grabbing' : 'cursor-crosshair'}`}
+        className={`w-full h-full block touch-none ${isPanMode ? 'cursor-grab active:cursor-grabbing' : isEraser ? 'cursor-cell' : 'cursor-crosshair'}`}
       />
     </div>
   );
