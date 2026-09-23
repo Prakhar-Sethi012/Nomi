@@ -217,8 +217,19 @@ function ExpensesView({ profile, setProfile }) {
     Object.entries(categoryColors).map(([tag, hex]) => [tag, getCategoryGradient(hex)])
   );
 
+  // An expense's tag is free-text from whoever created it (the quick-add
+  // form, the API, an old import) — it's never guaranteed to be one of the
+  // 5 categories above. Every lookup into categoryColors/categoryGradients/
+  // iconMap needs to go through this instead of reading exp.tags[0]
+  // directly, or an unrecognized tag (e.g. a custom one) looks up as
+  // undefined and crashes the donut chart's gradient render.
+  const getCategoryKey = (tags) => {
+    const tag = tags?.[0];
+    return tag && categoryColors[tag] ? tag : 'other';
+  };
+
   const categoryTotals = monthlyExpenses.reduce((acc, exp) => {
-    const tag = exp.tags[0] || 'other';
+    const tag = getCategoryKey(exp.tags);
     acc[tag] = (acc[tag] || 0) + exp.amount;
     return acc;
   }, {});
@@ -245,7 +256,7 @@ function ExpensesView({ profile, setProfile }) {
     return { tag, amount, percent, start, arcStart, arcFraction, color: categoryColors[tag] };
   });
 
-  const displayedExpenses = selectedCategory ? monthlyExpenses.filter(exp => exp.tags[0] === selectedCategory) : monthlyExpenses;
+  const displayedExpenses = selectedCategory ? monthlyExpenses.filter(exp => getCategoryKey(exp.tags) === selectedCategory) : monthlyExpenses;
   const groupedExpenses = displayedExpenses.reduce((acc, exp) => {
     const dateStr = new Date(exp.date).toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long' });
     if (!acc[dateStr]) acc[dateStr] = [];
@@ -476,8 +487,8 @@ function ExpensesView({ profile, setProfile }) {
                           <li key={exp.id} className="relative overflow-hidden rounded-lg border border-border hover:border-emerald-500/20 hover:-translate-y-1 transition-all shadow-sm hover:shadow-xl">
                             <SwipeRow onDelete={() => setDeleteTargetId(exp.id)}>
                               <div className="group relative bg-surface/50 hover:bg-surfaceHover py-2 px-3 flex items-center gap-3 cursor-default transition-colors">
-                                <div className="w-12 h-12 rounded-2xl flex items-center justify-center text-xl shadow-inner border border-border shrink-0" style={{ backgroundColor: categoryColors[exp.tags[0] || 'other'] + '20', color: categoryColors[exp.tags[0] || 'other'] }}>
-                                  {iconMap[exp.tags[0]] || '🧾'}
+                                <div className="w-12 h-12 rounded-2xl flex items-center justify-center text-xl shadow-inner border border-border shrink-0" style={{ backgroundColor: categoryColors[getCategoryKey(exp.tags)] + '20', color: categoryColors[getCategoryKey(exp.tags)] }}>
+                                  {iconMap[getCategoryKey(exp.tags)]}
                                 </div>
 
                                 {/* 3-line stack: title, then category, then the
