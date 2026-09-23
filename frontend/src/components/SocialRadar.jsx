@@ -472,10 +472,10 @@ function SocialRadar({ profile, setProfile }) {
 
         {viewLevel === 2 && activeCircle && (
           <div className="animate-fade-in flex flex-col gap-6">
-            <div className="flex justify-between items-center">
+            <div className="flex flex-wrap justify-between items-center gap-3">
               <button onClick={() => goToLevel(1)} className="text-sm text-textSecondary hover:text-textPrimary flex items-center gap-2 transition-colors">← Back to Lobby</button>
 
-              <div className="flex items-center gap-4">
+              <div className="flex flex-wrap items-center gap-2">
                 {activeCircle.creator_id === myProfileId && (
                   <button onClick={fetchHistory} className="text-xs bg-surface hover:bg-surfaceHover text-textPrimary border border-border px-3 py-1.5 rounded transition-all font-bold tracking-wider uppercase">
                     📜 Audit Log
