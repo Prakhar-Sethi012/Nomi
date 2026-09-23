@@ -12,9 +12,15 @@ import ExpensesView from './components/ExpensesView';
 import AuthScreen from './components/AuthScreen';
 import SocialRadar from './components/SocialRadar';
 import CloseFriendsView from './components/CloseFriendsView';
+import PrivacyPolicy from './components/PrivacyPolicy';
 import RadialNav from './components/nav/RadialNav';
 import PageTransition from './components/ui/PageTransition';
 import ConfirmModal from './components/ui/ConfirmModal';
+
+// Public, no-login pages live outside the whole auth/profile lifecycle —
+// checked once here (not in state) since it only ever needs the URL the
+// page loaded with, never a client-side navigation.
+const isPrivacyRoute = window.location.pathname === '/privacy';
 
 function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -27,6 +33,14 @@ function App() {
   // 1. AUTHENTICATE & FETCH PROFILE
   // =========================================
   useEffect(() => {
+    // /privacy must never depend on the backend or an existing session —
+    // skip the profile fetch entirely rather than let a stale token in
+    // localStorage fire a network call on a page that's supposed to work
+    // fully logged out.
+    if (isPrivacyRoute) {
+      setIsLoading(false);
+      return;
+    }
     if (isAuthenticated) {
       api.getProfile()
         .then(data => {
@@ -46,6 +60,8 @@ function App() {
   // 2. THE GLOBAL OFFLINE-FIRST LISTENER
   // =========================================
   useEffect(() => {
+    if (isPrivacyRoute) return;
+
     const handleOnline = () => {
       console.log("🟢 Connection restored!");
       offlineSync.processQueue();
@@ -86,6 +102,12 @@ function App() {
   // =========================================
   // RENDER BLOCKS
   // =========================================
+
+  // 🌐 PUBLIC ROUTE: no auth gate, no backend call — Google Play needs this
+  // URL to load the Privacy Policy on its own, logged out.
+  if (isPrivacyRoute) {
+    return <PrivacyPolicy />;
+  }
 
   if (isLoading) {
     return (
