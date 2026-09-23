@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
-import { api } from '../services/api';
+import { api, API_URL } from '../services/api';
 import PinConfirmModal from './PinConfirmModal';
 import Pressable from './ui/Pressable';
 import BottomSheet from './ui/BottomSheet';
@@ -129,7 +129,7 @@ function ExpensesView({ profile, setProfile }) {
     try {
       const token = localStorage.getItem('token');
       
-      let url = 'http://127.0.0.1:8000/expenses/export';
+      let url = `${API_URL}/expenses/export`;
       if (type === 'month') url += `?year=${viewYear}&month=${viewMonth + 1}`; // Backend extracts 1-12
       else if (type === 'year') url += `?year=${viewYear}`;
 
