@@ -137,7 +137,7 @@ function PortfolioWidget() {
             animate="visible"
             exit="exit"
             transition={m.fast}
-            className="py-8 flex flex-col items-center justify-center text-textSecondary border-2 border-dashed border-border rounded-lg"
+            className="py-8 px-4 flex flex-col items-center justify-center text-center text-textSecondary border-2 border-dashed border-border rounded-lg"
           >
             <p>Your portfolio is currently empty.</p>
             <p className="text-xs mt-1">Add your first project to start building your developer identity.</p>

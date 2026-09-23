@@ -81,7 +81,7 @@ function LinksView({ userId }) {
 
       {/* Links Grid */}
       {links.length === 0 && !showForm ? (
-        <div className="py-12 flex flex-col items-center justify-center text-textSecondary border-2 border-dashed border-border rounded-xl">
+        <div className="py-12 px-4 flex flex-col items-center justify-center text-center text-textSecondary border-2 border-dashed border-border rounded-xl">
           <p>Your directory is empty.</p>
         </div>
       ) : (

@@ -371,7 +371,7 @@ function TasksWidget({ setProfile }) {
         <>
           <Pressable onClick={() => setShowForm(true)} haptic="tap" className="w-full mb-3 bg-surfaceHover hover:bg-border border border-border text-textPrimary text-sm py-1.5 rounded transition-colors flex items-center justify-center gap-2">+ New Task</Pressable>
           {tasks.length === 0 ? (
-            <div className="flex-1 flex items-center justify-center text-textSecondary text-sm">No pending tasks. You're all caught up!</div>
+            <div className="flex-1 flex items-center justify-center text-center px-4 text-textSecondary text-sm">No pending tasks. You're all caught up!</div>
           ) : (
             <div className="overflow-visible md:overflow-y-auto pr-2 custom-scrollbar flex-1 md:min-h-0">
               <NotificationStack
