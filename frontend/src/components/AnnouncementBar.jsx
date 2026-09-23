@@ -65,7 +65,12 @@ function AnnouncementBar() {
               hardcoded warning color" convention already used elsewhere,
               since there's no dedicated --color-warning token), so the bar
               reads as urgent without fighting whichever theme is active. */}
-          <div className="flex items-center gap-3 bg-amber-500/10 border border-amber-500/30 text-textPrimary px-4 py-3 rounded-xl shadow-lg transition-colors duration-300">
+          {/* pr-16 on mobile only: App.jsx pins a fixed, circular Profile
+              button in the top-right corner (top-4 right-4, w-11 h-11,
+              z-30) below the md breakpoint. This banner is the first thing
+              in the page and reaches the same corner, so without the extra
+              clearance the dismiss button renders right underneath it. */}
+          <div className="flex items-center gap-3 bg-amber-500/10 border border-amber-500/30 text-textPrimary pl-4 pr-16 md:pr-4 py-3 rounded-xl shadow-lg transition-colors duration-300">
             <span className="text-lg shrink-0 text-amber-500" aria-hidden="true">⚠️</span>
             <p className="flex-1 text-sm font-bold leading-tight">{announcement.message}</p>
             <Pressable
