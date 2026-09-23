@@ -263,12 +263,14 @@ function TimetableView() {
               { value: 'agenda', label: 'Daily Agenda' },
             ]}
           />
-          <button onClick={() => setShowImportModal(true)} className="shrink-0 flex flex-row items-center justify-center gap-2 bg-background border border-border hover:border-accent text-textPrimary font-bold py-2 px-4 rounded shadow-lg transition-colors">
-            + Import from VTOP
-          </button>
-          <button onClick={() => setShowModal(true)} className="shrink-0 flex flex-row items-center justify-center gap-2 bg-accent hover:bg-accentHover text-white font-bold py-2 px-4 rounded shadow-lg transition-colors">
-            + Add Subject
-          </button>
+          <div className="flex flex-row flex-wrap gap-2">
+            <button onClick={() => setShowImportModal(true)} className="shrink-0 flex flex-row items-center justify-center gap-2 bg-background border border-border hover:border-accent text-textPrimary font-bold text-sm py-2 px-3 rounded shadow-lg transition-colors">
+              + Import from VTOP
+            </button>
+            <button onClick={() => setShowModal(true)} className="shrink-0 flex flex-row items-center justify-center gap-2 bg-accent hover:bg-accentHover text-white font-bold text-sm py-2 px-3 rounded shadow-lg transition-colors">
+              + Add Subject
+            </button>
+          </div>
         </div>
       </header>
 
