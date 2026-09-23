@@ -258,3 +258,10 @@ class MeetupResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+# ==========================================
+# 9. SYSTEM (Admin Broadcast Banner)
+# ==========================================
+class AnnouncementResponse(BaseModel):
+    id: Optional[str] = None
+    message: Optional[str] = None

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
+import AnnouncementBar from './AnnouncementBar';
 import TasksWidget from './TasksWidget';
 import ExpensesWidget from './ExpensesWidget';
 import PortfolioWidget from './PortfolioWidget';
@@ -77,7 +78,9 @@ function Dashboard({ profile, setProfile, setActiveTab }) {
   return (
     <PullToRefresh onRefresh={syncProfile}>
     <div className="w-full max-w-6xl mx-auto pb-10 animate-fade-in flex flex-col h-full">
-      
+
+      <AnnouncementBar />
+
       <header className="flex flex-col md:flex-row justify-between items-start md:items-center bg-surface p-6 rounded-xl border border-border mb-6 shadow-lg gap-4 shrink-0 transition-colors duration-300">
         
         {/* COLUMN 1 (LEFT) */}

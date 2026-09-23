@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import text
 from database import engine, get_db
 import models
-from routes import profile, portfolio, tasks, subjects, expenses, social, auth_routes, notes, weather
+from routes import profile, portfolio, tasks, subjects, expenses, social, auth_routes, notes, weather, system
 
 logger = logging.getLogger("uvicorn.error")
 
@@ -94,6 +94,7 @@ app.include_router(weather.router)
 app.include_router(social.router)
 app.include_router(auth_routes.router)
 app.include_router(notes.router)
+app.include_router(system.router)
 
 @app.get("/")
 def read_root(db: Session = Depends(get_db)):
