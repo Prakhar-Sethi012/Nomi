@@ -12,6 +12,7 @@ import ExpensesView from './components/ExpensesView';
 import AuthScreen from './components/AuthScreen';
 import SocialRadar from './components/SocialRadar';
 import CloseFriendsView from './components/CloseFriendsView';
+import Help from './components/Help';
 import PrivacyPolicy from './components/PrivacyPolicy';
 import RadialNav from './components/nav/RadialNav';
 import PageTransition from './components/ui/PageTransition';
@@ -158,6 +159,7 @@ function App() {
           
           {/* Close Friends Directory Tab */}
           <button onClick={() => setActiveTab('closeFriends')} className={`px-4 py-2 rounded-md text-sm font-bold transition-all duration-200 ${activeTab === 'closeFriends' ? 'bg-accent text-white shadow' : 'text-textSecondary hover:text-textPrimary hover:bg-surfaceHover'}`}>Close Friends</button>
+          <button onClick={() => setActiveTab('help')} className={`px-4 py-2 rounded-md text-sm font-bold transition-all duration-200 ${activeTab === 'help' ? 'bg-accent text-white shadow' : 'text-textSecondary hover:text-textPrimary hover:bg-surfaceHover'}`}>Help &amp; FAQ</button>
         </div>
         <button onClick={() => setActiveTab('profile')} className={`px-4 py-2 rounded-md text-sm font-bold transition-all duration-200 ${activeTab === 'profile' ? 'bg-accent text-white shadow' : 'text-textSecondary hover:text-textPrimary hover:bg-surfaceHover'}`}>Profile</button>
         {/* Logout Button */}
@@ -209,6 +211,7 @@ function App() {
           {activeTab === 'expenses' && <ExpensesView profile={profile} setProfile={setProfile} />}
           {activeTab === 'radar' && <SocialRadar profile={profile} setProfile={setProfile} />}
           {activeTab === 'closeFriends' && <CloseFriendsView />}
+          {activeTab === 'help' && <Help />}
           {activeTab === 'profile' && <ProfileView profile={profile} setProfile={setProfile} onLogout={handleLogout} />}
         </PageTransition>
       </div>

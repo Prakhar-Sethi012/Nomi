@@ -42,6 +42,7 @@ const NAV_ITEMS = [
   { id: 'links', label: 'Directory', icon: '🔗' },
   { id: 'closeFriends', label: 'Close Friends', icon: '💾' },
   { id: 'timetable', label: 'Timetable', icon: '🗓️' },
+  { id: 'help', label: 'Help & FAQ', icon: '❓' },
   { id: 'logout', label: 'Logout', icon: '🚪', isDanger: true },
 ];
 
