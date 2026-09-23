@@ -51,7 +51,7 @@ export const api = {
   getSubjects: () => fetchAPI('/subjects/'),
   addSubject: (data) => fetchAPI('/subjects/', { method: 'POST', body: JSON.stringify(data) }),
   updateSubject: (id, data) => fetchAPI(`/subjects/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
-  markAttendance: (id, attended) => fetchAPI(`/subjects/${id}/attendance?attended=${attended}`, { method: 'PUT' }),
+  markAttendance: (id, attended, component = 'theory') => fetchAPI(`/subjects/${id}/attendance?attended=${attended}&component=${component}`, { method: 'PUT' }),
   deleteSubject: (id) => fetchAPI(`/subjects/${id}`, { method: 'DELETE' }),
 
   // Expenses

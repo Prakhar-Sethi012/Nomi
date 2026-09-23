@@ -75,6 +75,14 @@ class Subject(Base):
     total_classes = Column(Integer, default=60)
     attended_classes = Column(Integer, default=0)
     conducted_classes = Column(Integer, default=0)
+    # Only meaningful for subject_type == "EMBEDDED": Theory keeps using the
+    # three columns above, Lab gets its own counters so the two can be
+    # logged independently (they run on different days/slots and a student
+    # can attend one without the other). Theory-only/Lab-only subjects never
+    # touch these — their one component still lives in the columns above.
+    lab_total_classes = Column(Integer, default=60)
+    lab_attended_classes = Column(Integer, default=0)
+    lab_conducted_classes = Column(Integer, default=0)
 
 class Expense(Base):
     __tablename__ = "expenses"

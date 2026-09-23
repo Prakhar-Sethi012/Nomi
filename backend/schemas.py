@@ -137,16 +137,21 @@ class SubjectCreate(BaseModel):
     theory_slot: Optional[str] = Field(None, max_length=50)
     lab_slot: Optional[str] = Field(None, max_length=50)
     total_classes: int = Field(60, gt=0, description="Total classes must be greater than 0")
+    # Only used when subject_type is EMBEDDED — see models.Subject.
+    lab_total_classes: int = Field(60, gt=0, description="Lab total classes must be greater than 0")
     room_number: Optional[str] = Field(None, max_length=50)
 
 class SubjectUpdate(BaseModel):
     total_classes: Optional[int] = Field(None, gt=0, description="Cannot be zero or negative")
+    lab_total_classes: Optional[int] = Field(None, gt=0, description="Cannot be zero or negative")
     room_number: Optional[str] = Field(None, max_length=50)
 
 class SubjectResponse(SubjectCreate):
     id: int
     attended_classes: int = Field(..., ge=0)
     conducted_classes: int = Field(..., ge=0)
+    lab_attended_classes: int = Field(..., ge=0)
+    lab_conducted_classes: int = Field(..., ge=0)
 
     class Config:
         from_attributes = True

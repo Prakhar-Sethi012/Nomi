@@ -29,10 +29,96 @@ function AttendanceRing({ percent, conducted }) {
   );
 }
 
+// The Absent/Present pair (or the "maxed out" message in its place) — shared
+// by the plain single-component card and each half of an expanded Embedded
+// course, so the swap animation only lives in one place.
+function AttendanceButtons({ conducted, total, onLog }) {
+  const m = useAppMotion();
+  const isMaxed = conducted >= total;
+
+  return (
+    <div className="flex gap-2 mt-1 relative">
+      <AnimatePresence mode="wait" initial={false}>
+        {isMaxed ? (
+          <motion.div
+            key="maxed"
+            variants={scaleIn}
+            initial="hidden"
+            animate="visible"
+            exit="exit"
+            transition={m.fast}
+            className="flex-1 bg-surfaceHover border border-border text-textSecondary text-[10px] uppercase tracking-wider font-bold py-1.5 rounded text-center opacity-70 cursor-not-allowed"
+          >
+            Max Classes Reached
+          </motion.div>
+        ) : (
+          <motion.div
+            key="active"
+            variants={scaleIn}
+            initial="hidden"
+            animate="visible"
+            exit="exit"
+            transition={m.fast}
+            className="flex-1 flex gap-2"
+          >
+            <Pressable
+              onClick={() => onLog(false)}
+              haptic="warning"
+              className="flex-1 bg-surface hover:bg-dangerBg border border-border hover:border-danger/50 text-textSecondary hover:text-danger text-xs font-bold py-1.5 rounded transition-all"
+            >
+              - Absent
+            </Pressable>
+            <Pressable
+              onClick={() => onLog(true)}
+              haptic="success"
+              className="flex-1 bg-surface hover:bg-success/20 border border-border hover:border-success/50 text-textSecondary hover:text-success text-xs font-bold py-1.5 rounded transition-all"
+            >
+              + Present
+            </Pressable>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+// One component's attendance card — `slot` is only passed for an Embedded
+// course's Theory/Lab halves; the plain single-component case (unchanged
+// from before) omits it so its room/class line renders exactly as it always
+// has.
+function ComponentCard({ label, slot, room, attended, conducted, total, onLog }) {
+  const currentPct = conducted === 0 ? 0 : (attended / conducted) * 100;
+
+  return (
+    <div className="bg-background p-3 rounded-lg border border-border flex flex-col gap-2">
+      <div className="flex justify-between items-start">
+        <div className="flex items-center gap-3">
+          <AttendanceRing percent={currentPct} conducted={conducted} />
+          <div>
+            <h3 className="text-sm font-bold text-textPrimary leading-tight">{label}</h3>
+            <p className="text-[10px] font-mono text-textSecondary mt-0.5">
+              {slot && <span className="text-accent">{slot} • </span>}
+              {room || 'Room TBA'} • <NumberRoll value={conducted} />/<NumberRoll value={total} /> Classes
+            </p>
+          </div>
+        </div>
+        <span className={`text-xs font-black ${currentPct >= 75 ? 'text-success' : conducted > 0 ? 'text-danger' : 'text-textSecondary'}`}>
+          {conducted > 0 ? <NumberRoll value={currentPct} decimals={1} suffix="%" /> : 'N/A'}
+        </span>
+      </div>
+      <AttendanceButtons conducted={conducted} total={total} onLog={onLog} />
+    </div>
+  );
+}
+
 function DashboardAttendance() {
   const [subjects, setSubjects] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isExpanded, setIsExpanded] = useState(false);
+  // Which Embedded courses currently have their Theory/Lab breakdown open —
+  // a Set of subject ids, separate from `isExpanded` above (that one is the
+  // whole pile; this is per-course).
+  const [openCourseIds, setOpenCourseIds] = useState(() => new Set());
   const m = useAppMotion();
 
   const fetchSubjects = async () => {
@@ -52,9 +138,9 @@ function DashboardAttendance() {
     fetchSubjects();
   }, []);
 
-  const logAttendance = async (id, isPresent) => {
+  const logAttendance = async (id, isPresent, component = 'theory') => {
     try {
-      await api.markAttendance(id, isPresent);
+      await api.markAttendance(id, isPresent, component);
       fetchSubjects(); // Refresh UI instantly
     } catch (err) {
       // Show an alert if the backend rejects it (e.g. if someone tries to bypass the UI)
@@ -63,79 +149,83 @@ function DashboardAttendance() {
     }
   };
 
-  // Extracted so the collapsed (sliced) and expanded (full) renders in the
-  // return below can both call the exact same card markup.
-  const renderSubjectCard = (sub) => {
-    // Safely default to 0 to prevent NaN crashes
-    const attended = sub.attended_classes || 0;
-    const conducted = sub.conducted_classes || 0;
-    const total = sub.total_classes || 60; // Fallback just in case
-    const currentPct = conducted === 0 ? 0 : (attended / conducted) * 100;
+  const toggleCourseOpen = (id) => {
+    setOpenCourseIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
 
-    // 🔥 NEW: Check if max classes reached
-    const isMaxed = conducted >= total;
+  // Extracted so the collapsed (sliced) and expanded (full) renders in the
+  // return below can both call the exact same card markup. An Embedded
+  // course (Theory + Lab share one Subject row, each with its own counters
+  // — see backend/models.py) collapses to just its name; expanding reveals
+  // the two components as their own ComponentCard, each logging attendance
+  // independently. Theory-only/Lab-only subjects render exactly as before.
+  const renderSubjectCard = (sub) => {
+    if (sub.subject_type !== 'EMBEDDED') {
+      return (
+        <ComponentCard
+          label={sub.name}
+          room={sub.room_number}
+          attended={sub.attended_classes || 0}
+          conducted={sub.conducted_classes || 0}
+          total={sub.total_classes || 60}
+          onLog={(present) => logAttendance(sub.id, present)}
+        />
+      );
+    }
+
+    const isOpen = openCourseIds.has(sub.id);
 
     return (
-      <div className="bg-background p-3 rounded-lg border border-border flex flex-col gap-2">
-
-        <div className="flex justify-between items-start">
-          <div className="flex items-center gap-3">
-            <AttendanceRing percent={currentPct} conducted={conducted} />
-            <div>
-              <h3 className="text-sm font-bold text-textPrimary leading-tight">{sub.name}</h3>
-              <p className="text-[10px] font-mono text-textSecondary mt-0.5">
-                {sub.room_number || 'Room TBA'} • <NumberRoll value={conducted} />/<NumberRoll value={total} /> Classes
-              </p>
-            </div>
-          </div>
-          <span className={`text-xs font-black ${currentPct >= 75 ? 'text-success' : conducted > 0 ? 'text-danger' : 'text-textSecondary'}`}>
-            {conducted > 0 ? <NumberRoll value={currentPct} decimals={1} suffix="%" /> : 'N/A'}
-          </span>
-        </div>
-
-        <div className="flex gap-2 mt-1 relative">
-          <AnimatePresence mode="wait" initial={false}>
-            {isMaxed ? (
-              <motion.div
-                key="maxed"
-                variants={scaleIn}
-                initial="hidden"
-                animate="visible"
-                exit="exit"
-                transition={m.fast}
-                className="flex-1 bg-surfaceHover border border-border text-textSecondary text-[10px] uppercase tracking-wider font-bold py-1.5 rounded text-center opacity-70 cursor-not-allowed"
-              >
-                Max Classes Reached
-              </motion.div>
-            ) : (
-              <motion.div
-                key="active"
-                variants={scaleIn}
-                initial="hidden"
-                animate="visible"
-                exit="exit"
-                transition={m.fast}
-                className="flex-1 flex gap-2"
-              >
-                <Pressable
-                  onClick={() => logAttendance(sub.id, false)}
-                  haptic="warning"
-                  className="flex-1 bg-surface hover:bg-dangerBg border border-border hover:border-danger/50 text-textSecondary hover:text-danger text-xs font-bold py-1.5 rounded transition-all"
-                >
-                  - Absent
-                </Pressable>
-                <Pressable
-                  onClick={() => logAttendance(sub.id, true)}
-                  haptic="success"
-                  className="flex-1 bg-surface hover:bg-success/20 border border-border hover:border-success/50 text-textSecondary hover:text-success text-xs font-bold py-1.5 rounded transition-all"
-                >
-                  + Present
-                </Pressable>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
-
+      <div className="bg-background rounded-lg border border-border overflow-hidden">
+        <Pressable
+          as="div"
+          onClick={() => toggleCourseOpen(sub.id)}
+          className="w-full flex items-center justify-between gap-2 p-3 cursor-pointer text-left"
+        >
+          <h3 className="text-sm font-bold text-textPrimary leading-tight">{sub.name}</h3>
+          <motion.span
+            className="text-textSecondary text-xs shrink-0"
+            animate={{ rotate: isOpen ? 180 : 0 }}
+            transition={m.snappy}
+          >
+            ▾
+          </motion.span>
+        </Pressable>
+        <AnimatePresence initial={false}>
+          {isOpen && (
+            <motion.div
+              key="components"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={m.fast}
+              className="flex flex-col gap-2 p-3 pt-0"
+            >
+              <ComponentCard
+                label="Theory"
+                slot={sub.theory_slot}
+                room={sub.room_number}
+                attended={sub.attended_classes || 0}
+                conducted={sub.conducted_classes || 0}
+                total={sub.total_classes || 60}
+                onLog={(present) => logAttendance(sub.id, present, 'theory')}
+              />
+              <ComponentCard
+                label="Lab"
+                slot={sub.lab_slot}
+                room={sub.room_number}
+                attended={sub.lab_attended_classes || 0}
+                conducted={sub.lab_conducted_classes || 0}
+                total={sub.lab_total_classes || 60}
+                onLog={(present) => logAttendance(sub.id, present, 'lab')}
+              />
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     );
   };
