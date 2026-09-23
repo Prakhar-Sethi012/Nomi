@@ -1,4 +1,4 @@
-const BASE_URL = 'http://localhost:8000';
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
 const fetchAPI = async (endpoint, options = {}) => {
   // 1. Grab the VIP wristband from local storage
   const token = localStorage.getItem('token');
@@ -10,7 +10,7 @@ const fetchAPI = async (endpoint, options = {}) => {
     ...options.headers,
   };
 
-  const response = await fetch(`${BASE_URL}${endpoint}`, { ...options, headers });
+  const response = await fetch(`${API_URL}${endpoint}`, { ...options, headers });
   
   if (!response.ok) {
     if (response.status === 401) {
