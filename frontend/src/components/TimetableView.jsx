@@ -2,12 +2,29 @@ import React, { useState, useEffect, useRef } from 'react';
 import { motion, useInView } from 'motion/react';
 import { api } from '../services/api';
 import { DAYS, TIMES, MASTER_GRID, slotExistsInCell, getSubjectColor, getSubjectForCell as getSubjectForCellShared, isClassActiveNow, getCurrentTimeColumnIndex } from '../utils/timetableUtils';
+import { parseFFCSText } from '../utils/ffcsParser';
+import { haptics } from '../utils/haptics';
 import { useAppMotion } from '../hooks/useAppMotion';
 import PinConfirmModal from './PinConfirmModal'; // 🔥 IMPORT MODAL
 import BottomSheet from './ui/BottomSheet';
 import SegmentedControl from './ui/SegmentedControl';
 import Skeleton from './ui/Skeleton';
 import JumpingDots from './ui/JumpingDots';
+
+// Shared by the manual "Add Subject" form and the VTOP import flow — walks
+// every grid cell the new slot(s) would occupy and reports the first
+// already-scheduled subject found sitting in one of them.
+function findClash(theorySlot, labSlot, existingSubjects) {
+  for (let r = 0; r < MASTER_GRID.length; r++) {
+    for (let c = 0; c < MASTER_GRID[r].length; c++) {
+      const cell = MASTER_GRID[r][c];
+      if (!slotExistsInCell(theorySlot, cell) && !slotExistsInCell(labSlot, cell)) continue;
+      const owner = existingSubjects.find(sub => slotExistsInCell(sub.theory_slot, cell) || slotExistsInCell(sub.lab_slot, cell));
+      if (owner) return { name: owner.name, day: DAYS[r], cell };
+    }
+  }
+  return null;
+}
 
 // The row nearest the middle of the scrollable agenda lifts slightly and
 // takes an accent border — a scroll-centred "you are here" cue. Detection
@@ -74,6 +91,13 @@ function TimetableView() {
   // 🔥 NEW STATE FOR MODAL
   const [deleteSubjectId, setDeleteSubjectId] = useState(null);
 
+  // VTOP import modal state
+  const [showImportModal, setShowImportModal] = useState(false);
+  const [importText, setImportText] = useState('');
+  const [parsedCourses, setParsedCourses] = useState(null);
+  const [importError, setImportError] = useState('');
+  const [isImporting, setIsImporting] = useState(false);
+
   const agendaScrollRef = useRef(null);
   const currentColRef = useRef(null);
   // State, not a ref — the "has it already animated" flag needs to be read
@@ -120,28 +144,11 @@ function TimetableView() {
     const newTheory = formData.theory_slot.toUpperCase();
     const newLab = formData.lab_slot.toUpperCase();
 
-    let hasClash = false;
-    for (let r = 0; r < MASTER_GRID.length; r++) {
-      for (let c = 0; c < MASTER_GRID[r].length; c++) {
-        const cell = MASTER_GRID[r][c];
-        const newWantsBlock = slotExistsInCell(newTheory, cell) || slotExistsInCell(newLab, cell);
-        
-        if (newWantsBlock) {
-          const existingOwner = subjects.find(sub => 
-            slotExistsInCell(sub.theory_slot, cell) || slotExistsInCell(sub.lab_slot, cell)
-          );
-          
-          if (existingOwner) {
-            setErrorMsg(`🚨 CLASH DETECTED: "${existingOwner.name}" is already scheduled during the ${cell} block on ${DAYS[r]}.`);
-            hasClash = true;
-            break;
-          }
-        }
-      }
-      if (hasClash) break;
+    const clash = findClash(newTheory, newLab, subjects);
+    if (clash) {
+      setErrorMsg(`🚨 CLASH DETECTED: "${clash.name}" is already scheduled during the ${clash.cell} block on ${clash.day}.`);
+      return;
     }
-
-    if (hasClash) return;
 
     setIsSaving(true);
     try {
@@ -160,8 +167,55 @@ function TimetableView() {
     try {
       await api.deleteSubject(id);
       fetchSubjects();
-    } catch (err) { 
-      console.error("Delete failed", err); 
+    } catch (err) {
+      console.error("Delete failed", err);
+    }
+  };
+
+  const handleCloseImportModal = () => {
+    setShowImportModal(false);
+    setImportText('');
+    setParsedCourses(null);
+    setImportError('');
+  };
+
+  const handleParseImport = () => {
+    const courses = parseFFCSText(importText);
+    if (courses.length === 0) {
+      setImportError("Couldn't find any courses in that text — make sure you copied the full course registration table and try again.");
+      return;
+    }
+    setImportError('');
+    setParsedCourses(courses);
+  };
+
+  // Saves each parsed course one at a time (not Promise.all) so a clash
+  // detected against a subject imported two courses ago still catches it —
+  // `cumulative` grows as each save lands instead of only ever checking the
+  // subjects that existed before the import started.
+  const handleConfirmImport = async () => {
+    setImportError('');
+    setIsImporting(true);
+    try {
+      let cumulative = subjects;
+      for (const course of parsedCourses) {
+        const clash = findClash(course.theory_slot.toUpperCase(), course.lab_slot.toUpperCase(), cumulative);
+        if (clash) {
+          throw new Error(`🚨 CLASH: "${course.name}" collides with "${clash.name}" during the ${clash.cell} block on ${clash.day}. Remove or fix it in VTOP and re-paste.`);
+        }
+        // faculty isn't part of SubjectCreate — it's preview-only, the
+        // backend has nowhere to store it yet.
+        const { faculty, ...payload } = course;
+        const saved = await api.addSubject(payload);
+        cumulative = [...cumulative, saved];
+      }
+      await fetchSubjects();
+      haptics.success();
+      handleCloseImportModal();
+    } catch (err) {
+      setImportError(err.message || 'Import failed.');
+    } finally {
+      setIsImporting(false);
     }
   };
 
@@ -209,6 +263,9 @@ function TimetableView() {
               { value: 'agenda', label: 'Daily Agenda' },
             ]}
           />
+          <button onClick={() => setShowImportModal(true)} className="shrink-0 flex flex-row items-center justify-center gap-2 bg-background border border-border hover:border-accent text-textPrimary font-bold py-2 px-4 rounded shadow-lg transition-colors">
+            + Import from VTOP
+          </button>
           <button onClick={() => setShowModal(true)} className="shrink-0 flex flex-row items-center justify-center gap-2 bg-accent hover:bg-accentHover text-white font-bold py-2 px-4 rounded shadow-lg transition-colors">
             + Add Subject
           </button>
@@ -257,6 +314,57 @@ function TimetableView() {
             <button type="submit" disabled={isSaving} className="flex-1 bg-accent hover:bg-accentHover disabled:opacity-60 text-white font-bold py-2 rounded transition-colors flex items-center justify-center">{isSaving ? <JumpingDots /> : 'Save Mapping'}</button>
           </div>
         </form>
+      </BottomSheet>
+
+      <BottomSheet isOpen={showImportModal} onClose={handleCloseImportModal} title="Import from VTOP">
+        {!parsedCourses ? (
+          <div className="flex flex-col gap-4">
+            <p className="text-xs text-textSecondary leading-relaxed">
+              Open your VTOP Course Registration page, select the whole table, copy it, and paste it below — Theory and Lab rows of the same Embedded course get merged automatically.
+            </p>
+            <textarea
+              rows={10}
+              value={importText}
+              onChange={e => setImportText(e.target.value)}
+              placeholder="Paste your VTOP course registration table here..."
+              className="w-full p-2 bg-background rounded text-xs text-textPrimary outline-none border border-border focus:border-accent font-mono transition-colors resize-none"
+            />
+            {importError && <div className="bg-dangerBg border border-danger text-danger text-xs p-3 rounded font-mono">{importError}</div>}
+            <div className="flex gap-2 mt-2">
+              <button type="button" onClick={handleCloseImportModal} className="flex-1 bg-surfaceHover hover:bg-border text-textPrimary font-bold py-2 rounded transition-colors">Cancel</button>
+              <button type="button" disabled={!importText.trim()} onClick={handleParseImport} className="flex-1 bg-accent hover:bg-accentHover disabled:opacity-60 text-white font-bold py-2 rounded transition-colors">Parse</button>
+            </div>
+          </div>
+        ) : (
+          <div className="flex flex-col gap-4">
+            <p className="text-xs text-textSecondary">
+              Found <strong className="text-textPrimary">{parsedCourses.length}</strong> course{parsedCourses.length !== 1 ? 's' : ''}. Review, then confirm to add them to your timetable.
+            </p>
+            <div className="flex flex-col gap-2 max-h-64 overflow-y-auto custom-scrollbar pr-1">
+              {parsedCourses.map((c, i) => (
+                <div key={i} className="p-3 bg-background border border-border rounded-lg transition-colors">
+                  <div className="flex justify-between items-start gap-2">
+                    <span className="text-sm font-bold text-textPrimary">{c.name}</span>
+                    <span className="shrink-0 text-[9px] uppercase tracking-wider font-bold bg-surface border border-border px-1.5 py-0.5 rounded text-accent">{c.subject_type}</span>
+                  </div>
+                  <div className="text-[10px] text-textSecondary mt-1.5 flex flex-wrap gap-x-3 gap-y-1">
+                    {c.theory_slot && <span>Theory: <strong className="text-textPrimary font-mono">{c.theory_slot}</strong></span>}
+                    {c.lab_slot && <span>Lab: <strong className="text-textPrimary font-mono">{c.lab_slot}</strong></span>}
+                    {c.room_number && <span>📍 {c.room_number}</span>}
+                    {c.faculty && <span>👤 {c.faculty}</span>}
+                  </div>
+                </div>
+              ))}
+            </div>
+            {importError && <div className="bg-dangerBg border border-danger text-danger text-xs p-3 rounded font-mono">{importError}</div>}
+            <div className="flex gap-2 mt-2">
+              <button type="button" disabled={isImporting} onClick={() => { setParsedCourses(null); setImportError(''); }} className="flex-1 bg-surfaceHover hover:bg-border disabled:opacity-60 text-textPrimary font-bold py-2 rounded transition-colors">Back</button>
+              <button type="button" disabled={isImporting} onClick={handleConfirmImport} className="flex-1 bg-accent hover:bg-accentHover disabled:opacity-60 text-white font-bold py-2 rounded transition-colors flex items-center justify-center">
+                {isImporting ? <JumpingDots /> : `Import ${parsedCourses.length} Course${parsedCourses.length !== 1 ? 's' : ''}`}
+              </button>
+            </div>
+          </div>
+        )}
       </BottomSheet>
 
       {viewMode === 'grid' && (
