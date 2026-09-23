@@ -95,7 +95,7 @@ function NextClassWidget() {
   const timeData = formatSmartTime(isHappeningNow ? minutesLeft : minutesUntil);
 
   return (
-    <div className={`p-6 rounded-xl border shadow-lg flex flex-col justify-center h-32 transition-all duration-300 relative overflow-hidden ${
+    <div className={`p-6 rounded-xl border shadow-lg flex flex-col justify-center min-h-32 transition-all duration-300 relative overflow-hidden ${
       isHappeningNow 
         ? 'bg-success/10 border-success shadow-[0_0_15px_rgba(34,197,94,0.15)]' 
         : 'bg-surface border-border'
@@ -111,7 +111,7 @@ function NextClassWidget() {
         {isHappeningNow ? 'Currently In' : 'Up Next'} • {classInfo.timeStr}
       </p>
       
-      <h2 className="text-xl font-black text-textPrimary line-clamp-1 mb-1">
+      <h2 className="text-xl font-black text-textPrimary line-clamp-2 leading-tight mb-1">
         {classInfo.subject.name}
       </h2>
       

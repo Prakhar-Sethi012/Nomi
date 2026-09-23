@@ -203,7 +203,7 @@ function ScratchpadView({ userId }) {
                       className="bg-background p-4 rounded-xl border border-border hover:border-emerald-500 cursor-pointer transition-colors flex flex-col h-40 group"
                     >
                       <div className="flex justify-between items-start mb-2">
-                        <h3 className="font-bold text-textPrimary text-sm truncate pr-2">{note.title || 'Untitled'}</h3>
+                        <h3 className="font-bold text-textPrimary text-sm line-clamp-2 leading-tight pr-2">{note.title || 'Untitled'}</h3>
                         <button
                           onClick={(e) => { e.stopPropagation(); setDeleteNoteId(note.id); }}
                           className="text-textSecondary hover:text-danger opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity"

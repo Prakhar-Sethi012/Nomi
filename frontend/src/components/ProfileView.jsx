@@ -124,7 +124,13 @@ function ProfileView({ profile, setProfile, onLogout }) {
             {/* PIN CHANGE BLOCK */}
             <motion.div layout transition={m.gentle} className="bg-background p-5 rounded-2xl border border-border">
               <h3 className="text-[10px] uppercase font-bold text-textSecondary tracking-widest block mb-3">Change App PIN</h3>
-              <div className="flex gap-3">
+              {/* flex-col on mobile: two w-full inputs side by side in a plain
+                  `flex` row hit the classic flexbox min-width:auto trap — each
+                  input refused to shrink below its placeholder's natural
+                  width, so on a narrow screen the row overflowed and bled
+                  past the card edge instead of the inputs just getting
+                  narrower. Stacking them on mobile sidesteps that entirely. */}
+              <div className="flex flex-col sm:flex-row gap-3">
                 <input
                   type="text" maxLength="4" placeholder="Current PIN"
                   value={currentPin} onChange={(e) => { setCurrentPin(e.target.value.replace(/[^a-zA-Z0-9]/g, '')); setAnswer(''); }}
