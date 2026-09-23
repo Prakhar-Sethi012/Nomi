@@ -56,13 +56,22 @@ function AnnouncementBar() {
           transition={m.base}
           className="overflow-hidden mb-6 shrink-0"
         >
-          <div className="flex items-center gap-3 bg-gradient-to-r from-amber-600 to-orange-600 text-white px-4 py-3 rounded-xl shadow-lg">
-            <span className="text-lg shrink-0" aria-hidden="true">⚠️</span>
+          {/* This app switches between 6 named themes via [data-theme] (see
+              index.css), not Tailwind's light/dark `dark:` variant, so a
+              hardcoded solid gradient was the one thing on this bar that
+              couldn't adapt. bg-surface/border-border/text-textPrimary
+              already resolve correctly under every theme; amber only carries
+              the accent/icon/border tint (same "amber-500 as the one
+              hardcoded warning color" convention already used elsewhere,
+              since there's no dedicated --color-warning token), so the bar
+              reads as urgent without fighting whichever theme is active. */}
+          <div className="flex items-center gap-3 bg-amber-500/10 border border-amber-500/30 text-textPrimary px-4 py-3 rounded-xl shadow-lg transition-colors duration-300">
+            <span className="text-lg shrink-0 text-amber-500" aria-hidden="true">⚠️</span>
             <p className="flex-1 text-sm font-bold leading-tight">{announcement.message}</p>
             <Pressable
               onClick={handleDismiss}
               haptic="tap"
-              className="shrink-0 w-6 h-6 flex items-center justify-center rounded-full hover:bg-white/20 text-white/90 hover:text-white transition-colors"
+              className="shrink-0 w-6 h-6 flex items-center justify-center rounded-full hover:bg-amber-500/20 text-textSecondary hover:text-amber-600 transition-colors"
               aria-label="Dismiss announcement"
             >
               ✕
