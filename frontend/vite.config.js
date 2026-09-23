@@ -17,19 +17,32 @@ export default defineConfig({
         ignoreURLParametersMatching: [/.*/] 
       },
       manifest: {
-        name: 'VIT Command Center',
-        short_name: 'CommandCenter',
+        // id pins the TWA/Play Store listing to this one stable identity —
+        // without it, a future manifest edit (name, icons, ...) risks
+        // Android treating the update as a different app instead of a
+        // new version of this one.
+        id: '/',
+        name: 'Command Center',
+        short_name: 'Command Center',
         description: 'Personal Student OS & Task Manager',
+        start_url: '/',
+        scope: '/',
         theme_color: '#0f172a',
         background_color: '#0f172a',
         display: 'standalone',
         orientation: 'portrait',
         icons: [
           {
-            src: '/vite.svg', // Temporary icon until you design a custom one
+            src: '/icon-192x192.png',
             sizes: '192x192',
-            type: 'image/svg+xml',
-            purpose: 'any maskable'
+            type: 'image/png',
+            purpose: 'any'
+          },
+          {
+            src: '/icon-512x512.png',
+            sizes: '512x512',
+            type: 'image/png',
+            purpose: 'any'
           }
         ]
       }
