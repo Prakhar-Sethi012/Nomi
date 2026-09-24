@@ -1,10 +1,10 @@
-[
-  {
-    "relation": ["delegate_permission/common.handle_all_urls"],
-    "target": {
-      "namespace": "android_app",
-      "package_name": "com.prakhar.nomi",
-      "sha256_cert_fingerprints": ["INSERT_SHA256_HERE"]
-    }
+[{
+  "relation": ["delegate_permission/common.handle_all_urls"],
+  "target": {
+    "namespace": "android_app",
+    "package_name": "app.vercel.nomi_navy_one.twa",
+    "sha256_cert_fingerprints": [
+      "F3:60:C3:4B:B6:3C:05:8C:F8:3E:A2:D4:92:E5:EB:98:A6:EB:1E:4D:B1:05:42:B0:21:3A:46:49:50:ED:13:3B"
+    ]
   }
-]
+}]
