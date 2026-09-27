@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { api } from '../services/api';
 import Pressable from './ui/Pressable';
@@ -111,9 +111,7 @@ function ComponentCard({ label, slot, room, attended, conducted, total, onLog })
   );
 }
 
-function DashboardAttendance() {
-  const [subjects, setSubjects] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
+function DashboardAttendance({ subjects, isLoading, onSubjectsChange }) {
   const [isExpanded, setIsExpanded] = useState(false);
   // Which Embedded courses currently have their Theory/Lab breakdown open —
   // a Set of subject ids, separate from `isExpanded` above (that one is the
@@ -121,27 +119,10 @@ function DashboardAttendance() {
   const [openCourseIds, setOpenCourseIds] = useState(() => new Set());
   const m = useAppMotion();
 
-  const fetchSubjects = async () => {
-    try {
-      const data = await api.getSubjects();
-      // Force sort by ID to prevent the "Jumping Bug" when updating
-      const sortedData = data.sort((a, b) => a.id - b.id);
-      setSubjects(sortedData);
-    } catch (err) {
-      console.error("Failed to load quick log subjects");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchSubjects();
-  }, []);
-
   const logAttendance = async (id, isPresent, component = 'theory') => {
     try {
       await api.markAttendance(id, isPresent, component);
-      fetchSubjects(); // Refresh UI instantly
+      onSubjectsChange(); // Refresh UI instantly
     } catch (err) {
       // Show an alert if the backend rejects it (e.g. if someone tries to bypass the UI)
       alert(err.message || "Failed to log attendance");

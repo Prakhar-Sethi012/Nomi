@@ -19,6 +19,12 @@ function Dashboard({ profile, setProfile, setActiveTab }) {
   const [isEditingCgpa, setIsEditingCgpa] = useState(false);
   const [tempCgpa, setTempCgpa] = useState(profile?.cgpa ? profile.cgpa.toFixed(2) : "0.00");
 
+  // NextClassWidget and DashboardAttendance both need the same subjects
+  // list — fetched once here and passed down, instead of each widget
+  // independently hitting GET /subjects/ on the same mount.
+  const [subjects, setSubjects] = useState([]);
+  const [isLoadingSubjects, setIsLoadingSubjects] = useState(true);
+
   const today = new Date();
   const dateString = today.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' });
 
@@ -33,10 +39,22 @@ function Dashboard({ profile, setProfile, setActiveTab }) {
     }
   };
 
+  const fetchSubjects = async () => {
+    try {
+      const data = await api.getSubjects();
+      setSubjects(data.sort((a, b) => a.id - b.id));
+    } catch (err) {
+      console.error("Failed to load subjects", err);
+    } finally {
+      setIsLoadingSubjects(false);
+    }
+  };
+
   // 🔥 NEW: Auto-Sync Profile on Mount
   // If you changed Ghost Mode in Radar, this pulls the fresh data the second you open the Dashboard!
   useEffect(() => {
     syncProfile();
+    fetchSubjects();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -174,7 +192,7 @@ function Dashboard({ profile, setProfile, setActiveTab }) {
         {/* 2-Column layout for Quote and Next Class Widget */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
           <motion.div variants={fadeUp}><DailyQuote /></motion.div>
-          <motion.div variants={fadeUp}><NextClassWidget /></motion.div>
+          <motion.div variants={fadeUp}><NextClassWidget subjects={subjects} isLoading={isLoadingSubjects} /></motion.div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start flex-1 min-h-0">
@@ -182,7 +200,7 @@ function Dashboard({ profile, setProfile, setActiveTab }) {
             <TasksWidget setProfile={setProfile} />
           </motion.div>
           <motion.div variants={fadeUp} className="lg:col-span-4 w-full">
-            <DashboardAttendance />
+            <DashboardAttendance subjects={subjects} isLoading={isLoadingSubjects} onSubjectsChange={fetchSubjects} />
           </motion.div>
           <motion.div variants={fadeUp} className="lg:col-span-3 w-full">
             <ExpensesWidget profile={profile} setActiveTab={setActiveTab} />

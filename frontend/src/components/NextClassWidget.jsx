@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { api } from '../services/api';
 import { getTodayClasses, getNextClassInfo } from '../utils/timetableUtils';
 import Skeleton from './ui/Skeleton';
 
@@ -15,25 +14,8 @@ const formatSmartTime = (minutes) => {
   return { value: days, unit: `day${days !== 1 ? 's' : ''}` };
 };
 
-function NextClassWidget() {
-  const [subjects, setSubjects] = useState([]);
+function NextClassWidget({ subjects, isLoading }) {
   const [timeInfo, setTimeInfo] = useState({ status: 'LOADING' });
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchSubjects = async () => {
-      try {
-        const data = await api.getSubjects();
-        setSubjects(data);
-      } catch (err) {
-        console.error("Failed to fetch subjects for widget", err);
-        setTimeInfo({ status: 'ERROR' });
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    fetchSubjects();
-  }, []);
 
   useEffect(() => {
     // No early-return on an empty subjects array here: getTodayClasses/

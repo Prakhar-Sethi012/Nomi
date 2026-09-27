@@ -1,22 +1,42 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, lazy, Suspense } from 'react';
 import { api } from './services/api';
 import { offlineSync } from './services/offlineSync';
-import ProfileView from './components/ProfileView';
 // --- Views & Components ---
+// Dashboard and AuthScreen stay as regular imports — one of them is what
+// almost every session opens to first, so splitting either out would just
+// trade the current single upfront download for an extra round-trip on the
+// most common path. Everything else here is a tab most sessions never even
+// visit, so it's split into its own chunk and only fetched the first time
+// its tab is actually opened, instead of every session paying for all of it
+// upfront in one bundle.
 import Dashboard from './components/Dashboard';
-import LinksView from './components/LinksView';
-import ScratchpadView from './components/ScratchpadView';
-import AttendanceStrategyView from './components/AttendanceStrategyView';
-import TimetableView from './components/TimetableView';
-import ExpensesView from './components/ExpensesView';
 import AuthScreen from './components/AuthScreen';
-import SocialRadar from './components/SocialRadar';
-import CloseFriendsView from './components/CloseFriendsView';
-import Help from './components/Help';
-import PrivacyPolicy from './components/PrivacyPolicy';
 import RadialNav from './components/nav/RadialNav';
 import PageTransition from './components/ui/PageTransition';
 import ConfirmModal from './components/ui/ConfirmModal';
+
+const ProfileView = lazy(() => import('./components/ProfileView'));
+const LinksView = lazy(() => import('./components/LinksView'));
+const ScratchpadView = lazy(() => import('./components/ScratchpadView'));
+const AttendanceStrategyView = lazy(() => import('./components/AttendanceStrategyView'));
+const TimetableView = lazy(() => import('./components/TimetableView'));
+const ExpensesView = lazy(() => import('./components/ExpensesView'));
+const SocialRadar = lazy(() => import('./components/SocialRadar'));
+const CloseFriendsView = lazy(() => import('./components/CloseFriendsView'));
+const Help = lazy(() => import('./components/Help'));
+const PrivacyPolicy = lazy(() => import('./components/PrivacyPolicy'));
+
+// Shared fallback for every lazy-loaded tab's Suspense boundary — a tab's
+// chunk is only a beat behind a warm cache, so this keeps the same
+// font-mono/animate-pulse language as the full-screen loading gate below
+// instead of introducing a second, different-looking spinner.
+function RouteFallback() {
+  return (
+    <div className="w-full py-24 flex items-center justify-center font-mono text-accent animate-pulse">
+      Loading...
+    </div>
+  );
+}
 
 // Public, no-login pages live outside the whole auth/profile lifecycle —
 // checked once here (not in state) since it only ever needs the URL the
@@ -107,7 +127,11 @@ function App() {
   // 🌐 PUBLIC ROUTE: no auth gate, no backend call — Google Play needs this
   // URL to load the Privacy Policy on its own, logged out.
   if (isPrivacyRoute) {
-    return <PrivacyPolicy />;
+    return (
+      <Suspense fallback={<RouteFallback />}>
+        <PrivacyPolicy />
+      </Suspense>
+    );
   }
 
   if (isLoading) {
@@ -203,16 +227,18 @@ function App() {
 
       <div className="w-full max-w-6xl flex justify-center pb-[calc(120px+env(safe-area-inset-bottom))] md:pb-0">
         <PageTransition tabKey={activeTab}>
-          {activeTab === 'dashboard' && <Dashboard profile={profile} setProfile={setProfile} setActiveTab={setActiveTab} />}
-          {activeTab === 'scratchpad' && <ScratchpadView userId={profile.id} />}
-          {activeTab === 'links' && <LinksView userId={profile.id} />}
-          {activeTab === 'timetable' && <TimetableView />}
-          {activeTab === 'strategy' && <AttendanceStrategyView />}
-          {activeTab === 'expenses' && <ExpensesView profile={profile} setProfile={setProfile} />}
-          {activeTab === 'radar' && <SocialRadar profile={profile} setProfile={setProfile} />}
-          {activeTab === 'closeFriends' && <CloseFriendsView />}
-          {activeTab === 'help' && <Help />}
-          {activeTab === 'profile' && <ProfileView profile={profile} setProfile={setProfile} onLogout={handleLogout} />}
+          <Suspense fallback={<RouteFallback />}>
+            {activeTab === 'dashboard' && <Dashboard profile={profile} setProfile={setProfile} setActiveTab={setActiveTab} />}
+            {activeTab === 'scratchpad' && <ScratchpadView userId={profile.id} />}
+            {activeTab === 'links' && <LinksView userId={profile.id} />}
+            {activeTab === 'timetable' && <TimetableView />}
+            {activeTab === 'strategy' && <AttendanceStrategyView />}
+            {activeTab === 'expenses' && <ExpensesView profile={profile} setProfile={setProfile} />}
+            {activeTab === 'radar' && <SocialRadar profile={profile} setProfile={setProfile} />}
+            {activeTab === 'closeFriends' && <CloseFriendsView />}
+            {activeTab === 'help' && <Help />}
+            {activeTab === 'profile' && <ProfileView profile={profile} setProfile={setProfile} onLogout={handleLogout} />}
+          </Suspense>
         </PageTransition>
       </div>
 
