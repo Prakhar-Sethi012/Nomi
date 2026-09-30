@@ -1,5 +1,6 @@
 import { useRef } from 'react';
-import { useMotionValue, animate } from 'motion/react';
+import { useMotionValue, useMotionValueEvent, animate } from 'motion/react';
+import { haptics } from '../utils/haptics';
 
 // Pixels of horizontal drag that move the wheel by exactly one 45° slot —
 // tuned for a comfortable thumb swipe, not too twitchy or too sluggish.
@@ -21,6 +22,21 @@ export function useRotaryDrag(anglePerSlot, m) {
   const rotation = useMotionValue(0);
   const dragStartRotation = useRef(0);
   const degreesPerPixel = anglePerSlot / PIXELS_PER_SLOT;
+
+  // A real dial clicks once per detent, not once per pixel — this fires a
+  // single micro-vibration exactly when the nearest slot changes, whether
+  // that's from an in-progress drag or the release-snap animation settling
+  // across a boundary. Tracked in a ref (not state) so it never triggers a
+  // re-render of its own; the wheel's visuals are already driven entirely
+  // off the `rotation` motion value.
+  const lastSlotRef = useRef(0);
+  useMotionValueEvent(rotation, 'change', (latest) => {
+    const slot = Math.round(latest / anglePerSlot);
+    if (slot !== lastSlotRef.current) {
+      lastSlotRef.current = slot;
+      haptics.selection();
+    }
+  });
 
   const onPanStart = () => {
     dragStartRotation.current = rotation.get();
