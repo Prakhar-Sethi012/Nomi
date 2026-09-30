@@ -15,7 +15,7 @@ A mobile-first, installable Student OS — timetable, attendance, expenses, note
 [![PostgreSQL](https://img.shields.io/badge/Postgres-Neon-4169E1?logo=postgresql&logoColor=white)](backend/database.py)
 [![PWA](https://img.shields.io/badge/PWA-installable-5A0FC8?logo=pwa&logoColor=white)](frontend/vite.config.js)
 
-[Live App](https://nomi-navy-one.vercel.app) · [Report a Bug](https://github.com/Prakhar-Sethi012/student-dashboard-pwa/issues)
+[Live App](https://nomi-navy-one.vercel.app) · [Report a Bug](https://github.com/Prakhar-Sethi012/Nomi/issues)
 
 </div>
 

@@ -5,5 +5,4 @@ __pycache__/
 # Security
 .env
 .claude/
-.claude
 skills.md
