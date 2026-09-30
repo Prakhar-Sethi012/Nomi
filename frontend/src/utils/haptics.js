@@ -15,8 +15,15 @@ const fire = (pattern) => {
 };
 
 export const haptics = {
+  // Lightest tier — scroll/dial detents (a new slot centering), fired
+  // once per crossing rather than continuously.
   selection: () => fire(5),
+  // Standard taps: buttons, tabs, toggles.
+  light: () => fire(10),
   tap: () => fire(8),
+  // Primary actions with a real side effect worth a firmer confirmation
+  // (e.g. attendance logging) without escalating to a full pattern.
+  medium: () => fire(25),
   success: () => fire([12, 40, 18]),
   warning: () => fire([16, 60, 16]),
   error: () => fire([24, 50, 24, 50, 24]),

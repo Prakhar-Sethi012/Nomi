@@ -1,6 +1,7 @@
 import React, { useState, useEffect, lazy, Suspense } from 'react';
 import { api } from './services/api';
 import { offlineSync } from './services/offlineSync';
+import { haptics } from './utils/haptics';
 // --- Views & Components ---
 // Dashboard and AuthScreen stay as regular imports — one of them is what
 // almost every session opens to first, so splitting either out would just
@@ -118,7 +119,14 @@ function App() {
     setProfile(null);
   };
 
-  const handleLogout = () => setShowLogoutConfirm(true);
+  const handleLogout = () => { haptics.light(); setShowLogoutConfirm(true); };
+
+  // Every primary nav trigger (desktop tabs, the two pinned mobile corner
+  // buttons) routes through this instead of calling setActiveTab directly,
+  // so switching tabs always gets the same light tap feedback — RadialNav's
+  // own dial already fires its own haptic on selection, so it isn't wired
+  // through here.
+  const selectTab = (tab) => { haptics.light(); setActiveTab(tab); };
 
   // =========================================
   // RENDER BLOCKS
@@ -173,19 +181,19 @@ function App() {
 
         {/* Navigation Tabs */}
         <div className="flex flex-wrap gap-1 justify-center md:justify-start items-center flex-1">
-          <button onClick={() => setActiveTab('dashboard')} className={`px-4 py-2 rounded-md text-sm font-bold transition-all duration-200 ${activeTab === 'dashboard' ? 'bg-accent text-white shadow' : 'text-textSecondary hover:text-textPrimary hover:bg-surfaceHover'}`}>Dashboard</button>
-          <button onClick={() => setActiveTab('scratchpad')} className={`px-4 py-2 rounded-md text-sm font-bold transition-all duration-200 ${activeTab === 'scratchpad' ? 'bg-accent text-white shadow' : 'text-textSecondary hover:text-textPrimary hover:bg-surfaceHover'}`}>Scratchpad</button>
-          <button onClick={() => setActiveTab('links')} className={`px-4 py-2 rounded-md text-sm font-bold transition-all duration-200 ${activeTab === 'links' ? 'bg-accent text-white shadow' : 'text-textSecondary hover:text-textPrimary hover:bg-surfaceHover'}`}>Directory</button>
-          <button onClick={() => setActiveTab('strategy')} className={`px-4 py-2 rounded-md text-sm font-bold transition-all duration-200 ${activeTab === 'strategy' ? 'bg-accent text-white shadow' : 'text-textSecondary hover:text-textPrimary hover:bg-surfaceHover'}`}>Strategy</button>
-          <button onClick={() => setActiveTab('timetable')} className={`px-4 py-2 rounded-md text-sm font-bold transition-all duration-200 ${activeTab === 'timetable' ? 'bg-accent text-white shadow' : 'text-textSecondary hover:text-textPrimary hover:bg-surfaceHover'}`}>Timetable</button>
-          <button onClick={() => setActiveTab('expenses')} className={`px-4 py-2 rounded-md text-sm font-bold transition-all duration-200 flex items-center gap-2 ${activeTab === 'expenses' ? 'bg-success text-white shadow' : 'text-textSecondary hover:text-textPrimary hover:bg-surfaceHover'}`}>Finance</button>
-          <button onClick={() => setActiveTab('radar')} className={`px-4 py-2 rounded-md text-sm font-bold transition-all duration-200 ${activeTab === 'radar' ? 'bg-accent text-white shadow' : 'text-textSecondary hover:text-textPrimary hover:bg-surfaceHover'}`}>Radar</button>
+          <button onClick={() => selectTab('dashboard')} className={`px-4 py-2 rounded-md text-sm font-bold transition-all duration-200 ${activeTab === 'dashboard' ? 'bg-accent text-white shadow' : 'text-textSecondary hover:text-textPrimary hover:bg-surfaceHover'}`}>Dashboard</button>
+          <button onClick={() => selectTab('scratchpad')} className={`px-4 py-2 rounded-md text-sm font-bold transition-all duration-200 ${activeTab === 'scratchpad' ? 'bg-accent text-white shadow' : 'text-textSecondary hover:text-textPrimary hover:bg-surfaceHover'}`}>Scratchpad</button>
+          <button onClick={() => selectTab('links')} className={`px-4 py-2 rounded-md text-sm font-bold transition-all duration-200 ${activeTab === 'links' ? 'bg-accent text-white shadow' : 'text-textSecondary hover:text-textPrimary hover:bg-surfaceHover'}`}>Directory</button>
+          <button onClick={() => selectTab('strategy')} className={`px-4 py-2 rounded-md text-sm font-bold transition-all duration-200 ${activeTab === 'strategy' ? 'bg-accent text-white shadow' : 'text-textSecondary hover:text-textPrimary hover:bg-surfaceHover'}`}>Strategy</button>
+          <button onClick={() => selectTab('timetable')} className={`px-4 py-2 rounded-md text-sm font-bold transition-all duration-200 ${activeTab === 'timetable' ? 'bg-accent text-white shadow' : 'text-textSecondary hover:text-textPrimary hover:bg-surfaceHover'}`}>Timetable</button>
+          <button onClick={() => selectTab('expenses')} className={`px-4 py-2 rounded-md text-sm font-bold transition-all duration-200 flex items-center gap-2 ${activeTab === 'expenses' ? 'bg-success text-white shadow' : 'text-textSecondary hover:text-textPrimary hover:bg-surfaceHover'}`}>Finance</button>
+          <button onClick={() => selectTab('radar')} className={`px-4 py-2 rounded-md text-sm font-bold transition-all duration-200 ${activeTab === 'radar' ? 'bg-accent text-white shadow' : 'text-textSecondary hover:text-textPrimary hover:bg-surfaceHover'}`}>Radar</button>
           
           {/* Close Friends Directory Tab */}
-          <button onClick={() => setActiveTab('closeFriends')} className={`px-4 py-2 rounded-md text-sm font-bold transition-all duration-200 ${activeTab === 'closeFriends' ? 'bg-accent text-white shadow' : 'text-textSecondary hover:text-textPrimary hover:bg-surfaceHover'}`}>Close Friends</button>
-          <button onClick={() => setActiveTab('help')} className={`px-4 py-2 rounded-md text-sm font-bold transition-all duration-200 ${activeTab === 'help' ? 'bg-accent text-white shadow' : 'text-textSecondary hover:text-textPrimary hover:bg-surfaceHover'}`}>Help &amp; FAQ</button>
+          <button onClick={() => selectTab('closeFriends')} className={`px-4 py-2 rounded-md text-sm font-bold transition-all duration-200 ${activeTab === 'closeFriends' ? 'bg-accent text-white shadow' : 'text-textSecondary hover:text-textPrimary hover:bg-surfaceHover'}`}>Close Friends</button>
+          <button onClick={() => selectTab('help')} className={`px-4 py-2 rounded-md text-sm font-bold transition-all duration-200 ${activeTab === 'help' ? 'bg-accent text-white shadow' : 'text-textSecondary hover:text-textPrimary hover:bg-surfaceHover'}`}>Help &amp; FAQ</button>
         </div>
-        <button onClick={() => setActiveTab('profile')} className={`px-4 py-2 rounded-md text-sm font-bold transition-all duration-200 ${activeTab === 'profile' ? 'bg-accent text-white shadow' : 'text-textSecondary hover:text-textPrimary hover:bg-surfaceHover'}`}>Profile</button>
+        <button onClick={() => selectTab('profile')} className={`px-4 py-2 rounded-md text-sm font-bold transition-all duration-200 ${activeTab === 'profile' ? 'bg-accent text-white shadow' : 'text-textSecondary hover:text-textPrimary hover:bg-surfaceHover'}`}>Profile</button>
         {/* Logout Button */}
         <button 
           onClick={handleLogout}
@@ -200,7 +208,7 @@ function App() {
           RadialNav's bottom cluster since it's anchored to the opposite
           corner of the screen, not the FAB. */}
       <button
-        onClick={() => setActiveTab('profile')}
+        onClick={() => selectTab('profile')}
         aria-label="Profile"
         title="Profile"
         className={`md:hidden fixed z-30 w-11 h-11 rounded-full shadow-lg border-2 flex items-center justify-center text-lg transition-colors top-[calc(1rem+env(safe-area-inset-top))] right-4 ${
@@ -215,7 +223,7 @@ function App() {
           circular geometry at all), just anchored to the opposite bottom
           corner instead of top-right. */}
       <button
-        onClick={() => setActiveTab('dashboard')}
+        onClick={() => selectTab('dashboard')}
         aria-label="Home"
         title="Home"
         className={`md:hidden fixed z-30 w-11 h-11 rounded-full shadow-lg border-2 flex items-center justify-center text-lg transition-colors bottom-[calc(1.5rem+env(safe-area-inset-bottom))] left-4 ${
