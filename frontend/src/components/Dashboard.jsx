@@ -9,10 +9,12 @@ import DashboardAttendance from './DashboardAttendance';
 import DailyQuote from './DailyQuote';
 import ThemeToggle from './ThemeToggle';
 import { api } from '../services/api';
+import { haptics } from '../utils/haptics';
 import NextClassWidget from './NextClassWidget';
 import NumberRoll from './ui/NumberRoll';
 import PullToRefresh from './ui/PullToRefresh';
 import SlotMachineText from './ui/SlotMachineText';
+import Toast from './ui/Toast';
 import { staggerParent, fadeUp } from '../motion/variants';
 
 function Dashboard({ profile, setProfile, setActiveTab }) {
@@ -24,6 +26,7 @@ function Dashboard({ profile, setProfile, setActiveTab }) {
   // independently hitting GET /subjects/ on the same mount.
   const [subjects, setSubjects] = useState([]);
   const [isLoadingSubjects, setIsLoadingSubjects] = useState(true);
+  const [toastMessage, setToastMessage] = useState(null);
 
   const today = new Date();
   const dateString = today.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' });
@@ -75,6 +78,39 @@ function Dashboard({ profile, setProfile, setActiveTab }) {
     }
   };
 
+  // Optimistic: the count/percentage update synchronously (same increment
+  // rule the backend applies — conducted always, attended only if present),
+  // and the actual request fires in the background. A failure rolls the
+  // snapshot back and surfaces a toast instead of alert()'s blocking modal,
+  // which would otherwise undercut the whole point of not making the tap
+  // wait on the network.
+  const logAttendance = async (id, isPresent, component = 'theory') => {
+    haptics.medium();
+    const snapshot = subjects;
+    setSubjects(prev => prev.map(sub => {
+      if (sub.id !== id) return sub;
+      if (component === 'lab') {
+        return {
+          ...sub,
+          lab_conducted_classes: (sub.lab_conducted_classes || 0) + 1,
+          lab_attended_classes: (sub.lab_attended_classes || 0) + (isPresent ? 1 : 0),
+        };
+      }
+      return {
+        ...sub,
+        conducted_classes: (sub.conducted_classes || 0) + 1,
+        attended_classes: (sub.attended_classes || 0) + (isPresent ? 1 : 0),
+      };
+    }));
+
+    try {
+      await api.markAttendance(id, isPresent, component);
+    } catch (err) {
+      setSubjects(snapshot);
+      setToastMessage(err.message || 'Failed to log attendance');
+    }
+  };
+
   const handleGhostModeToggle = async () => {
     // Optimistic UI update for snappy feel
     const newGhostState = !profile.is_ghost;
@@ -94,6 +130,7 @@ function Dashboard({ profile, setProfile, setActiveTab }) {
   };
 
   return (
+    <>
     <PullToRefresh onRefresh={syncProfile}>
     <div className="w-full max-w-6xl mx-auto pb-10 animate-fade-in flex flex-col h-full">
 
@@ -200,7 +237,7 @@ function Dashboard({ profile, setProfile, setActiveTab }) {
             <TasksWidget setProfile={setProfile} />
           </motion.div>
           <motion.div variants={fadeUp} className="lg:col-span-4 w-full">
-            <DashboardAttendance subjects={subjects} isLoading={isLoadingSubjects} onSubjectsChange={fetchSubjects} />
+            <DashboardAttendance subjects={subjects} isLoading={isLoadingSubjects} onLogAttendance={logAttendance} />
           </motion.div>
           <motion.div variants={fadeUp} className="lg:col-span-3 w-full">
             <ExpensesWidget profile={profile} setActiveTab={setActiveTab} />
@@ -213,6 +250,12 @@ function Dashboard({ profile, setProfile, setActiveTab }) {
       </motion.div>
     </div>
     </PullToRefresh>
+    {/* Rendered outside PullToRefresh deliberately: that wrapper's motion.div
+        always carries a live `transform` (bound to its drag `y`), which
+        would make a `position: fixed` descendant fix relative to it instead
+        of the real viewport. */}
+    <Toast message={toastMessage} onDismiss={() => setToastMessage(null)} />
+    </>
   );
 }
 

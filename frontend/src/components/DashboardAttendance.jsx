@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
-import { api } from '../services/api';
 import Pressable from './ui/Pressable';
 import NumberRoll from './ui/NumberRoll';
 import Skeleton from './ui/Skeleton';
 import { useAppMotion } from '../hooks/useAppMotion';
+import { haptics } from '../utils/haptics';
 import { scaleIn } from '../motion/variants';
 
 // How many cards visually peek out of the collapsed stack — same default
@@ -63,14 +63,12 @@ function AttendanceButtons({ conducted, total, onLog }) {
           >
             <Pressable
               onClick={() => onLog(false)}
-              haptic="warning"
               className="flex-1 bg-surface hover:bg-dangerBg border border-border hover:border-danger/50 text-textSecondary hover:text-danger text-xs font-bold py-1.5 rounded transition-all"
             >
               - Absent
             </Pressable>
             <Pressable
               onClick={() => onLog(true)}
-              haptic="success"
               className="flex-1 bg-surface hover:bg-success/20 border border-border hover:border-success/50 text-textSecondary hover:text-success text-xs font-bold py-1.5 rounded transition-all"
             >
               + Present
@@ -111,24 +109,13 @@ function ComponentCard({ label, slot, room, attended, conducted, total, onLog })
   );
 }
 
-function DashboardAttendance({ subjects, isLoading, onSubjectsChange }) {
+function DashboardAttendance({ subjects, isLoading, onLogAttendance }) {
   const [isExpanded, setIsExpanded] = useState(false);
   // Which Embedded courses currently have their Theory/Lab breakdown open —
   // a Set of subject ids, separate from `isExpanded` above (that one is the
   // whole pile; this is per-course).
   const [openCourseIds, setOpenCourseIds] = useState(() => new Set());
   const m = useAppMotion();
-
-  const logAttendance = async (id, isPresent, component = 'theory') => {
-    try {
-      await api.markAttendance(id, isPresent, component);
-      onSubjectsChange(); // Refresh UI instantly
-    } catch (err) {
-      // Show an alert if the backend rejects it (e.g. if someone tries to bypass the UI)
-      alert(err.message || "Failed to log attendance");
-      console.error("Failed to log attendance");
-    }
-  };
 
   const toggleCourseOpen = (id) => {
     setOpenCourseIds(prev => {
@@ -153,7 +140,7 @@ function DashboardAttendance({ subjects, isLoading, onSubjectsChange }) {
           attended={sub.attended_classes || 0}
           conducted={sub.conducted_classes || 0}
           total={sub.total_classes || 60}
-          onLog={(present) => logAttendance(sub.id, present)}
+          onLog={(present) => onLogAttendance(sub.id, present)}
         />
       );
     }
@@ -193,7 +180,7 @@ function DashboardAttendance({ subjects, isLoading, onSubjectsChange }) {
                 attended={sub.attended_classes || 0}
                 conducted={sub.conducted_classes || 0}
                 total={sub.total_classes || 60}
-                onLog={(present) => logAttendance(sub.id, present, 'theory')}
+                onLog={(present) => onLogAttendance(sub.id, present, 'theory')}
               />
               <ComponentCard
                 label="Lab"
@@ -202,7 +189,7 @@ function DashboardAttendance({ subjects, isLoading, onSubjectsChange }) {
                 attended={sub.lab_attended_classes || 0}
                 conducted={sub.lab_conducted_classes || 0}
                 total={sub.lab_total_classes || 60}
-                onLog={(present) => logAttendance(sub.id, present, 'lab')}
+                onLog={(present) => onLogAttendance(sub.id, present, 'lab')}
               />
             </motion.div>
           )}
@@ -257,7 +244,7 @@ function DashboardAttendance({ subjects, isLoading, onSubjectsChange }) {
           same card, same `layout` prop, same key, the whole way through, so
           the transition is one continuous FLIP rather than a swap. */}
       <div
-        onClick={() => { if (!isExpanded && subjects.length > 1) setIsExpanded(true); }}
+        onClick={() => { if (!isExpanded && subjects.length > 1) { haptics.light(); setIsExpanded(true); } }}
         className={`flex-1 md:min-h-0 overflow-visible md:overflow-y-auto custom-scrollbar pr-2 flex flex-col gap-3 ${
           !isExpanded && subjects.length > 1 ? 'cursor-pointer' : ''
         }`}
