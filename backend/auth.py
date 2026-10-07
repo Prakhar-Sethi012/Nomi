@@ -68,6 +68,6 @@ def get_current_user(
 
     user = db.query(models.Profile).filter(models.Profile.id == int(user_id)).first()
     if user is None:
-        raise HTTPException(status_code=404, detail="User not found")
+        raise HTTPException(status_code=401, detail="User not found. Please log in again.")
     
     return user

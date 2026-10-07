@@ -21,6 +21,18 @@ IS_PRODUCTION = ENVIRONMENT == "production"
 
 models.Base.metadata.create_all(bind=engine)
 
+# Auto-migrate schema updates for existing tables
+with engine.connect() as conn:
+    for stmt in [
+        "ALTER TABLE tasks ADD COLUMN due_time VARCHAR;",
+        "ALTER TABLE tasks ADD COLUMN duration INTEGER;",
+    ]:
+        try:
+            conn.execute(text(stmt))
+            conn.commit()
+        except Exception:
+            conn.rollback()
+
 app = FastAPI(
     # Swagger/ReDoc/the raw OpenAPI schema are a free map of every route,
     # model, and field constraint to anyone who asks — only wire them up
