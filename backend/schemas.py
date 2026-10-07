@@ -100,6 +100,8 @@ class TaskCreate(BaseModel):
     tags: List[Tag] = Field(default_factory=list, max_length=20)
     is_todo: Optional[bool] = False
     frequency: Optional[str] = Field("Once", max_length=20) # 🔥 NEW
+    due_time: Optional[str] = Field(None, max_length=10)
+    duration: Optional[int] = Field(None, ge=0, description="Duration in minutes")
 
 class TaskUpdate(BaseModel):
     title: Optional[str] = Field(None, min_length=1, max_length=100)
@@ -108,6 +110,8 @@ class TaskUpdate(BaseModel):
     status: Optional[str] = Field(None, max_length=50)
     is_todo: Optional[bool] = None
     frequency: Optional[str] = Field(None, max_length=20) # 🔥 NEW
+    due_time: Optional[str] = Field(None, max_length=10)
+    duration: Optional[int] = Field(None, ge=0)
 
 class TaskResponse(BaseModel):
     id: int
@@ -119,6 +123,8 @@ class TaskResponse(BaseModel):
     completed_at: Optional[datetime.datetime] = None
     is_todo: bool
     frequency: str # 🔥 NEW
+    due_time: Optional[str] = None
+    duration: Optional[int] = None
 
     @field_validator('frequency', mode='before')
     @classmethod

@@ -7,14 +7,17 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Fetch the database URL
-SQLALCHEMY_DATABASE_URL = os.getenv("DATABASE_URL")
+SQLALCHEMY_DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./nomi.db")
 
 # Create the SQLAlchemy engine
 # pool_pre_ping tests each connection with a lightweight query before handing
 # it to a request — without it, a connection Postgres dropped (idle timeout,
 # restart, load balancer) surfaces as a hard 500 on whatever request happens
 # to grab it next, instead of transparently reconnecting.
-engine = create_engine(SQLALCHEMY_DATABASE_URL, pool_pre_ping=True)
+if SQLALCHEMY_DATABASE_URL.startswith("sqlite"):
+    engine = create_engine(SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False})
+else:
+    engine = create_engine(SQLALCHEMY_DATABASE_URL, pool_pre_ping=True)
 
 # Create a sessionmaker to talk to the database
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)

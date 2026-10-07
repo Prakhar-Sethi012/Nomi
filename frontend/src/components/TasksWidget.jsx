@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'motion/react';
+import { Link } from 'react-router-dom';
 import { api } from '../services/api';
 import Pressable from './ui/Pressable';
 import NotificationStack from './ui/NotificationStack';
@@ -31,7 +32,22 @@ function TasksWidget({ setProfile }) {
   const [showForm, setShowForm] = useState(false);
   const [editingTaskId, setEditingTaskId] = useState(null);
 
-  const [formData, setFormData] = useState({ title: '', due_date: '', tags: '', frequency: 'Once' });
+  const getTodayDefaultInput = () => {
+    const d = new Date();
+    d.setMinutes(0, 0, 0);
+    d.setHours(d.getHours() + 1);
+    const offset = d.getTimezoneOffset() * 60000;
+    return new Date(d.getTime() - offset).toISOString().slice(0, 16);
+  };
+
+  const [formData, setFormData] = useState({
+    title: '',
+    due_date: getTodayDefaultInput(),
+    due_time: '',
+    duration: 30,
+    tags: '',
+    frequency: 'Once'
+  });
 
   // Mirrors completingTasks so the unmount-cleanup effect below can always see
   // the latest timers without re-running on every tick.
@@ -74,6 +90,8 @@ function TasksWidget({ setProfile }) {
     setFormData({
       title: task.title,
       due_date: formatForInput(task.due_date),
+      due_time: task.due_time || '',
+      duration: task.duration != null ? task.duration : 30,
       tags: task.tags.join(', '),
       frequency: task.frequency || 'Once'
     });
@@ -89,18 +107,27 @@ function TasksWidget({ setProfile }) {
       try { isoDate = new Date(formData.due_date).toISOString(); } 
       catch (e) { return setError('Invalid date selection.'); }
 
+      const payload = {
+        title: formData.title,
+        due_date: isoDate,
+        due_time: formData.due_time || null,
+        duration: formData.duration ? parseInt(formData.duration, 10) : null,
+        tags: tagsArray,
+        frequency: formData.frequency
+      };
+
       if (editingTaskId) {
-        const payload = { title: formData.title, due_date: isoDate, tags: tagsArray, frequency: formData.frequency };
         await api.updateTask(editingTaskId, payload);
       } else {
-        const payload = { title: formData.title, task_type: 'Work', due_date: isoDate, tags: tagsArray, is_todo: true, frequency: formData.frequency };
+        payload.task_type = 'Work';
+        payload.is_todo = true;
         await api.addTask(payload);
       }
       
       fetchTasks(); 
       setShowForm(false); 
       setEditingTaskId(null);
-      setFormData({ title: '', due_date: '', tags: '', frequency: 'Once' });
+      setFormData({ title: '', due_date: getTodayDefaultInput(), due_time: '', duration: 30, tags: '', frequency: 'Once' });
       
     } catch (err) { 
       setError(err.message || 'Network failed.'); 
@@ -254,9 +281,16 @@ function TasksWidget({ setProfile }) {
                   </span>
                 ))}
               </div>
-              <p className={`text-xs whitespace-nowrap ml-2 ${isOverdue ? 'text-danger font-bold' : 'text-textSecondary'}`}>
-                {new Date(task.due_date).toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
-              </p>
+              <div className="flex items-center gap-1.5 ml-2">
+                {task.duration && (
+                  <span className="text-[10px] text-textSecondary font-mono flex items-center gap-0.5 bg-surface px-1.5 py-0.5 rounded border border-border">
+                    ⏳ {task.duration >= 60 ? `${Math.floor(task.duration / 60)}h ${task.duration % 60 ? `${task.duration % 60}m` : ''}`.trim() : `${task.duration}m`}
+                  </span>
+                )}
+                <p className={`text-xs whitespace-nowrap ${isOverdue ? 'text-danger font-bold' : 'text-textSecondary'}`}>
+                  {task.due_time ? task.due_time : new Date(task.due_date).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}
+                </p>
+              </div>
             </div>
           </div>
         </SwipeRow>
@@ -269,20 +303,27 @@ function TasksWidget({ setProfile }) {
   // would never actually fire from the app's own UI.
   const isImportant = (task) => task.tags?.some((t) => t.toLowerCase().includes('imp'));
 
-  // Important tasks are forced to the top regardless of due date; overdue
-  // tasks sort to the top of whatever's left — that's the card the collapsed
-  // notification pile actually shows, so the most urgent item is the one
-  // visible without expanding.
-  const sortedTasks = [...tasks].sort((a, b) => {
-    const aImportant = isImportant(a);
-    const bImportant = isImportant(b);
-    if (aImportant !== bImportant) return aImportant ? -1 : 1;
+  // Strictly check if task is scheduled for today in user's local timezone
+  const isToday = (isoString) => {
+    if (!isoString) return false;
+    const taskDate = new Date(isoString);
+    const today = new Date();
+    return (
+      taskDate.getFullYear() === today.getFullYear() &&
+      taskDate.getMonth() === today.getMonth() &&
+      taskDate.getDate() === today.getDate()
+    );
+  };
 
-    const today = new Date().setHours(0, 0, 0, 0);
-    const aOverdue = new Date(a.due_date).setHours(0, 0, 0, 0) < today;
-    const bOverdue = new Date(b.due_date).setHours(0, 0, 0, 0) < today;
-    return aOverdue === bOverdue ? 0 : aOverdue ? -1 : 1;
-  });
+  // Filter tasks strictly scheduled for today
+  const todayTasks = tasks
+    .filter(task => isToday(task.due_date))
+    .sort((a, b) => {
+      const aImportant = isImportant(a);
+      const bImportant = isImportant(b);
+      if (aImportant !== bImportant) return aImportant ? -1 : 1;
+      return new Date(a.due_date) - new Date(b.due_date);
+    });
 
   if (isLoading) {
     return (
@@ -307,8 +348,21 @@ function TasksWidget({ setProfile }) {
   return (
     <div className="bg-surface p-5 rounded-xl border border-border shadow-lg flex flex-col h-auto md:h-[400px]">
       <h2 className="text-xl font-bold text-textPrimary mb-4 flex justify-between items-center">
-        Action Items
-        {!showForm && !editingTaskId && <span className="text-xs bg-accent text-white px-2 py-1 rounded-full">{tasks.length}</span>}
+        <Link
+          to="/calendar"
+          className="group flex items-center gap-2 hover:text-accent transition-colors"
+          title="Open full Calendar"
+        >
+          <span>Action Items</span>
+          <span className="text-xs text-textSecondary group-hover:text-accent transition-colors font-mono opacity-60 group-hover:opacity-100">
+            ↗
+          </span>
+        </Link>
+        {!showForm && !editingTaskId && (
+          <span className="text-xs bg-accent text-white px-2 py-0.5 rounded-full font-bold shadow-sm">
+            {todayTasks.length}
+          </span>
+        )}
       </h2>
 
       {error && <div className="bg-dangerBg border border-danger text-danger text-xs p-2 rounded mb-2 overflow-x-auto max-h-16 font-mono">{error}</div>}
@@ -330,6 +384,33 @@ function TasksWidget({ setProfile }) {
               <option value="Weekly">Weekly</option>
               <option value="Monthly">Monthly</option>
             </select>
+          </div>
+
+          <div className="flex gap-2 items-center">
+            <div className="flex-1 flex items-center gap-1.5 bg-background p-1.5 rounded border border-border">
+              <span className="text-xs text-textSecondary font-mono pl-1">⏳</span>
+              <input
+                type="number"
+                min="0"
+                step="5"
+                placeholder="Duration (mins, e.g. 30)"
+                value={formData.duration || ''}
+                onChange={(e) => setFormData({...formData, duration: e.target.value ? parseInt(e.target.value, 10) : ''})}
+                className="w-full bg-transparent text-xs text-textPrimary outline-none font-mono"
+              />
+            </div>
+            <div className="flex gap-1">
+              {[15, 30, 60, 120].map(mins => (
+                <button
+                  key={mins}
+                  type="button"
+                  onClick={() => setFormData({...formData, duration: mins})}
+                  className={`text-[9px] font-bold px-1.5 py-1 rounded border transition-colors ${formData.duration === mins ? 'bg-accent text-white border-accent' : 'bg-surface text-textSecondary border-border hover:border-accent'}`}
+                >
+                  {mins >= 60 ? `${mins/60}h` : `${mins}m`}
+                </button>
+              ))}
+            </div>
           </div>
 
           <div className="flex flex-col gap-2">
@@ -363,19 +444,31 @@ function TasksWidget({ setProfile }) {
           </div>
 
           <div className="flex gap-2 mt-auto pt-2">
-            <Pressable type="button" onClick={() => { setShowForm(false); setEditingTaskId(null); setError(''); setFormData({ title: '', due_date: '', tags: '', frequency: 'Once' }); }} className="flex-1 bg-surfaceHover hover:bg-border text-textPrimary text-sm py-2 rounded transition-colors">Cancel</Pressable>
+            <Pressable type="button" onClick={() => { setShowForm(false); setEditingTaskId(null); setError(''); setFormData({ title: '', due_date: getTodayDefaultInput(), tags: '', frequency: 'Once' }); }} className="flex-1 bg-surfaceHover hover:bg-border text-textPrimary text-sm py-2 rounded transition-colors">Cancel</Pressable>
             <Pressable type="submit" haptic="tap" className="flex-1 bg-accent hover:bg-accentHover text-white text-sm py-2 rounded font-bold transition-colors">{editingTaskId ? 'Save Edits' : 'Add Task'}</Pressable>
           </div>
         </form>
       ) : (
         <>
           <Pressable onClick={() => setShowForm(true)} haptic="tap" className="w-full mb-3 bg-surfaceHover hover:bg-border border border-border text-textPrimary text-sm py-1.5 rounded transition-colors flex items-center justify-center gap-2">+ New Task</Pressable>
-          {tasks.length === 0 ? (
-            <div className="flex-1 flex items-center justify-center text-center px-4 text-textSecondary text-sm">No pending tasks. You're all caught up!</div>
+          {todayTasks.length === 0 ? (
+            <div className="flex-1 flex flex-col items-center justify-center text-center p-6 gap-2 select-none">
+              <div className="w-12 h-12 rounded-full bg-surfaceHover/80 border border-border/80 flex items-center justify-center text-textSecondary/40 text-xl font-bold shadow-inner mb-1">
+                ✓
+              </div>
+              <p className="text-sm font-medium text-textSecondary">You're clear for today</p>
+              <Link
+                to="/calendar"
+                className="mt-1 text-xs text-accent hover:text-accentHover font-semibold transition-colors flex items-center gap-1 group"
+              >
+                <span>View all in Calendar</span>
+                <span className="transition-transform group-hover:translate-x-0.5">→</span>
+              </Link>
+            </div>
           ) : (
             <div className="overflow-visible md:overflow-y-auto pr-2 custom-scrollbar flex-1 md:min-h-0">
               <NotificationStack
-                items={sortedTasks}
+                items={todayTasks}
                 keyExtractor={(task) => task.id}
                 renderItem={renderTaskRow}
               />

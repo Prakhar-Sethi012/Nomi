@@ -35,6 +35,7 @@ const LABEL_CURVE_D = `M ${LABEL_CENTER - LABEL_ARC_R} ${LABEL_CENTER} A ${LABEL
 // used to get the same treatment but rides the wheel now, same as
 // everything else here.
 const NAV_ITEMS = [
+  { id: 'calendar', label: 'Calendar', icon: '📅' },
   { id: 'expenses', label: 'Finance', icon: '💰' },
   { id: 'radar', label: 'Radar', icon: '📡' },
   { id: 'scratchpad', label: 'Scratchpad', icon: '📝' },
