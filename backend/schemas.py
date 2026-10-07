@@ -95,13 +95,13 @@ class PortfolioResponse(BaseModel):
 # ==========================================
 class TaskCreate(BaseModel):
     title: str = Field(..., min_length=1, max_length=100)
-    task_type: str = Field(..., max_length=50)
+    task_type: Optional[str] = Field("Work", max_length=50)
     due_date: datetime.datetime
     tags: List[Tag] = Field(default_factory=list, max_length=20)
     is_todo: Optional[bool] = False
-    frequency: Optional[str] = Field("Once", max_length=20) # 🔥 NEW
-    due_time: Optional[str] = Field(None, max_length=10)
-    duration: Optional[int] = Field(None, ge=0, description="Duration in minutes")
+    frequency: Optional[str] = Field("Once", max_length=20)
+    due_time: Optional[str] = None
+    duration: Optional[int] = None
 
 class TaskUpdate(BaseModel):
     title: Optional[str] = Field(None, min_length=1, max_length=100)
@@ -109,9 +109,9 @@ class TaskUpdate(BaseModel):
     tags: Optional[List[Tag]] = Field(None, max_length=20)
     status: Optional[str] = Field(None, max_length=50)
     is_todo: Optional[bool] = None
-    frequency: Optional[str] = Field(None, max_length=20) # 🔥 NEW
-    due_time: Optional[str] = Field(None, max_length=10)
-    duration: Optional[int] = Field(None, ge=0)
+    frequency: Optional[str] = Field(None, max_length=20)
+    due_time: Optional[str] = None
+    duration: Optional[int] = None
 
 class TaskResponse(BaseModel):
     id: int
