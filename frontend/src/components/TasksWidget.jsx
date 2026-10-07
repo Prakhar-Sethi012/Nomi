@@ -40,7 +40,14 @@ function TasksWidget({ setProfile }) {
     return new Date(d.getTime() - offset).toISOString().slice(0, 16);
   };
 
-  const [formData, setFormData] = useState({ title: '', due_date: getTodayDefaultInput(), tags: '', frequency: 'Once' });
+  const [formData, setFormData] = useState({
+    title: '',
+    due_date: getTodayDefaultInput(),
+    due_time: '',
+    duration: 30,
+    tags: '',
+    frequency: 'Once'
+  });
 
   // Mirrors completingTasks so the unmount-cleanup effect below can always see
   // the latest timers without re-running on every tick.
@@ -83,6 +90,8 @@ function TasksWidget({ setProfile }) {
     setFormData({
       title: task.title,
       due_date: formatForInput(task.due_date),
+      due_time: task.due_time || '',
+      duration: task.duration != null ? task.duration : 30,
       tags: task.tags.join(', '),
       frequency: task.frequency || 'Once'
     });
@@ -98,18 +107,27 @@ function TasksWidget({ setProfile }) {
       try { isoDate = new Date(formData.due_date).toISOString(); } 
       catch (e) { return setError('Invalid date selection.'); }
 
+      const payload = {
+        title: formData.title,
+        due_date: isoDate,
+        due_time: formData.due_time || null,
+        duration: formData.duration ? parseInt(formData.duration, 10) : null,
+        tags: tagsArray,
+        frequency: formData.frequency
+      };
+
       if (editingTaskId) {
-        const payload = { title: formData.title, due_date: isoDate, tags: tagsArray, frequency: formData.frequency };
         await api.updateTask(editingTaskId, payload);
       } else {
-        const payload = { title: formData.title, task_type: 'Work', due_date: isoDate, tags: tagsArray, is_todo: true, frequency: formData.frequency };
+        payload.task_type = 'Work';
+        payload.is_todo = true;
         await api.addTask(payload);
       }
       
       fetchTasks(); 
       setShowForm(false); 
       setEditingTaskId(null);
-      setFormData({ title: '', due_date: getTodayDefaultInput(), tags: '', frequency: 'Once' });
+      setFormData({ title: '', due_date: getTodayDefaultInput(), due_time: '', duration: 30, tags: '', frequency: 'Once' });
       
     } catch (err) { 
       setError(err.message || 'Network failed.'); 
@@ -263,9 +281,16 @@ function TasksWidget({ setProfile }) {
                   </span>
                 ))}
               </div>
-              <p className={`text-xs whitespace-nowrap ml-2 ${isOverdue ? 'text-danger font-bold' : 'text-textSecondary'}`}>
-                {new Date(task.due_date).toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
-              </p>
+              <div className="flex items-center gap-1.5 ml-2">
+                {task.duration && (
+                  <span className="text-[10px] text-textSecondary font-mono flex items-center gap-0.5 bg-surface px-1.5 py-0.5 rounded border border-border">
+                    ⏳ {task.duration >= 60 ? `${Math.floor(task.duration / 60)}h ${task.duration % 60 ? `${task.duration % 60}m` : ''}`.trim() : `${task.duration}m`}
+                  </span>
+                )}
+                <p className={`text-xs whitespace-nowrap ${isOverdue ? 'text-danger font-bold' : 'text-textSecondary'}`}>
+                  {task.due_time ? task.due_time : new Date(task.due_date).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}
+                </p>
+              </div>
             </div>
           </div>
         </SwipeRow>
@@ -359,6 +384,33 @@ function TasksWidget({ setProfile }) {
               <option value="Weekly">Weekly</option>
               <option value="Monthly">Monthly</option>
             </select>
+          </div>
+
+          <div className="flex gap-2 items-center">
+            <div className="flex-1 flex items-center gap-1.5 bg-background p-1.5 rounded border border-border">
+              <span className="text-xs text-textSecondary font-mono pl-1">⏳</span>
+              <input
+                type="number"
+                min="0"
+                step="5"
+                placeholder="Duration (mins, e.g. 30)"
+                value={formData.duration || ''}
+                onChange={(e) => setFormData({...formData, duration: e.target.value ? parseInt(e.target.value, 10) : ''})}
+                className="w-full bg-transparent text-xs text-textPrimary outline-none font-mono"
+              />
+            </div>
+            <div className="flex gap-1">
+              {[15, 30, 60, 120].map(mins => (
+                <button
+                  key={mins}
+                  type="button"
+                  onClick={() => setFormData({...formData, duration: mins})}
+                  className={`text-[9px] font-bold px-1.5 py-1 rounded border transition-colors ${formData.duration === mins ? 'bg-accent text-white border-accent' : 'bg-surface text-textSecondary border-border hover:border-accent'}`}
+                >
+                  {mins >= 60 ? `${mins/60}h` : `${mins}m`}
+                </button>
+              ))}
+            </div>
           </div>
 
           <div className="flex flex-col gap-2">

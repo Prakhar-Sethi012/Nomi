@@ -36,6 +36,35 @@ function getTaskDateKey(isoString) {
   return toLocalDateKey(d);
 }
 
+// Format minutes into clean human-readable workload string (e.g. 135 -> "2h 15m", 45 -> "45m")
+function formatDuration(minutes) {
+  if (!minutes || minutes <= 0) return '0m';
+  const hours = Math.floor(minutes / 60);
+  const mins = minutes % 60;
+  if (hours > 0 && mins > 0) return `${hours}h ${mins}m`;
+  if (hours > 0) return `${hours}h`;
+  return `${mins}m`;
+}
+
+// Calculate total workload minutes for a list of tasks
+function calculateTotalMinutes(tasks = []) {
+  return tasks.reduce((sum, task) => {
+    const duration = task.duration != null && task.duration > 0 ? task.duration : 30; // Fallback 30 mins
+    return sum + duration;
+  }, 0);
+}
+
+// Get heatmap level based on total minutes and task count
+function getHeatmapLevel(tasks = []) {
+  if (!tasks || tasks.length === 0) return 'none';
+  const totalMinutes = calculateTotalMinutes(tasks);
+  const count = tasks.length;
+
+  if (totalMinutes >= 240 || count >= 6) return 'heavy'; // 4+ hours or 6+ tasks
+  if (totalMinutes >= 120 || count >= 3) return 'medium'; // 2-4 hours or 3-5 tasks
+  return 'light'; // < 2 hours or 1-2 tasks
+}
+
 const WEEKDAYS = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
 const MONTH_NAMES = [
   'January', 'February', 'March', 'April', 'May', 'June',
@@ -54,7 +83,8 @@ function CalendarView({ setProfile, setActiveTab }) {
 
   // Form State inside expanded cell window
   const [newTaskTitle, setNewTaskTitle] = useState('');
-  const [newTaskTime, setNewTaskTime] = useState('12:00');
+  const [newTaskDueTime, setNewTaskDueTime] = useState('');
+  const [newTaskDuration, setNewTaskDuration] = useState(30);
   const [newTaskTags, setNewTaskTags] = useState('');
   const [newTaskFrequency, setNewTaskFrequency] = useState('Once');
   const [isAddingTask, setIsAddingTask] = useState(false);
@@ -244,9 +274,17 @@ function CalendarView({ setProfile, setActiveTab }) {
       setIsAddingTask(true);
       setError('');
       
-      const [hours, minutes] = (newTaskTime || '12:00').split(':');
       const [sYear, sMonth, sDay] = selectedDate.split('-');
-      const taskDate = new Date(parseInt(sYear, 10), parseInt(sMonth, 10) - 1, parseInt(sDay, 10), parseInt(hours, 10), parseInt(minutes, 10));
+      let hours = 12;
+      let minutes = 0;
+      
+      if (newTaskDueTime) {
+        const parts = newTaskDueTime.split(':');
+        hours = parseInt(parts[0], 10) || 12;
+        minutes = parseInt(parts[1], 10) || 0;
+      }
+      
+      const taskDate = new Date(parseInt(sYear, 10), parseInt(sMonth, 10) - 1, parseInt(sDay, 10), hours, minutes);
       
       const tagsArray = newTaskTags
         .split(',')
@@ -257,6 +295,8 @@ function CalendarView({ setProfile, setActiveTab }) {
         title: newTaskTitle.trim(),
         task_type: 'Work',
         due_date: taskDate.toISOString(),
+        due_time: newTaskDueTime.trim() || null,
+        duration: newTaskDuration ? parseInt(newTaskDuration, 10) : null,
         tags: tagsArray,
         is_todo: true,
         frequency: newTaskFrequency || 'Once'
@@ -265,6 +305,8 @@ function CalendarView({ setProfile, setActiveTab }) {
       await api.addTask(payload);
       haptics.success();
       setNewTaskTitle('');
+      setNewTaskDueTime('');
+      setNewTaskDuration(30);
       setNewTaskTags('');
       setNewTaskFrequency('Once');
       fetchTasks();
@@ -283,20 +325,24 @@ function CalendarView({ setProfile, setActiveTab }) {
     const [y, m, d] = dateKey.split('-');
     const dateObj = new Date(parseInt(y, 10), parseInt(m, 10) - 1, parseInt(d, 10));
     return dateObj.toLocaleDateString(undefined, {
-      weekday: 'long',
-      month: 'short',
+      month: 'long',
       day: 'numeric',
       year: 'numeric'
     });
   };
 
   const selectedTasks = selectedDate ? (tasksByDate[selectedDate] || []) : [];
+  const selectedTotalMinutes = calculateTotalMinutes(selectedTasks);
   const sortedSelectedTasks = [...selectedTasks].sort((a, b) => {
     const aImp = isImportant(a);
     const bImp = isImportant(b);
     if (aImp !== bImp) return aImp ? -1 : 1;
     return new Date(a.due_date) - new Date(b.due_date);
   });
+
+  const totalMonthMinutes = calendarDays
+    .filter(d => d.isCurrentMonth)
+    .reduce((acc, d) => acc + calculateTotalMinutes(tasksByDate[d.dateKey] || []), 0);
 
   const totalTasksThisMonth = calendarDays
     .filter(d => d.isCurrentMonth)
@@ -306,9 +352,9 @@ function CalendarView({ setProfile, setActiveTab }) {
     <div className="w-full max-w-6xl mx-auto pb-12 animate-fade-in flex flex-col font-sans">
       
       {/* Top Header Bar */}
-      <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center bg-surface p-5 sm:p-6 rounded-xl border border-border mb-6 shadow-lg gap-4 transition-colors duration-300">
+      <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center bg-surface p-5 sm:p-6 rounded-2xl border border-border mb-6 shadow-lg gap-4 transition-colors duration-300">
         <div>
-          <div className="flex items-center gap-3 mb-1">
+          <div className="flex items-center gap-2 mb-1.5">
             <Link
               to="/"
               onClick={() => setActiveTab && setActiveTab('dashboard')}
@@ -317,24 +363,24 @@ function CalendarView({ setProfile, setActiveTab }) {
               <span className="group-hover:-translate-x-0.5 transition-transform">←</span>
               <span>Dashboard</span>
             </Link>
-            <span className="text-textSecondary text-xs">•</span>
-            <span className="text-accent text-xs font-bold uppercase tracking-wider">Schedule OS</span>
+            <span className="text-textSecondary/50 text-xs">•</span>
+            <span className="text-accent text-xs font-bold uppercase tracking-wider">Workload Management Engine</span>
           </div>
-          <h1 className="text-2xl sm:text-3xl font-black text-textPrimary tracking-tight flex items-center gap-2">
+          <h1 className="text-2xl sm:text-3xl font-black text-textPrimary tracking-tight flex flex-wrap items-center gap-2.5">
             <span>Calendar</span>
-            <span className="text-xs font-mono font-medium text-textSecondary bg-surfaceHover px-2.5 py-1 rounded-md border border-border">
-              {totalTasksThisMonth} {totalTasksThisMonth === 1 ? 'task' : 'tasks'} in {MONTH_NAMES[month]}
+            <span className="text-xs font-mono font-semibold text-textSecondary bg-surfaceHover px-2.5 py-1 rounded-lg border border-border">
+              {totalTasksThisMonth} {totalTasksThisMonth === 1 ? 'task' : 'tasks'} • {formatDuration(totalMonthMinutes)} load in {MONTH_NAMES[month]}
             </span>
           </h1>
         </div>
 
         {/* Month Selector & Controls */}
         <div className="flex items-center gap-2 self-stretch sm:self-auto justify-between sm:justify-end">
-          <div className="flex items-center bg-surfaceHover border border-border rounded-lg p-1 shadow-inner">
+          <div className="flex items-center bg-surfaceHover border border-border rounded-xl p-1 shadow-inner">
             <button
               onClick={handlePrevMonth}
               aria-label="Previous Month"
-              className="p-2 hover:bg-surface text-textSecondary hover:text-textPrimary rounded-md transition-all text-sm font-bold active:scale-95"
+              className="p-2 hover:bg-surface text-textSecondary hover:text-textPrimary rounded-lg transition-all text-sm font-bold active:scale-95"
             >
               ◀
             </button>
@@ -344,7 +390,7 @@ function CalendarView({ setProfile, setActiveTab }) {
             <button
               onClick={handleNextMonth}
               aria-label="Next Month"
-              className="p-2 hover:bg-surface text-textSecondary hover:text-textPrimary rounded-md transition-all text-sm font-bold active:scale-95"
+              className="p-2 hover:bg-surface text-textSecondary hover:text-textPrimary rounded-lg transition-all text-sm font-bold active:scale-95"
             >
               ▶
             </button>
@@ -352,135 +398,132 @@ function CalendarView({ setProfile, setActiveTab }) {
 
           <button
             onClick={handleGoToToday}
-            className="px-3.5 py-2 bg-accent hover:bg-accentHover text-white text-xs font-bold rounded-lg transition-all shadow-md active:scale-95 flex items-center gap-1.5"
+            className="px-3.5 py-2 bg-accent hover:bg-accentHover text-white text-xs font-bold rounded-xl transition-all shadow-md active:scale-95 flex items-center gap-1.5"
           >
             <span>●</span> Today
           </button>
         </div>
       </header>
 
+      {/* Heatmap Legend Bar */}
+      <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-2.5 mb-4 bg-surface/60 rounded-xl border border-border/60 text-xs text-textSecondary font-mono select-none">
+        <span className="font-bold text-textPrimary text-[11px] uppercase tracking-wider">Heatmap Workload:</span>
+        <div className="flex flex-wrap items-center gap-3 sm:gap-4 text-[11px]">
+          <div className="flex items-center gap-1.5">
+            <span className="w-3 h-3 rounded-full border border-border/80 bg-transparent" />
+            <span>0h Clear</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <span className="w-3 h-3 rounded-full bg-white/15 border border-white/20" />
+            <span>&lt;2h Light</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <span className="w-3 h-3 rounded-full bg-amber-500/30 border border-amber-500/50" />
+            <span>2-4h Medium</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <span className="w-3 h-3 rounded-full bg-gradient-to-r from-orange-500 to-red-600 shadow-sm" />
+            <span>4h+ Heavy</span>
+          </div>
+        </div>
+      </div>
+
       {error && (
-        <div className="bg-dangerBg border border-danger text-danger text-xs p-3 rounded-lg mb-4 font-mono flex items-center justify-between">
+        <div className="bg-dangerBg border border-danger text-danger text-xs p-3 rounded-xl mb-4 font-mono flex items-center justify-between">
           <span>{error}</span>
           <button onClick={() => setError('')} className="text-danger font-bold hover:underline">Dismiss</button>
         </div>
       )}
 
-      {/* Main Calendar Card */}
-      <div className="bg-surface rounded-2xl border border-border shadow-xl p-3 sm:p-6 transition-colors duration-300">
+      {/* Main Calendar Card - INVISIBLE GRID (Concept A) */}
+      <div className="bg-surface rounded-2xl border border-border shadow-xl p-4 sm:p-7 transition-colors duration-300">
         
         {/* Weekday Column Headers */}
-        <div className="grid grid-cols-7 gap-1 sm:gap-2 mb-2">
+        <div className="grid grid-cols-7 gap-2 mb-4">
           {WEEKDAYS.map(day => (
             <div
               key={day}
-              className="text-center py-2 text-[10px] sm:text-xs font-mono font-bold text-textSecondary tracking-wider uppercase select-none"
+              className="text-center py-1.5 text-[11px] sm:text-xs font-mono font-bold text-textSecondary/80 tracking-wider uppercase select-none"
             >
               {day}
             </div>
           ))}
         </div>
 
-        {/* Calendar Days Grid */}
+        {/* Invisible Calendar Grid */}
         {isLoading ? (
-          <div className="grid grid-cols-7 gap-1 sm:gap-2">
+          <div className="grid grid-cols-7 gap-2 sm:gap-4">
             {Array.from({ length: 35 }).map((_, i) => (
-              <div key={i} className="aspect-square min-h-[70px] sm:min-h-[95px] p-2 rounded-xl bg-surfaceHover/50 border border-border/50">
-                <Skeleton className="w-5 h-5 rounded-md mb-2" />
-                <Skeleton className="w-full h-3 rounded-full" />
+              <div key={i} className="aspect-square flex items-center justify-center">
+                <Skeleton className="w-12 h-12 rounded-full" />
               </div>
             ))}
           </div>
         ) : (
-          <div className="grid grid-cols-7 gap-1.5 sm:gap-2.5">
+          <div className="grid grid-cols-7 gap-2 sm:gap-4">
             {calendarDays.map((day) => {
               const dayTasks = tasksByDate[day.dateKey] || [];
               const isToday = day.dateKey === todayKey;
               const isSelected = selectedDate === day.dateKey;
-              const hasTasks = dayTasks.length > 0;
-              const importantCount = dayTasks.filter(isImportant).length;
+              const count = dayTasks.length;
+              const totalMinutes = calculateTotalMinutes(dayTasks);
+              const heatmapLevel = getHeatmapLevel(dayTasks);
+
+              // Circular Heatmap Styling
+              let heatmapCircleStyle = 'bg-transparent text-textSecondary hover:bg-surfaceHover/60';
+              if (heatmapLevel === 'light') {
+                heatmapCircleStyle = 'bg-white/10 dark:bg-white/10 text-textPrimary hover:bg-white/20 border border-white/10 shadow-sm';
+              } else if (heatmapLevel === 'medium') {
+                heatmapCircleStyle = 'bg-amber-500/20 text-amber-300 border border-amber-500/40 hover:bg-amber-500/30 shadow-md shadow-amber-500/10 font-bold';
+              } else if (heatmapLevel === 'heavy') {
+                heatmapCircleStyle = 'bg-gradient-to-br from-orange-500 to-red-600 text-white font-black shadow-lg shadow-orange-500/25 hover:brightness-110';
+              }
+
+              // Dim non-current-month days
+              const opacityClass = day.isCurrentMonth ? 'opacity-100' : 'opacity-30 hover:opacity-75';
 
               return (
-                <motion.div
+                <div
                   key={day.dateKey}
-                  layoutId={`calendar-cell-${day.dateKey}`}
-                  onClick={() => {
-                    haptics.selection();
-                    setSelectedDate(day.dateKey);
-                  }}
-                  whileHover={{ scale: 1.02, y: -2 }}
-                  whileTap={{ scale: 0.98 }}
-                  transition={{ type: 'spring', stiffness: 400, damping: 25 }}
-                  className={`relative min-h-[74px] sm:min-h-[105px] p-2 sm:p-2.5 rounded-xl border cursor-pointer transition-all duration-200 flex flex-col justify-between overflow-hidden select-none group ${
-                    isSelected
-                      ? 'opacity-0' // Hidden when expanded to avoid double element artifacts during transition
-                      : day.isCurrentMonth
-                        ? isToday
-                          ? 'bg-accent/10 border-accent shadow-md shadow-accent/10'
-                          : hasTasks
-                            ? 'bg-surface hover:bg-surfaceHover border-border hover:border-accent/60'
-                            : 'bg-surface hover:bg-surfaceHover border-border/80 hover:border-border'
-                        : 'bg-background/40 opacity-40 border-border/40 hover:opacity-75'
-                  }`}
+                  className={`aspect-square flex items-center justify-center p-1 select-none ${opacityClass}`}
                 >
-                  {/* Top row: Day Number and Important Star */}
-                  <div className="flex items-center justify-between">
-                    <span
-                      className={`text-xs sm:text-sm font-bold w-6 h-6 flex items-center justify-center rounded-full transition-colors ${
-                        isToday
-                          ? 'bg-accent text-white shadow-sm'
-                          : day.isCurrentMonth
-                            ? 'text-textPrimary group-hover:text-accent'
-                            : 'text-textSecondary'
-                      }`}
-                    >
+                  <motion.button
+                    type="button"
+                    layoutId={`calendar-cell-${day.dateKey}`}
+                    onClick={() => {
+                      haptics.selection();
+                      setSelectedDate(day.dateKey);
+                    }}
+                    whileHover={{ scale: 1.1, y: -2 }}
+                    whileTap={{ scale: 0.94 }}
+                    transition={{ type: 'spring', stiffness: 450, damping: 25 }}
+                    className={`relative w-12 h-12 sm:w-14 sm:h-14 rounded-full flex flex-col items-center justify-center cursor-pointer transition-all duration-200 ${heatmapCircleStyle} ${
+                      isSelected ? 'opacity-0' : ''
+                    } ${
+                      isToday
+                        ? 'ring-2 ring-accent ring-offset-2 ring-offset-background font-black'
+                        : ''
+                    }`}
+                    title={`${day.dateKey}: ${count} tasks, ${formatDuration(totalMinutes)} workload`}
+                  >
+                    {/* Date Number */}
+                    <span className="text-sm sm:text-base leading-none">
                       {day.dayNum}
                     </span>
 
-                    {importantCount > 0 && (
-                      <span className="text-[10px] text-accent font-bold" title={`${importantCount} Important`}>
-                        ⭐
+                    {/* Tiny Workload text or count indicator underneath */}
+                    {count > 0 && (
+                      <span className="text-[8px] sm:text-[9px] font-mono leading-tight mt-0.5 opacity-90">
+                        {formatDuration(totalMinutes)}
                       </span>
                     )}
-                  </div>
 
-                  {/* Task Indicators */}
-                  <div className="mt-auto pt-1">
-                    {hasTasks ? (
-                      <div className="flex flex-col gap-1">
-                        {/* Dot Cluster on smaller screens / Pill badge on larger */}
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-1">
-                            {dayTasks.slice(0, 3).map((t, idx) => (
-                              <span
-                                key={idx}
-                                className={`w-1.5 h-1.5 rounded-full ${
-                                  isImportant(t) ? 'bg-accent' : 'bg-textSecondary'
-                                }`}
-                              />
-                            ))}
-                            {dayTasks.length > 3 && (
-                              <span className="text-[8px] font-mono text-textSecondary font-bold">
-                                +{dayTasks.length - 3}
-                              </span>
-                            )}
-                          </div>
-
-                          <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-surfaceHover text-textPrimary border border-border shrink-0">
-                            {dayTasks.length}
-                          </span>
-                        </div>
-
-                        {/* Text preview of top task on md+ screens */}
-                        <p className="hidden md:block text-[10px] text-textSecondary truncate font-medium group-hover:text-textPrimary transition-colors">
-                          {dayTasks[0].title}
-                        </p>
-                      </div>
-                    ) : (
-                      <div className="h-4" />
+                    {/* Today indicator dot if 0 tasks */}
+                    {isToday && count === 0 && (
+                      <span className="absolute bottom-1.5 w-1 h-1 rounded-full bg-accent" />
                     )}
-                  </div>
-                </motion.div>
+                  </motion.button>
+                </div>
               );
             })}
           </div>
@@ -488,7 +531,7 @@ function CalendarView({ setProfile, setActiveTab }) {
       </div>
 
       {/* ========================================================================= */}
-      {/* FLUID SHARED-ELEMENT EXPANSION WINDOW (Framer Motion layoutId)            */}
+      {/* FLUID SHARED-ELEMENT EXPANSION WINDOW (Workload Dashboard)                */}
       {/* ========================================================================= */}
       <AnimatePresence>
         {selectedDate && (
@@ -501,7 +544,7 @@ function CalendarView({ setProfile, setActiveTab }) {
               exit={{ opacity: 0 }}
               transition={{ duration: 0.2 }}
               onClick={() => setSelectedDate(null)}
-              className="fixed inset-0 z-40 bg-black/70 backdrop-blur-sm"
+              className="fixed inset-0 z-40 bg-black/75 backdrop-blur-sm"
             />
 
             {/* Centered Expanded Window Container */}
@@ -510,13 +553,13 @@ function CalendarView({ setProfile, setActiveTab }) {
                 key={`expanded-${selectedDate}`}
                 layoutId={`calendar-cell-${selectedDate}`}
                 transition={{ type: 'spring', stiffness: 350, damping: 28 }}
-                className="pointer-events-auto w-full max-w-lg bg-surface border-2 border-accent shadow-2xl rounded-2xl flex flex-col max-h-[88vh] overflow-hidden transition-colors duration-300"
+                className="pointer-events-auto w-full max-w-lg bg-surface border-2 border-accent shadow-2xl rounded-3xl flex flex-col max-h-[88vh] overflow-hidden transition-colors duration-300"
               >
-                {/* Header */}
-                <div className="p-5 border-b border-border bg-surfaceHover/50 flex items-start justify-between gap-3 shrink-0">
+                {/* Header (Workload Analytics Header) */}
+                <div className="p-5 sm:p-6 border-b border-border bg-surfaceHover/50 flex items-start justify-between gap-4 shrink-0">
                   <div>
                     <div className="flex items-center gap-2">
-                      <h3 className="text-xl font-black text-textPrimary tracking-tight">
+                      <h3 className="text-xl sm:text-2xl font-black text-textPrimary tracking-tight">
                         {formatSelectedHeaderDate(selectedDate)}
                       </h3>
                       {selectedDate === todayKey && (
@@ -525,10 +568,22 @@ function CalendarView({ setProfile, setActiveTab }) {
                         </span>
                       )}
                     </div>
-                    <p className="text-xs text-textSecondary mt-1">
-                      {sortedSelectedTasks.length}{' '}
-                      {sortedSelectedTasks.length === 1 ? 'task scheduled' : 'tasks scheduled'} for this day
-                    </p>
+                    
+                    {/* Analytics Subtitle */}
+                    <div className="flex items-center gap-2 mt-1 text-xs font-mono text-textSecondary flex-wrap">
+                      <span className="font-bold text-textPrimary">
+                        {sortedSelectedTasks.length} {sortedSelectedTasks.length === 1 ? 'Task' : 'Tasks'}
+                      </span>
+                      <span>•</span>
+                      <span className="text-accent font-semibold">
+                        Total Load: {formatDuration(selectedTotalMinutes)}
+                      </span>
+                      {selectedTotalMinutes >= 240 && (
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-red-500/20 text-red-400 border border-red-500/30">
+                          🔥 Heavy Load
+                        </span>
+                      )}
+                    </div>
                   </div>
 
                   <button
@@ -548,8 +603,8 @@ function CalendarView({ setProfile, setActiveTab }) {
                       <div className="w-12 h-12 rounded-full bg-surfaceHover border border-border flex items-center justify-center text-textSecondary/40 text-xl font-bold shadow-inner mb-1">
                         ✓
                       </div>
-                      <p className="text-sm font-medium text-textPrimary">No tasks on this date</p>
-                      <p className="text-xs text-textSecondary">Use the quick add form below to schedule a task.</p>
+                      <p className="text-sm font-medium text-textPrimary">Zero Workload for this day</p>
+                      <p className="text-xs text-textSecondary">You're clear! Add a task below if you'd like to schedule work.</p>
                     </div>
                   ) : (
                     sortedSelectedTasks.map((task) => {
@@ -558,11 +613,12 @@ function CalendarView({ setProfile, setActiveTab }) {
                       const isRecurring = task.frequency && task.frequency !== 'Once';
                       const completing = completingTasks[task.id];
                       const important = isImportant(task);
+                      const durationMins = task.duration != null && task.duration > 0 ? task.duration : 30;
 
                       return (
                         <div
                           key={task.id}
-                          className={`relative p-3 rounded-xl border transition-all duration-200 ${
+                          className={`relative p-3.5 rounded-2xl border transition-all duration-200 ${
                             completing
                               ? 'opacity-50 scale-[0.98] bg-surfaceHover border-success'
                               : important
@@ -625,7 +681,7 @@ function CalendarView({ setProfile, setActiveTab }) {
                             {!completing && (
                               <button
                                 onClick={() => handleDeleteTask(task.id)}
-                                className="text-textSecondary hover:text-danger p-1 rounded transition-colors text-xs opacity-60 hover:opacity-100"
+                                className="text-textSecondary hover:text-danger p-1 rounded-md transition-colors text-xs opacity-60 hover:opacity-100"
                                 title="Delete task"
                               >
                                 ✕
@@ -633,24 +689,32 @@ function CalendarView({ setProfile, setActiveTab }) {
                             )}
                           </div>
 
-                          {/* Footer row: Tags and Time */}
-                          <div className="flex justify-between items-center mt-2.5 pt-2 border-t border-border/50 text-xs ml-8">
+                          {/* Footer row: Due Time, Duration, and Tags */}
+                          <div className="flex flex-wrap justify-between items-center gap-2 mt-2.5 pt-2 border-t border-border/50 text-xs ml-8">
+                            <div className="flex items-center gap-2">
+                              {/* Due Time */}
+                              <span className="font-mono text-[11px] text-textSecondary font-medium flex items-center gap-1 bg-surface px-2 py-0.5 rounded border border-border">
+                                <span>⏰</span>
+                                <span>{task.due_time || 'Anytime'}</span>
+                              </span>
+
+                              {/* Duration */}
+                              <span className="font-mono text-[11px] text-accent font-semibold flex items-center gap-1 bg-surface px-2 py-0.5 rounded border border-border">
+                                <span>⏳</span>
+                                <span>{formatDuration(durationMins)}</span>
+                              </span>
+                            </div>
+
                             <div className="flex flex-wrap gap-1">
                               {task.tags.map((tag) => (
                                 <span
                                   key={tag}
-                                  className="text-[9px] uppercase tracking-wider font-bold bg-surface border border-border px-1.5 py-0.5 rounded text-accent"
+                                  className="text-[9px] uppercase tracking-wider font-bold bg-surface border border-border px-1.5 py-0.5 rounded text-textSecondary"
                                 >
                                   {tag}
                                 </span>
                               ))}
                             </div>
-                            <span className="font-mono text-[11px] text-textSecondary font-medium">
-                              {new Date(task.due_date).toLocaleTimeString(undefined, {
-                                hour: '2-digit',
-                                minute: '2-digit'
-                              })}
-                            </span>
                           </div>
                         </div>
                       );
@@ -658,38 +722,95 @@ function CalendarView({ setProfile, setActiveTab }) {
                   )}
                 </div>
 
-                {/* Embedded Add Task Form */}
-                <div className="p-4 sm:p-5 border-t border-border bg-surfaceHover/30 shrink-0">
+                {/* Embedded Add Task Form (Upgraded with Due Time & Duration) */}
+                <div className="p-4 sm:p-5 border-t border-border bg-surfaceHover/40 shrink-0">
                   <form onSubmit={handleAddTask} className="flex flex-col gap-2.5">
-                    <div className="flex gap-2">
-                      <input
-                        type="text"
-                        placeholder="Add a task for this date..."
-                        required
-                        value={newTaskTitle}
-                        onChange={(e) => setNewTaskTitle(e.target.value)}
-                        className="flex-1 p-2 bg-background rounded-lg text-sm text-textPrimary border border-border focus:border-accent outline-none transition-colors"
-                      />
-                      <input
-                        type="time"
-                        value={newTaskTime}
-                        onChange={(e) => setNewTaskTime(e.target.value)}
-                        className="w-24 p-2 bg-background rounded-lg text-xs font-mono text-textPrimary border border-border focus:border-accent outline-none"
-                      />
+                    <input
+                      type="text"
+                      placeholder="Task title..."
+                      required
+                      value={newTaskTitle}
+                      onChange={(e) => setNewTaskTitle(e.target.value)}
+                      className="w-full p-2.5 bg-background rounded-xl text-sm text-textPrimary border border-border focus:border-accent outline-none transition-colors"
+                    />
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      {/* Due Time Input (Optional - Anytime if empty) */}
+                      <div className="flex items-center gap-2 bg-background p-2 rounded-xl border border-border">
+                        <span className="text-xs text-textSecondary font-mono pl-1">⏰</span>
+                        <input
+                          type="time"
+                          value={newTaskDueTime}
+                          onChange={(e) => setNewTaskDueTime(e.target.value)}
+                          className="w-full bg-transparent text-xs font-mono text-textPrimary outline-none"
+                          title="Due Time (leave empty for Anytime)"
+                        />
+                        {newTaskDueTime && (
+                          <button
+                            type="button"
+                            onClick={() => setNewTaskDueTime('')}
+                            className="text-[10px] text-textSecondary hover:text-textPrimary pr-1"
+                            title="Clear time (Anytime)"
+                          >
+                            ✕
+                          </button>
+                        )}
+                        {!newTaskDueTime && (
+                          <span className="text-[10px] text-textSecondary/60 font-mono pr-1 select-none">
+                            Anytime
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Duration Input */}
+                      <div className="flex items-center gap-2 bg-background p-2 rounded-xl border border-border">
+                        <span className="text-xs text-textSecondary font-mono pl-1">⏳</span>
+                        <input
+                          type="number"
+                          min="5"
+                          step="5"
+                          placeholder="Duration (mins)"
+                          value={newTaskDuration || ''}
+                          onChange={(e) => setNewTaskDuration(e.target.value ? parseInt(e.target.value, 10) : '')}
+                          className="w-full bg-transparent text-xs font-mono text-textPrimary outline-none"
+                        />
+                        <span className="text-[10px] text-textSecondary font-mono pr-1 select-none">
+                          mins
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Quick Duration Preset Chips */}
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <span className="text-[10px] text-textSecondary font-mono">Quick Duration:</span>
+                      {[15, 30, 45, 60, 90, 120].map((mins) => (
+                        <button
+                          key={mins}
+                          type="button"
+                          onClick={() => setNewTaskDuration(mins)}
+                          className={`text-[9px] font-bold px-2 py-0.5 rounded-md border transition-colors ${
+                            newTaskDuration === mins
+                              ? 'bg-accent text-white border-accent'
+                              : 'bg-surface text-textSecondary border-border hover:border-accent'
+                          }`}
+                        >
+                          {mins >= 60 ? `${mins / 60}h` : `${mins}m`}
+                        </button>
+                      ))}
                     </div>
 
                     <div className="flex flex-wrap sm:flex-nowrap gap-2 items-center">
                       <input
                         type="text"
-                        placeholder="Tags (e.g. important, quiz)"
+                        placeholder="Tags (e.g. important, project)"
                         value={newTaskTags}
                         onChange={(e) => setNewTaskTags(e.target.value)}
-                        className="flex-1 min-w-[140px] p-2 bg-background rounded-lg text-xs text-textPrimary border border-border focus:border-accent outline-none"
+                        className="flex-1 min-w-[140px] p-2 bg-background rounded-xl text-xs text-textPrimary border border-border focus:border-accent outline-none"
                       />
                       <select
                         value={newTaskFrequency}
                         onChange={(e) => setNewTaskFrequency(e.target.value)}
-                        className="p-2 bg-background rounded-lg text-xs text-textPrimary border border-border focus:border-accent outline-none shrink-0"
+                        className="p-2 bg-background rounded-xl text-xs text-textPrimary border border-border focus:border-accent outline-none shrink-0"
                       >
                         <option value="Once">Once</option>
                         <option value="Daily">Daily</option>
@@ -700,14 +821,14 @@ function CalendarView({ setProfile, setActiveTab }) {
                       <Pressable
                         type="submit"
                         disabled={isAddingTask || !newTaskTitle.trim()}
-                        className="px-4 py-2 bg-accent hover:bg-accentHover disabled:opacity-50 text-white rounded-lg text-xs font-bold transition-all shadow shrink-0"
+                        className="px-4 py-2 bg-accent hover:bg-accentHover disabled:opacity-50 text-white rounded-xl text-xs font-bold transition-all shadow shrink-0"
                       >
                         {isAddingTask ? 'Adding...' : '+ Add Task'}
                       </Pressable>
                     </div>
 
                     {/* Quick Tag Chips */}
-                    <div className="flex flex-wrap gap-1 pt-1">
+                    <div className="flex flex-wrap gap-1">
                       {['important', 'cat', 'fat', 'quiz', 'club', 'others'].map((preset) => (
                         <button
                           key={preset}

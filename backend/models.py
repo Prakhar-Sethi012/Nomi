@@ -61,6 +61,8 @@ class Task(Base):
     completed_at = Column(DateTime, nullable=True)
     is_todo = Column(Boolean, default=False)
     frequency = Column(String, default="Once", nullable=False)
+    due_time = Column(String, nullable=True)
+    duration = Column(Integer, nullable=True)
     
 class Subject(Base):
     __tablename__ = "subjects"
