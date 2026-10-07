@@ -6,21 +6,50 @@ export default defineConfig({
   plugins: [
     react(),
     VitePWA({
-      registerType: 'autoUpdate', // Automatically updates the app when you push new code
+      registerType: 'autoUpdate',
+      includeAssets: ['favicon.svg', 'icon-192x192.png', 'icon-512x512.png', 'icons.svg'],
       devOptions: {
-        enabled: true // Allows us to test the service worker in localhost!
+        enabled: true
       },
       workbox: {
-        // This tells the service worker to cache ALL static files
-        globPatterns: ['**/*.{js,css,html,ico,png,svg,json}'],
-        // Ignore URL parameters for caching purposes
-        ignoreURLParametersMatching: [/.*/] 
+        // Cache all core App Shell assets (HTML, CSS, JS, SVGs, PNGs, web fonts)
+        globPatterns: ['**/*.{js,css,html,ico,png,svg,json,woff,woff2}'],
+        ignoreURLParametersMatching: [/.*/],
+        cleanupOutdatedCaches: true,
+        clientsClaim: true,
+        skipWaiting: true,
+        navigateFallback: '/index.html',
+        navigateFallbackDenylist: [/^\/api/],
+        runtimeCaching: [
+          {
+            // Google Fonts stylesheets (Inter, Space Grotesk, JetBrains Mono)
+            urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
+            handler: 'StaleWhileRevalidate',
+            options: {
+              cacheName: 'google-fonts-stylesheets',
+              cacheableResponse: {
+                statuses: [0, 200]
+              }
+            }
+          },
+          {
+            // Google Fonts web font binaries
+            urlPattern: /^https:\/\/fonts\.gstatic\.com\/.*/i,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'google-fonts-webfonts',
+              expiration: {
+                maxEntries: 30,
+                maxAgeSeconds: 60 * 60 * 24 * 365 // 1 year
+              },
+              cacheableResponse: {
+                statuses: [0, 200]
+              }
+            }
+          }
+        ]
       },
       manifest: {
-        // id pins the TWA/Play Store listing to this one stable identity —
-        // without it, a future manifest edit (name, icons, ...) risks
-        // Android treating the update as a different app instead of a
-        // new version of this one.
         id: '/',
         name: 'Nomi',
         short_name: 'Nomi',

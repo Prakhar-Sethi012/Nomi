@@ -2,29 +2,51 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
 import CopyButton from './ui/CopyButton';
 import PinConfirmModal from './PinConfirmModal';
+import { userStorage } from '../services/db';
+
+const DEFAULT_LINKS = [
+  { id: '1', name: 'GitHub', url: 'https://github.com', icon: '🐙', desc: 'Code repositories & version control' },
+  { id: '2', name: 'LinkedIn', url: 'https://linkedin.com', icon: '💼', desc: 'Professional network & resume' }
+];
 
 function LinksView({ userId }) {
   // Namespaced per-user so switching accounts on a shared browser doesn't
   // show the previous user's directory.
   const linksKey = `cc_links_${userId}`;
 
-  // 1. Load links from local storage, or provide a default starter pack
-  const [links, setLinks] = useState(() => {
-    const saved = localStorage.getItem(linksKey);
-    if (saved) return JSON.parse(saved);
-    return [
-      { id: '1', name: 'GitHub', url: 'https://github.com', icon: '🐙', desc: 'Code repositories & version control' },
-      { id: '2', name: 'LinkedIn', url: 'https://linkedin.com', icon: '💼', desc: 'Professional network & resume' }
-    ];
-  });
+  // 1. Load links from IndexedDB storage, or provide a default starter pack
+  const [links, setLinks] = useState(DEFAULT_LINKS);
+
+  useEffect(() => {
+    let isMounted = true;
+    userStorage.getItem(linksKey).then((saved) => {
+      if (!isMounted) return;
+      if (saved && Array.isArray(saved)) {
+        setLinks(saved);
+      } else {
+        // Check for legacy localStorage data
+        try {
+          const legacy = localStorage.getItem(linksKey);
+          if (legacy) {
+            const parsed = JSON.parse(legacy);
+            if (Array.isArray(parsed)) {
+              setLinks(parsed);
+              userStorage.setItem(linksKey, parsed);
+            }
+          }
+        } catch {}
+      }
+    });
+    return () => { isMounted = false; };
+  }, [linksKey]);
 
   const [showForm, setShowForm] = useState(false);
   const [formData, setFormData] = useState({ name: '', url: '', icon: '🔗', desc: '' });
   const [deleteTargetId, setDeleteTargetId] = useState(null);
 
-  // 2. Auto-save to local storage whenever the links array changes
+  // 2. Auto-save to IndexedDB whenever the links array changes
   useEffect(() => {
-    localStorage.setItem(linksKey, JSON.stringify(links));
+    userStorage.setItem(linksKey, links);
   }, [links, linksKey]);
 
   const handleSubmit = (e) => {

@@ -2,6 +2,7 @@ import React, { useState, useEffect, lazy, Suspense } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { api } from './services/api';
 import { offlineSync } from './services/offlineSync';
+import { clearApiCache } from './services/db';
 import { haptics } from './utils/haptics';
 // --- Views & Components ---
 // Dashboard and AuthScreen stay as regular imports — one of them is what
@@ -124,8 +125,9 @@ function App() {
   // the radial wheel's Logout item, ProfileView) only opens the confirm
   // dialog now; `executeLogout` is the actual, one-way session teardown,
   // gated behind it so a stray tap can't end the session with no way back.
-  const executeLogout = () => {
+  const executeLogout = async () => {
     localStorage.removeItem('token');
+    await clearApiCache();
     setIsAuthenticated(false);
     setProfile(null);
   };
