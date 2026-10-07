@@ -1,4 +1,5 @@
 import React, { useState, useEffect, lazy, Suspense } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { api } from './services/api';
 import { offlineSync } from './services/offlineSync';
 import { haptics } from './utils/haptics';
@@ -16,6 +17,7 @@ import RadialNav from './components/nav/RadialNav';
 import PageTransition from './components/ui/PageTransition';
 import ConfirmModal from './components/ui/ConfirmModal';
 
+const CalendarView = lazy(() => import('./components/calendar/CalendarView'));
 const ProfileView = lazy(() => import('./components/ProfileView'));
 const LinksView = lazy(() => import('./components/LinksView'));
 const ScratchpadView = lazy(() => import('./components/ScratchpadView'));
@@ -45,11 +47,20 @@ function RouteFallback() {
 const isPrivacyRoute = window.location.pathname === '/privacy';
 
 function App() {
-  const [activeTab, setActiveTab] = useState('dashboard');
+  const location = useLocation();
+  const navigate = useNavigate();
+  const [activeTab, setActiveTab] = useState(window.location.pathname === '/calendar' ? 'calendar' : 'dashboard');
   const [profile, setProfile] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(!!localStorage.getItem('token'));
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+
+  // Sync route changes with active tab (e.g. clicking /calendar Link)
+  useEffect(() => {
+    if (location.pathname === '/calendar') {
+      setActiveTab('calendar');
+    }
+  }, [location.pathname]);
 
   // =========================================
   // 1. AUTHENTICATE & FETCH PROFILE
@@ -126,7 +137,15 @@ function App() {
   // so switching tabs always gets the same light tap feedback — RadialNav's
   // own dial already fires its own haptic on selection, so it isn't wired
   // through here.
-  const selectTab = (tab) => { haptics.light(); setActiveTab(tab); };
+  const selectTab = (tab) => {
+    haptics.light();
+    setActiveTab(tab);
+    if (tab === 'calendar') {
+      navigate('/calendar');
+    } else if (location.pathname === '/calendar') {
+      navigate('/');
+    }
+  };
 
   // =========================================
   // RENDER BLOCKS
@@ -182,6 +201,7 @@ function App() {
         {/* Navigation Tabs */}
         <div className="flex flex-wrap gap-1 justify-center md:justify-start items-center flex-1">
           <button onClick={() => selectTab('dashboard')} className={`px-4 py-2 rounded-md text-sm font-bold transition-all duration-200 ${activeTab === 'dashboard' ? 'bg-accent text-white shadow' : 'text-textSecondary hover:text-textPrimary hover:bg-surfaceHover'}`}>Dashboard</button>
+          <button onClick={() => selectTab('calendar')} className={`px-4 py-2 rounded-md text-sm font-bold transition-all duration-200 ${activeTab === 'calendar' ? 'bg-accent text-white shadow' : 'text-textSecondary hover:text-textPrimary hover:bg-surfaceHover'}`}>Calendar</button>
           <button onClick={() => selectTab('scratchpad')} className={`px-4 py-2 rounded-md text-sm font-bold transition-all duration-200 ${activeTab === 'scratchpad' ? 'bg-accent text-white shadow' : 'text-textSecondary hover:text-textPrimary hover:bg-surfaceHover'}`}>Scratchpad</button>
           <button onClick={() => selectTab('links')} className={`px-4 py-2 rounded-md text-sm font-bold transition-all duration-200 ${activeTab === 'links' ? 'bg-accent text-white shadow' : 'text-textSecondary hover:text-textPrimary hover:bg-surfaceHover'}`}>Directory</button>
           <button onClick={() => selectTab('strategy')} className={`px-4 py-2 rounded-md text-sm font-bold transition-all duration-200 ${activeTab === 'strategy' ? 'bg-accent text-white shadow' : 'text-textSecondary hover:text-textPrimary hover:bg-surfaceHover'}`}>Strategy</button>
@@ -237,6 +257,7 @@ function App() {
         <PageTransition tabKey={activeTab}>
           <Suspense fallback={<RouteFallback />}>
             {activeTab === 'dashboard' && <Dashboard profile={profile} setProfile={setProfile} setActiveTab={setActiveTab} />}
+            {activeTab === 'calendar' && <CalendarView profile={profile} setProfile={setProfile} setActiveTab={setActiveTab} />}
             {activeTab === 'scratchpad' && <ScratchpadView userId={profile.id} />}
             {activeTab === 'links' && <LinksView userId={profile.id} />}
             {activeTab === 'timetable' && <TimetableView />}
