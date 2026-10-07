@@ -44,6 +44,21 @@ def get_todo_list(
     ).order_by(models.Task.due_date.asc()).all()
     return tasks
 
+# 4. GET ALL TASKS (with optional date range)
+@router.get("/", response_model=List[schemas.TaskResponse])
+def get_tasks(
+    start_date: Optional[str] = None,
+    end_date: Optional[str] = None,
+    db: Session = Depends(get_db),
+    current_user: models.Profile = Depends(get_current_user)
+):
+    query = db.query(models.Task).filter(models.Task.user_id == current_user.id)
+    if start_date:
+        query = query.filter(models.Task.due_date >= start_date)
+    if end_date:
+        query = query.filter(models.Task.due_date <= end_date)
+    return query.order_by(models.Task.due_date.asc()).all()
+
 # 5. DELETE A TASK
 @router.delete("/{task_id}")
 def delete_task(task_id: int, db: Session = Depends(get_db), current_user: models.Profile = Depends(get_current_user)):

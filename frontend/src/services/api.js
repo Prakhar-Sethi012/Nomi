@@ -1,35 +1,91 @@
+import { cacheResponse, getCachedResponse, clearApiCache } from './db';
+import { offlineSync } from './offlineSync';
+
 export const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
+
+/**
+ * Core fetch wrapper with "Cache then Network / Offline-First" fallback
+ */
 const fetchAPI = async (endpoint, options = {}) => {
-  // 1. Grab the VIP wristband from local storage
+  const method = (options.method || 'GET').toUpperCase();
+  const isGet = method === 'GET';
+
+  // 1. Grab auth token
   const token = localStorage.getItem('token');
   
-  // 2. Attach it to the headers if it exists
+  // 2. Attach headers
   const headers = {
     'Content-Type': 'application/json',
     ...(token && { Authorization: `Bearer ${token}` }),
     ...options.headers,
   };
 
-  const response = await fetch(`${API_URL}${endpoint}`, { ...options, headers });
-  
-  if (!response.ok) {
-    if (response.status === 401) {
-      // 🚨 If the token expired or is invalid, kick the user back to the login screen
-      localStorage.removeItem('token');
-      window.location.reload(); 
+  try {
+    const response = await fetch(`${API_URL}${endpoint}`, { ...options, headers });
+    
+    if (!response.ok) {
+      if (response.status === 401) {
+        // Token expired or invalid: teardown session and clear sensitive cached data
+        localStorage.removeItem('token');
+        await clearApiCache();
+        window.location.reload(); 
+      }
+      
+      // On server 5xx errors during GET, check if IndexedDB has a valid cached copy
+      if (isGet && response.status >= 500) {
+        const cachedData = await getCachedResponse(endpoint);
+        if (cachedData !== null) {
+          console.warn(`⚠️ [IndexedDB Cache Fallback] Server returned ${response.status}. Serving cached data for ${endpoint}`);
+          return cachedData;
+        }
+      }
+
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.detail || `API request failed with status ${response.status}`);
     }
-    const errorData = await response.json().catch(() => ({}));
-    throw new Error(errorData.detail || 'API request failed');
+
+    const data = await response.json();
+
+    // 3. Save successful GET response directly to IndexedDB for offline access
+    if (isGet) {
+      await cacheResponse(endpoint, data);
+    }
+
+    return data;
+  } catch (error) {
+    // 4. OFFLINE FALLBACK: If network failed on a GET request, serve cached data from IndexedDB
+    if (isGet) {
+      const cachedData = await getCachedResponse(endpoint);
+      if (cachedData !== null) {
+        console.log(`📡 [IndexedDB Offline] Network unavailable. Serving cached data for ${endpoint}`);
+        return cachedData;
+      }
+    } else {
+      // If a mutation failed due to network disconnect, queue it for background sync
+      const isNetworkError = !navigator.onLine || error.name === 'TypeError' || error.message.includes('fetch');
+      if (isNetworkError) {
+        let payload = null;
+        if (options.body) {
+          try {
+            payload = JSON.parse(options.body);
+          } catch {
+            payload = options.body;
+          }
+        }
+        await offlineSync.addToQueue(`${API_URL}${endpoint}`, method, payload);
+      }
+    }
+
+    throw error;
   }
-  return response.json();
 };
 
 export const api = {
-  // 🔥 NEW: Authentication Endpoints
+  // 🔥 Authentication Endpoints
   login: (data) => fetchAPI('/auth/login', { method: 'POST', body: JSON.stringify(data) }),
   register: (data) => fetchAPI('/auth/register', { method: 'POST', body: JSON.stringify(data) }),
 
-  // Profile (Notice we removed setupProfile since register handles it now!)
+  // Profile
   getProfile: () => fetchAPI('/profile/'),
   updateProfile: (data) => fetchAPI('/profile', { method: 'PUT', body: JSON.stringify(data) }),
 

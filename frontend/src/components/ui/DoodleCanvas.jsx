@@ -1,4 +1,5 @@
 import { forwardRef, useEffect, useImperativeHandle, useRef } from 'react';
+import { userStorage } from '../../services/db';
 
 const BG = '#1e293b';
 const DEFAULT_COLOR = '#60a5fa';
@@ -73,11 +74,9 @@ const DoodleCanvas = forwardRef(function DoodleCanvas({ doodleKey, color = DEFAU
   }, [isPanMode]);
 
   const persist = () => {
-    try {
-      localStorage.setItem(doodleKey, JSON.stringify({ strokes: strokesRef.current }));
-    } catch {
-      // Storage full or unavailable — the doodle just won't survive reload.
-    }
+    userStorage.setItem(doodleKey, { strokes: strokesRef.current }).catch((err) => {
+      console.warn('Failed to save doodle strokes to IndexedDB:', err);
+    });
   };
 
   const drawStroke = (ctx, stroke) => {
@@ -116,28 +115,43 @@ const DoodleCanvas = forwardRef(function DoodleCanvas({ doodleKey, color = DEFAU
     clear() {
       strokesRef.current = [];
       render();
+      userStorage.removeItem(doodleKey).catch(() => {});
       localStorage.removeItem(doodleKey);
     },
   }), [doodleKey]);
 
+  // 1. Load strokes from IndexedDB asynchronously
   useEffect(() => {
-    try {
-      const saved = JSON.parse(localStorage.getItem(doodleKey));
-      strokesRef.current = Array.isArray(saved?.strokes) ? saved.strokes : [];
-    } catch {
-      strokesRef.current = [];
-    }
+    let isMounted = true;
+    userStorage.getItem(doodleKey).then((saved) => {
+      if (!isMounted) return;
+      if (saved && Array.isArray(saved.strokes)) {
+        strokesRef.current = saved.strokes;
+        render();
+      } else {
+        // Fallback for legacy localStorage doodles
+        try {
+          const legacy = JSON.parse(localStorage.getItem(doodleKey));
+          if (Array.isArray(legacy?.strokes)) {
+            strokesRef.current = legacy.strokes;
+            userStorage.setItem(doodleKey, { strokes: legacy.strokes });
+            render();
+          }
+        } catch {}
+      }
+    });
 
+    return () => { isMounted = false; };
+  }, [doodleKey]);
+
+  // 2. Setup canvas resize observer and wheel panning listeners
+  useEffect(() => {
     const container = containerRef.current;
     const canvas = canvasRef.current;
     if (!container || !canvas) return;
 
     const resize = (cssWidth, cssHeight) => {
       if (cssWidth <= 0 || cssHeight <= 0) return;
-      // ResizeObserver can fire with the exact same rect it just reported
-      // (a layout recalc that changed nothing, or a debounced tick that
-      // lands after a settle) — skip the wipe-and-redraw when nothing
-      // actually changed instead of paying for it anyway.
       const prev = sizeRef.current;
       if (prev.width === cssWidth && prev.height === cssHeight) return;
       dprRef.current = window.devicePixelRatio || 1;
@@ -147,12 +161,6 @@ const DoodleCanvas = forwardRef(function DoodleCanvas({ doodleKey, color = DEFAU
       render();
     };
 
-    // Setting canvas.width/height (inside resize()) wipes the whole backing
-    // buffer and forces a full redraw of every stroke — fine once, but the
-    // Focus Mode expand/collapse transition fires ResizeObserver dozens of
-    // times a second while it animates, so without debouncing this turned
-    // into a redraw storm for the whole transition. First tick still runs
-    // immediately so the canvas has correct dimensions right away.
     let firstResize = true;
     let resizeTimer = null;
     const observer = new ResizeObserver((entries) => {
@@ -167,11 +175,6 @@ const DoodleCanvas = forwardRef(function DoodleCanvas({ doodleKey, color = DEFAU
     });
     observer.observe(container);
 
-    // Two-finger trackpad scroll / mouse wheel pans the camera directly —
-    // the literal "infinite scroll" the canvas is meant to feel like.
-    // Registered as a native, non-passive listener so preventDefault
-    // actually stops the page from scrolling behind the canvas (React's
-    // synthetic onWheel is passive by default and can't reliably block it).
     const onWheel = (e) => {
       e.preventDefault();
       panRef.current = { x: panRef.current.x + e.deltaX, y: panRef.current.y + e.deltaY };
@@ -185,7 +188,7 @@ const DoodleCanvas = forwardRef(function DoodleCanvas({ doodleKey, color = DEFAU
       canvas.removeEventListener('wheel', onWheel);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [doodleKey]);
+  }, []);
 
   const posFromEvent = (e) => {
     const rect = canvasRef.current.getBoundingClientRect();
